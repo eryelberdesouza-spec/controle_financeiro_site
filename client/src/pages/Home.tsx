@@ -1,25 +1,40 @@
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Streamdown } from 'streamdown';
+import { useState } from 'react';
+import Layout from '@/components/Layout';
+import Overview from '@/components/sections/Overview';
+import Payments from '@/components/sections/Payments';
+import Receivables from '@/components/sections/Receivables';
+import Dashboard from '@/components/sections/Dashboard';
+import Reports from '@/components/sections/Reports';
+import Customization from '@/components/sections/Customization';
+import FAQ from '@/components/sections/FAQ';
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Best Practices, Design Guide and Common Pitfalls
- */
 export default function Home() {
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  const [activeSection, setActiveSection] = useState('overview');
+
+  const renderSection = () => {
+    switch (activeSection) {
+      case 'overview':
+        return <Overview />;
+      case 'payments':
+        return <Payments />;
+      case 'receivables':
+        return <Receivables />;
+      case 'dashboard':
+        return <Dashboard />;
+      case 'reports':
+        return <Reports />;
+      case 'customization':
+        return <Customization />;
+      case 'faq':
+        return <FAQ />;
+      default:
+        return <Overview />;
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
-    </div>
+    <Layout activeSection={activeSection} onSectionChange={setActiveSection}>
+      {renderSection()}
+    </Layout>
   );
 }

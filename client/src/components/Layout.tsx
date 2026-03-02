@@ -10,7 +10,8 @@ interface LayoutProps {
 
 const menuItems = [
   { id: 'overview', label: 'Visão Geral', icon: FileText },
-  { id: 'payments', label: 'Pagamentos', icon: Download },
+  { id: 'downloads', label: 'Downloads', icon: Download },
+  { id: 'payments', label: 'Pagamentos', icon: FileText },
   { id: 'receivables', label: 'Recebimentos', icon: BarChart3 },
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { id: 'reports', label: 'Relatórios', icon: FileText },

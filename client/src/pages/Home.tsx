@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Layout from '@/components/Layout';
 import Overview from '@/components/sections/Overview';
+import Downloads from '@/components/sections/Downloads';
 import Payments from '@/components/sections/Payments';
 import Receivables from '@/components/sections/Receivables';
 import Dashboard from '@/components/sections/Dashboard';
@@ -15,6 +16,8 @@ export default function Home() {
     switch (activeSection) {
       case 'overview':
         return <Overview />;
+      case 'downloads':
+        return <Downloads />;
       case 'payments':
         return <Payments />;
       case 'receivables':

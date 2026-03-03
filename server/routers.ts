@@ -6,21 +6,31 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   createPagamento,
+  createPagamentoParcelas,
   createRecebimento,
+  createRecebimentoParcelas,
   deletePagamento,
+  deletePagamentoParcelas,
   deleteRecebimento,
+  deleteRecebimentoParcelas,
   deleteUser,
   getDashboardStats,
+  getEmpresaConfig,
   getPagamentoById,
   getPagamentosStats,
   getRecebimentoById,
   getRecebimentosStats,
+  listPagamentoParcelas,
   listPagamentos,
+  listRecebimentoParcelas,
   listRecebimentos,
   listUsers,
   updatePagamento,
+  updatePagamentoParcela,
   updateRecebimento,
+  updateRecebimentoParcela,
   updateUserRole,
+  upsertEmpresaConfig,
 } from "./db";
 
 // Procedure que exige role admin
@@ -184,6 +194,85 @@ const usersRouter = router({
     .mutation(({ input }) => deleteUser(input.id)),
 });
 
+const empresaRouter = router({
+  get: staffProcedure.query(() => getEmpresaConfig()),
+  save: adminProcedure
+    .input(z.object({
+      nomeEmpresa: z.string().min(1).optional(),
+      cnpj: z.string().optional(),
+      telefone: z.string().optional(),
+      email: z.string().email().optional(),
+      endereco: z.string().optional(),
+      logoUrl: z.string().optional(),
+      corPrimaria: z.string().optional(),
+    }))
+    .mutation(({ input }) => upsertEmpresaConfig(input)),
+});
+
+const parcelaSchema = z.object({
+  numeroParcela: z.number(),
+  valor: z.string(),
+  dataVencimento: z.date(),
+  dataPagamento: z.date().optional(),
+  status: z.enum(["Pendente", "Pago", "Atrasado", "Cancelado"]).optional(),
+  observacao: z.string().optional(),
+});
+
+const parcelaRecebimentoSchema = z.object({
+  numeroParcela: z.number(),
+  valor: z.string(),
+  dataVencimento: z.date(),
+  dataRecebimento: z.date().optional(),
+  status: z.enum(["Pendente", "Recebido", "Atrasado", "Cancelado"]).optional(),
+  observacao: z.string().optional(),
+});
+
+const pagamentoParcelasRouter = router({
+  list: staffProcedure
+    .input(z.object({ pagamentoId: z.number() }))
+    .query(({ input }) => listPagamentoParcelas(input.pagamentoId)),
+  createBulk: staffProcedure
+    .input(z.object({
+      pagamentoId: z.number(),
+      parcelas: z.array(parcelaSchema),
+    }))
+    .mutation(({ input }) =>
+      createPagamentoParcelas(input.parcelas.map(p => ({ ...p, pagamentoId: input.pagamentoId })))
+    ),
+  update: staffProcedure
+    .input(z.object({
+      id: z.number(),
+      data: parcelaSchema.partial(),
+    }))
+    .mutation(({ input }) => updatePagamentoParcela(input.id, input.data)),
+  deleteBulk: staffProcedure
+    .input(z.object({ pagamentoId: z.number() }))
+    .mutation(({ input }) => deletePagamentoParcelas(input.pagamentoId)),
+});
+
+const recebimentoParcelasRouter = router({
+  list: staffProcedure
+    .input(z.object({ recebimentoId: z.number() }))
+    .query(({ input }) => listRecebimentoParcelas(input.recebimentoId)),
+  createBulk: staffProcedure
+    .input(z.object({
+      recebimentoId: z.number(),
+      parcelas: z.array(parcelaRecebimentoSchema),
+    }))
+    .mutation(({ input }) =>
+      createRecebimentoParcelas(input.parcelas.map(p => ({ ...p, recebimentoId: input.recebimentoId })))
+    ),
+  update: staffProcedure
+    .input(z.object({
+      id: z.number(),
+      data: parcelaRecebimentoSchema.partial(),
+    }))
+    .mutation(({ input }) => updateRecebimentoParcela(input.id, input.data)),
+  deleteBulk: staffProcedure
+    .input(z.object({ recebimentoId: z.number() }))
+    .mutation(({ input }) => deleteRecebimentoParcelas(input.recebimentoId)),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -198,6 +287,9 @@ export const appRouter = router({
   recebimentos: recebimentosRouter,
   dashboard: dashboardRouter,
   usuarios: usersRouter,
+  empresa: empresaRouter,
+  pagamentoParcelas: pagamentoParcelasRouter,
+  recebimentoParcelas: recebimentoParcelasRouter,
 });
 
 export type AppRouter = typeof appRouter;

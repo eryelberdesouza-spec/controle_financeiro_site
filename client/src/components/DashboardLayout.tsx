@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -33,6 +34,7 @@ const menuItems = [
   { icon: ArrowDownCircle, label: "Recebimentos", path: "/recebimentos" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: Users, label: "Usuários", path: "/usuarios", adminOnly: true },
+  { icon: Settings, label: "Configurações", path: "/configuracoes", adminOnly: true },
   { icon: BookOpen, label: "Guia de Uso", path: "/guia" },
   { icon: HelpCircle, label: "FAQ", path: "/faq" },
 ];
@@ -119,6 +121,7 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+  const { data: empresa } = trpc.empresa.get.useQuery();
 
   useEffect(() => {
     if (isCollapsed) {
@@ -175,10 +178,19 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
+                  {empresa?.logoUrl && (
+                    <img
+                      src={empresa.logoUrl}
+                      alt="Logo"
+                      className="h-7 w-7 object-contain rounded shrink-0"
+                    />
+                  )}
                   <span className="font-semibold tracking-tight truncate text-primary">
-                    FinControl
+                    {empresa?.nomeEmpresa || "FinControl"}
                   </span>
                 </div>
+              ) : empresa?.logoUrl ? (
+                <img src={empresa.logoUrl} alt="Logo" className="h-6 w-6 object-contain rounded mx-auto" />
               ) : null}
             </div>
           </SidebarHeader>

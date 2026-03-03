@@ -45,3 +45,39 @@
 - [x] Criar página de gestão de usuários (admin)
 - [x] Implementar controle de acesso: admin vs operador vs user
 - [x] Atualizar testes para novos campos e rotas (14 testes passando)
+
+## Configurações da Empresa (v3)
+- [ ] Criar tabela empresa_config no banco (nome, logo_url, cnpj, telefone, endereco)
+- [ ] Criar helpers de DB para empresa_config
+- [ ] Criar procedures tRPC para ler e salvar configurações da empresa
+- [ ] Criar página de Configurações com upload de logo e nome da empresa
+- [ ] Exibir logo e nome no cabeçalho do sidebar
+- [ ] Exibir logo e nome nos relatórios e impressão
+- [ ] Adicionar item "Configurações" ao menu (somente admin)
+- [ ] Testar procedures de configurações
+
+## Configurações e Relatórios Avançados (v4)
+- [ ] Finalizar helpers de DB para empresa_config (getEmpresaConfig, upsertEmpresaConfig)
+- [ ] Criar procedure tRPC para ler e salvar configurações da empresa
+- [ ] Criar página de Configurações com upload de logo, nome, CNPJ, telefone, endereço
+- [ ] Exibir logo e nome da empresa no sidebar (cabeçalho)
+- [ ] Exibir logo e nome da empresa nos relatórios e impressão
+- [ ] Adicionar item "Configurações" no menu (somente admin)
+- [ ] Implementar filtros avançados no relatório de pagamentos (nº controle, data, nome, status, centro de custo, banco, valor min/max)
+- [ ] Implementar filtros avançados no relatório de recebimentos (nº controle, data, nome, status, tipo recebimento, contrato, valor min/max)
+- [ ] Exibir filtros aplicados no cabeçalho do relatório impresso
+- [ ] Atualizar exportação CSV para respeitar os filtros aplicados
+
+## Sistema de Parcelas (v5)
+- [ ] Criar tabela pagamento_parcelas no schema (valor, vencimento, dataPagamento, status, observacao)
+- [ ] Criar tabela recebimento_parcelas no schema (valor, vencimento, dataRecebimento, status, observacao)
+- [ ] Executar migração do banco
+- [ ] Criar helpers de DB para parcelas de pagamentos
+- [ ] Criar helpers de DB para parcelas de recebimentos
+- [ ] Criar procedures tRPC para CRUD de parcelas
+- [ ] Atualizar formulário de pagamentos: gerar parcelas automaticamente ao salvar
+- [ ] Atualizar formulário de recebimentos: gerar parcelas automaticamente ao salvar
+- [ ] Criar componente de tabela de parcelas editável (valor, vencimento, pagamento, status)
+- [ ] Exibir parcelas na listagem/detalhe de pagamentos e recebimentos
+- [ ] Filtros avançados nos relatórios (nº controle, data, nome, status, valor min/max, tipo)
+- [ ] Logo e nome da empresa nos relatórios e impressão

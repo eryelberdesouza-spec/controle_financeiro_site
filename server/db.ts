@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertPagamento, InsertRecebimento, InsertUser, pagamentos, recebimentos, users } from "../drizzle/schema";
+import { EmpresaConfig, empresaConfig, InsertEmpresaConfig, InsertPagamento, InsertRecebimento, InsertUser, pagamentos, recebimentos, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -183,6 +183,31 @@ export async function getRecebimentosStats() {
   }).from(recebimentos).groupBy(recebimentos.status);
 }
 
+// ==================== EMPRESA CONFIG ====================
+
+export async function getEmpresaConfig(): Promise<EmpresaConfig | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(empresaConfig).limit(1);
+  return result[0] ?? null;
+}
+
+export async function upsertEmpresaConfig(data: Partial<InsertEmpresaConfig>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await db.select().from(empresaConfig).limit(1);
+  if (existing.length > 0) {
+    return db.update(empresaConfig).set(data).where(eq(empresaConfig.id, existing[0].id));
+  } else {
+    return db.insert(empresaConfig).values({
+      nomeEmpresa: data.nomeEmpresa ?? "Minha Empresa",
+      ...data,
+    });
+  }
+}
+
+// ==================== DASHBOARD ====================
+
 export async function getDashboardStats() {
   const db = await getDb();
   if (!db) return null;
@@ -204,4 +229,66 @@ export async function getDashboardStats() {
     }).from(recebimentos),
   ]);
   return { pagamentos: pagStats[0], recebimentos: recStats[0] };
+}
+
+
+
+// ==================== PARCELAS DE PAGAMENTOS ====================
+
+import { InsertPagamentoParcela, InsertRecebimentoParcela, pagamentoParcelas, recebimentoParcelas } from "../drizzle/schema";
+
+export async function listPagamentoParcelas(pagamentoId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(pagamentoParcelas)
+    .where(eq(pagamentoParcelas.pagamentoId, pagamentoId))
+    .orderBy(pagamentoParcelas.numeroParcela);
+}
+
+export async function createPagamentoParcelas(parcelas: InsertPagamentoParcela[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (parcelas.length === 0) return;
+  return db.insert(pagamentoParcelas).values(parcelas);
+}
+
+export async function updatePagamentoParcela(id: number, data: Partial<InsertPagamentoParcela>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(pagamentoParcelas).set(data).where(eq(pagamentoParcelas.id, id));
+}
+
+export async function deletePagamentoParcelas(pagamentoId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(pagamentoParcelas).where(eq(pagamentoParcelas.pagamentoId, pagamentoId));
+}
+
+// ==================== PARCELAS DE RECEBIMENTOS ====================
+
+export async function listRecebimentoParcelas(recebimentoId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(recebimentoParcelas)
+    .where(eq(recebimentoParcelas.recebimentoId, recebimentoId))
+    .orderBy(recebimentoParcelas.numeroParcela);
+}
+
+export async function createRecebimentoParcelas(parcelas: InsertRecebimentoParcela[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (parcelas.length === 0) return;
+  return db.insert(recebimentoParcelas).values(parcelas);
+}
+
+export async function updateRecebimentoParcela(id: number, data: Partial<InsertRecebimentoParcela>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(recebimentoParcelas).set(data).where(eq(recebimentoParcelas.id, id));
+}
+
+export async function deleteRecebimentoParcelas(recebimentoId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(recebimentoParcelas).where(eq(recebimentoParcelas.recebimentoId, recebimentoId));
 }

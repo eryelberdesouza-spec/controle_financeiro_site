@@ -1,4 +1,4 @@
-import { decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -32,6 +32,8 @@ export const pagamentos = mysqlTable("pagamentos", {
   descricao: text("descricao"),
   observacao: text("observacao"),
   autorizadoPor: varchar("autorizadoPor", { length: 255 }),
+  parcelado: boolean("parcelado").default(false).notNull(),
+  quantidadeParcelas: int("quantidadeParcelas").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -66,3 +68,53 @@ export const recebimentos = mysqlTable("recebimentos", {
 
 export type Recebimento = typeof recebimentos.$inferSelect;
 export type InsertRecebimento = typeof recebimentos.$inferInsert;
+
+// Tabela de Configurações da Empresa
+export const empresaConfig = mysqlTable("empresa_config", {
+  id: int("id").autoincrement().primaryKey(),
+  nomeEmpresa: varchar("nomeEmpresa", { length: 255 }).notNull().default("Minha Empresa"),
+  cnpj: varchar("cnpj", { length: 20 }),
+  telefone: varchar("telefone", { length: 20 }),
+  email: varchar("email", { length: 320 }),
+  endereco: text("endereco"),
+  logoUrl: text("logoUrl"),
+  corPrimaria: varchar("corPrimaria", { length: 7 }).default("#2563eb"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmpresaConfig = typeof empresaConfig.$inferSelect;
+export type InsertEmpresaConfig = typeof empresaConfig.$inferInsert;
+
+// Tabela de Parcelas de Pagamentos
+export const pagamentoParcelas = mysqlTable("pagamento_parcelas", {
+  id: int("id").autoincrement().primaryKey(),
+  pagamentoId: int("pagamentoId").notNull().references(() => pagamentos.id),
+  numeroParcela: int("numeroParcela").notNull(),
+  valor: decimal("valor", { precision: 15, scale: 2 }).notNull(),
+  dataVencimento: timestamp("dataVencimento").notNull(),
+  dataPagamento: timestamp("dataPagamento"),
+  status: mysqlEnum("status", ["Pendente", "Pago", "Atrasado", "Cancelado"]).default("Pendente").notNull(),
+  observacao: text("observacao"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PagamentoParcela = typeof pagamentoParcelas.$inferSelect;
+export type InsertPagamentoParcela = typeof pagamentoParcelas.$inferInsert;
+
+// Tabela de Parcelas de Recebimentos
+export const recebimentoParcelas = mysqlTable("recebimento_parcelas", {
+  id: int("id").autoincrement().primaryKey(),
+  recebimentoId: int("recebimentoId").notNull().references(() => recebimentos.id),
+  numeroParcela: int("numeroParcela").notNull(),
+  valor: decimal("valor", { precision: 15, scale: 2 }).notNull(),
+  dataVencimento: timestamp("dataVencimento").notNull(),
+  dataRecebimento: timestamp("dataRecebimento"),
+  status: mysqlEnum("status", ["Pendente", "Recebido", "Atrasado", "Cancelado"]).default("Pendente").notNull(),
+  observacao: text("observacao"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RecebimentoParcela = typeof recebimentoParcelas.$inferSelect;
+export type InsertRecebimentoParcela = typeof recebimentoParcelas.$inferInsert;

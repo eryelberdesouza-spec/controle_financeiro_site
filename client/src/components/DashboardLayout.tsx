@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -32,6 +32,7 @@ const menuItems = [
   { icon: ArrowUpCircle, label: "Pagamentos", path: "/pagamentos" },
   { icon: ArrowDownCircle, label: "Recebimentos", path: "/recebimentos" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
+  { icon: Users, label: "Usuários", path: "/usuarios", adminOnly: true },
   { icon: BookOpen, label: "Guia de Uso", path: "/guia" },
   { icon: HelpCircle, label: "FAQ", path: "/faq" },
 ];
@@ -184,7 +185,7 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {menuItems.filter(item => !('adminOnly' in item && item.adminOnly) || user?.role === 'admin').map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>

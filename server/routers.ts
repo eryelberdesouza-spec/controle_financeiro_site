@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -8,6 +9,7 @@ import {
   createRecebimento,
   deletePagamento,
   deleteRecebimento,
+  deleteUser,
   getDashboardStats,
   getPagamentoById,
   getPagamentosStats,
@@ -15,12 +17,32 @@ import {
   getRecebimentosStats,
   listPagamentos,
   listRecebimentos,
+  listUsers,
   updatePagamento,
   updateRecebimento,
+  updateUserRole,
 } from "./db";
 
+// Procedure que exige role admin
+const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito a administradores." });
+  }
+  return next({ ctx });
+});
+
+// Procedure que exige admin ou operador (bloqueia role "user" simples)
+const staffProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "admin" && ctx.user.role !== "operador") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Acesso não autorizado." });
+  }
+  return next({ ctx });
+});
+
+const TIPOS_RECEBIMENTO = ["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"] as const;
+
 const pagamentosRouter = router({
-  list: protectedProcedure
+  list: staffProcedure
     .input(z.object({
       status: z.string().optional(),
       centroCusto: z.string().optional(),
@@ -29,12 +51,13 @@ const pagamentosRouter = router({
     }).optional())
     .query(({ input }) => listPagamentos(input)),
 
-  getById: protectedProcedure
+  getById: staffProcedure
     .input(z.object({ id: z.number() }))
     .query(({ input }) => getPagamentoById(input.id)),
 
-  create: protectedProcedure
+  create: staffProcedure
     .input(z.object({
+      numeroControle: z.string().optional(),
       nomeCompleto: z.string().min(1),
       cpf: z.string().optional(),
       banco: z.string().optional(),
@@ -51,9 +74,10 @@ const pagamentosRouter = router({
     }))
     .mutation(({ input, ctx }) => createPagamento({ ...input, createdBy: ctx.user.id })),
 
-  update: protectedProcedure
+  update: staffProcedure
     .input(z.object({
       id: z.number(),
+      numeroControle: z.string().optional(),
       nomeCompleto: z.string().min(1).optional(),
       cpf: z.string().optional(),
       banco: z.string().optional(),
@@ -70,15 +94,16 @@ const pagamentosRouter = router({
     }))
     .mutation(({ input }) => { const { id, ...data } = input; return updatePagamento(id, data); }),
 
-  delete: protectedProcedure
+  // Somente admin pode excluir pagamentos
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(({ input }) => deletePagamento(input.id)),
 
-  stats: protectedProcedure.query(() => getPagamentosStats()),
+  stats: staffProcedure.query(() => getPagamentosStats()),
 });
 
 const recebimentosRouter = router({
-  list: protectedProcedure
+  list: staffProcedure
     .input(z.object({
       status: z.string().optional(),
       tipoRecebimento: z.string().optional(),
@@ -87,19 +112,22 @@ const recebimentosRouter = router({
     }).optional())
     .query(({ input }) => listRecebimentos(input)),
 
-  getById: protectedProcedure
+  getById: staffProcedure
     .input(z.object({ id: z.number() }))
     .query(({ input }) => getRecebimentoById(input.id)),
 
-  create: protectedProcedure
+  create: staffProcedure
     .input(z.object({
+      numeroControle: z.string().optional(),
       numeroContrato: z.string().optional(),
       nomeRazaoSocial: z.string().min(1),
       descricao: z.string().optional(),
-      tipoRecebimento: z.enum(["Pix", "Boleto", "Transferência", "Cartão", "Dinheiro", "Outro"]).default("Pix"),
+      tipoRecebimento: z.enum(TIPOS_RECEBIMENTO).default("Pix"),
       valorTotal: z.string().min(1),
       valorEquipamento: z.string().optional().default("0"),
       valorServico: z.string().optional().default("0"),
+      juros: z.string().optional().default("0"),
+      desconto: z.string().optional().default("0"),
       quantidadeParcelas: z.number().min(1).default(1),
       parcelaAtual: z.number().min(1).optional(),
       dataVencimento: z.date(),
@@ -109,16 +137,19 @@ const recebimentosRouter = router({
     }))
     .mutation(({ input, ctx }) => createRecebimento({ ...input, createdBy: ctx.user.id })),
 
-  update: protectedProcedure
+  update: staffProcedure
     .input(z.object({
       id: z.number(),
+      numeroControle: z.string().optional(),
       numeroContrato: z.string().optional(),
       nomeRazaoSocial: z.string().min(1).optional(),
       descricao: z.string().optional(),
-      tipoRecebimento: z.enum(["Pix", "Boleto", "Transferência", "Cartão", "Dinheiro", "Outro"]).optional(),
+      tipoRecebimento: z.enum(TIPOS_RECEBIMENTO).optional(),
       valorTotal: z.string().optional(),
       valorEquipamento: z.string().optional(),
       valorServico: z.string().optional(),
+      juros: z.string().optional(),
+      desconto: z.string().optional(),
       quantidadeParcelas: z.number().min(1).optional(),
       parcelaAtual: z.number().min(1).optional(),
       dataVencimento: z.date().optional(),
@@ -128,15 +159,29 @@ const recebimentosRouter = router({
     }))
     .mutation(({ input }) => { const { id, ...data } = input; return updateRecebimento(id, data); }),
 
-  delete: protectedProcedure
+  // Somente admin pode excluir recebimentos
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(({ input }) => deleteRecebimento(input.id)),
 
-  stats: protectedProcedure.query(() => getRecebimentosStats()),
+  stats: staffProcedure.query(() => getRecebimentosStats()),
 });
 
 const dashboardRouter = router({
-  stats: protectedProcedure.query(() => getDashboardStats()),
+  stats: staffProcedure.query(() => getDashboardStats()),
+});
+
+const usersRouter = router({
+  list: adminProcedure.query(() => listUsers()),
+  updateRole: adminProcedure
+    .input(z.object({
+      id: z.number(),
+      role: z.enum(["admin", "operador", "user"]),
+    }))
+    .mutation(({ input }) => updateUserRole(input.id, input.role)),
+  delete: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => deleteUser(input.id)),
 });
 
 export const appRouter = router({
@@ -152,6 +197,7 @@ export const appRouter = router({
   pagamentos: pagamentosRouter,
   recebimentos: recebimentosRouter,
   dashboard: dashboardRouter,
+  usuarios: usersRouter,
 });
 
 export type AppRouter = typeof appRouter;

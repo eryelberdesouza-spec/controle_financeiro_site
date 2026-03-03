@@ -10,6 +10,7 @@ import Recebimentos from "./pages/Recebimentos";
 import Relatorios from "./pages/Relatorios";
 import Guia from "./pages/Guia";
 import Faq from "./pages/Faq";
+import Usuarios from "./pages/Usuarios";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/pagamentos" component={Pagamentos} />
       <Route path="/recebimentos" component={Recebimentos} />
       <Route path="/relatorios" component={Relatorios} />
+      <Route path="/usuarios" component={Usuarios} />
       <Route path="/guia" component={Guia} />
       <Route path="/faq" component={Faq} />
       <Route path="/404" component={NotFound} />

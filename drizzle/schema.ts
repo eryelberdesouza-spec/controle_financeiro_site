@@ -6,7 +6,7 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "operador"]).default("operador").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -18,6 +18,7 @@ export type InsertUser = typeof users.$inferInsert;
 // Tabela de Pagamentos
 export const pagamentos = mysqlTable("pagamentos", {
   id: int("id").autoincrement().primaryKey(),
+  numeroControle: varchar("numeroControle", { length: 50 }),
   nomeCompleto: varchar("nomeCompleto", { length: 255 }).notNull(),
   cpf: varchar("cpf", { length: 18 }),
   banco: varchar("banco", { length: 100 }),
@@ -42,13 +43,16 @@ export type InsertPagamento = typeof pagamentos.$inferInsert;
 // Tabela de Recebimentos
 export const recebimentos = mysqlTable("recebimentos", {
   id: int("id").autoincrement().primaryKey(),
+  numeroControle: varchar("numeroControle", { length: 50 }),
   numeroContrato: varchar("numeroContrato", { length: 100 }),
   nomeRazaoSocial: varchar("nomeRazaoSocial", { length: 255 }).notNull(),
   descricao: text("descricao"),
-  tipoRecebimento: mysqlEnum("tipoRecebimento", ["Pix", "Boleto", "Transferência", "Cartão", "Dinheiro", "Outro"]).default("Pix").notNull(),
+  tipoRecebimento: mysqlEnum("tipoRecebimento", ["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"]).default("Pix").notNull(),
   valorTotal: decimal("valorTotal", { precision: 15, scale: 2 }).notNull(),
   valorEquipamento: decimal("valorEquipamento", { precision: 15, scale: 2 }).default("0"),
   valorServico: decimal("valorServico", { precision: 15, scale: 2 }).default("0"),
+  juros: decimal("juros", { precision: 15, scale: 2 }).default("0"),
+  desconto: decimal("desconto", { precision: 15, scale: 2 }).default("0"),
   quantidadeParcelas: int("quantidadeParcelas").default(1).notNull(),
   parcelaAtual: int("parcelaAtual").default(1),
   dataVencimento: timestamp("dataVencimento").notNull(),

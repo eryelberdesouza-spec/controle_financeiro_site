@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer } from "lucide-react";
+import { ComprovanteViewer, type ComprovanteRecebimento } from "@/components/ComprovanteViewer";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -148,7 +149,50 @@ export default function Recebimentos() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selecionados, setSelecionados] = useState<Set<number>>(new Set());
+  const [comprovanteOpen, setComprovanteOpen] = useState(false);
+  const [comprovanteRegistros, setComprovanteRegistros] = useState<ComprovanteRecebimento[]>([]);
   const utils = trpc.useUtils();
+
+  const toComprovante = (r: any): ComprovanteRecebimento => ({
+    id: r.id,
+    numeroControle: r.numeroControle,
+    numeroContrato: r.numeroContrato,
+    nomeRazaoSocial: r.nomeRazaoSocial,
+    tipoRecebimento: r.tipoRecebimento,
+    valorTotal: r.valorTotal,
+    valorEquipamento: r.valorEquipamento,
+    valorServico: r.valorServico,
+    juros: r.juros,
+    desconto: r.desconto,
+    quantidadeParcelas: r.quantidadeParcelas,
+    parcelaAtual: r.parcelaAtual,
+    dataVencimento: r.dataVencimento,
+    dataRecebimento: r.dataRecebimento,
+    status: r.status,
+    descricao: r.descricao,
+    observacao: r.observacao,
+  });
+
+  const handleImprimirUnico = (r: any) => {
+    setComprovanteRegistros([toComprovante(r)]);
+    setComprovanteOpen(true);
+  };
+
+  const handleImprimirLote = () => {
+    const registros = filtered.filter(r => selecionados.has(r.id)).map(toComprovante);
+    if (registros.length === 0) { toast.error("Selecione ao menos um recebimento."); return; }
+    setComprovanteRegistros(registros);
+    setComprovanteOpen(true);
+  };
+
+  const toggleSelecionado = (id: number) => {
+    setSelecionados(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  };
+
+  const toggleTodos = () => {
+    setSelecionados(selecionados.size === filtered.length ? new Set() : new Set(filtered.map(r => r.id)));
+  };
 
   const { data: recebimentos = [], isLoading } = trpc.recebimentos.list.useQuery();
 
@@ -283,7 +327,12 @@ export default function Recebimentos() {
             <h1 className="text-2xl font-bold text-foreground">Recebimentos</h1>
             <p className="text-muted-foreground text-sm mt-1">Controle de recebimentos e contratos</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {selecionados.size > 0 && (
+              <Button variant="outline" onClick={handleImprimirLote} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
+                <Printer className="h-4 w-4" /> Imprimir Selecionados ({selecionados.size})
+              </Button>
+            )}
             <Button variant="outline" onClick={() => exportToCSV(filtered)} className="gap-2">
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
@@ -332,6 +381,9 @@ export default function Recebimentos() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/50">
+                      <th className="p-3 w-10">
+                        <input type="checkbox" className="rounded" checked={selecionados.size === filtered.length && filtered.length > 0} onChange={toggleTodos} title="Selecionar todos" />
+                      </th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Nº Controle</th>
                       <th className="text-left p-3 font-medium text-muted-foreground">Nome / Razão Social</th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Contrato</th>
@@ -346,7 +398,10 @@ export default function Recebimentos() {
                   <tbody>
                     {filtered.map((r) => (
                       <>
-                        <tr key={r.id} className="border-b hover:bg-muted/30 transition-colors">
+                        <tr key={r.id} className={`border-b hover:bg-muted/30 transition-colors ${selecionados.has(r.id) ? 'bg-blue-50' : ''}`}>
+                          <td className="p-3 w-10">
+                            <input type="checkbox" className="rounded" checked={selecionados.has(r.id)} onChange={() => toggleSelecionado(r.id)} />
+                          </td>
                           <td className="p-3 text-muted-foreground hidden lg:table-cell font-mono text-xs">{r.numeroControle || "-"}</td>
                           <td className="p-3 font-medium">
                             <div className="flex items-center gap-1.5">
@@ -379,6 +434,9 @@ export default function Recebimentos() {
                                   {expandedId === r.id ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                                 </Button>
                               )}
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" title="Imprimir comprovante" onClick={() => handleImprimirUnico(r)}>
+                                <Printer className="h-3.5 w-3.5" />
+                              </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(r)}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
@@ -569,6 +627,12 @@ export default function Recebimentos() {
           </form>
         </DialogContent>
       </Dialog>
+      <ComprovanteViewer
+        open={comprovanteOpen}
+        onClose={() => setComprovanteOpen(false)}
+        tipo="recebimento"
+        registros={comprovanteRegistros}
+      />
     </DashboardLayout>
   );
 }

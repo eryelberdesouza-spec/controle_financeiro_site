@@ -5,26 +5,32 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
+  createConvite,
   createPagamento,
   createPagamentoParcelas,
   createRecebimento,
   createRecebimentoParcelas,
   deletePagamento,
   deletePagamentoParcelas,
+  deleteConvite,
   deleteRecebimento,
   deleteRecebimentoParcelas,
   deleteUser,
   getDashboardStats,
+  getConviteByToken,
   getEmpresaConfig,
   getPagamentoById,
   getPagamentosStats,
   getRecebimentoById,
   getRecebimentosStats,
+  listConvites,
   listPagamentoParcelas,
   listPagamentos,
   listRecebimentoParcelas,
   listRecebimentos,
   listUsers,
+  markConviteAceito,
+  toggleUserAtivo,
   updatePagamento,
   updatePagamentoParcela,
   updateRecebimento,
@@ -189,9 +195,59 @@ const usersRouter = router({
       role: z.enum(["admin", "operador", "user"]),
     }))
     .mutation(({ input }) => updateUserRole(input.id, input.role)),
+  toggleAtivo: adminProcedure
+    .input(z.object({ id: z.number(), ativo: z.boolean() }))
+    .mutation(({ input }) => toggleUserAtivo(input.id, input.ativo)),
   delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(({ input }) => deleteUser(input.id)),
+});
+
+const convitesRouter = router({
+  list: adminProcedure.query(() => listConvites()),
+  create: adminProcedure
+    .input(z.object({
+      email: z.string().email(),
+      nome: z.string().optional(),
+      role: z.enum(["admin", "operador", "user"]),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { nanoid } = await import("nanoid");
+      const token = nanoid(48);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 dias
+      await createConvite({
+        email: input.email,
+        nome: input.nome,
+        role: input.role,
+        token,
+        expiresAt,
+        createdBy: ctx.user.id,
+      });
+      const baseUrl = (ctx.req as any).headers?.origin ?? "";
+      const link = `${baseUrl}/convite/${token}`;
+      return { token, link, expiresAt };
+    }),
+  delete: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => deleteConvite(input.id)),
+  aceitar: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const convite = await getConviteByToken(input.token);
+      if (!convite) throw new TRPCError({ code: "NOT_FOUND", message: "Convite não encontrado." });
+      if (convite.status !== "pendente") throw new TRPCError({ code: "BAD_REQUEST", message: "Este convite já foi utilizado ou expirou." });
+      if (new Date() > convite.expiresAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Convite expirado." });
+      return { email: convite.email, nome: convite.nome, role: convite.role, token: convite.token };
+    }),
+  confirmar: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .mutation(async ({ input }) => {
+      const convite = await getConviteByToken(input.token);
+      if (!convite || convite.status !== "pendente") throw new TRPCError({ code: "BAD_REQUEST", message: "Convite inválido." });
+      if (new Date() > convite.expiresAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Convite expirado." });
+      await markConviteAceito(input.token);
+      return { success: true, email: convite.email, role: convite.role };
+    }),
 });
 
 const empresaRouter = router({
@@ -290,6 +346,7 @@ export const appRouter = router({
   empresa: empresaRouter,
   pagamentoParcelas: pagamentoParcelasRouter,
   recebimentoParcelas: recebimentoParcelasRouter,
+  convites: convitesRouter,
 });
 
 export type AppRouter = typeof appRouter;

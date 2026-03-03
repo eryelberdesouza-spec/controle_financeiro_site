@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import AceitarConvite from "./pages/AceitarConvite";
 import Pagamentos from "./pages/Pagamentos";
 import Recebimentos from "./pages/Recebimentos";
 import Relatorios from "./pages/Relatorios";
@@ -16,8 +17,8 @@ import Configuracoes from "./pages/Configuracoes";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/pagamentos" component={Pagamentos} />
+     <Route path={"/"} component={Home} />
+      <Route path={"/convite/:token"} component={AceitarConvite} />      <Route path="/pagamentos" component={Pagamentos} />
       <Route path="/recebimentos" component={Recebimentos} />
       <Route path="/relatorios" component={Relatorios} />
       <Route path="/usuarios" component={Usuarios} />

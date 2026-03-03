@@ -81,3 +81,24 @@
 - [ ] Exibir parcelas na listagem/detalhe de pagamentos e recebimentos
 - [ ] Filtros avançados nos relatórios (nº controle, data, nome, status, valor min/max, tipo)
 - [ ] Logo e nome da empresa nos relatórios e impressão
+
+## Impressão e PDF Individual/Lote (v5)
+- [ ] Criar componente ComprovanteViewer com layout profissional (logo, dados da empresa, tabela)
+- [ ] Adicionar botão de impressão individual em cada linha de Pagamentos
+- [ ] Adicionar botão de impressão individual em cada linha de Recebimentos
+- [ ] Implementar seleção múltipla (checkboxes) nas listagens
+- [ ] Criar botão "Imprimir Selecionados" para impressão em lote
+- [ ] Exibir parcelas no comprovante quando parcelado
+- [ ] Incluir logo e dados da empresa no cabeçalho do comprovante
+
+## Gestão de Usuários e PDF (v6)
+- [ ] Adicionar tabela de convites no schema (email, role, token, status, expira)
+- [ ] Criar helpers de DB para listar/criar/atualizar usuários e convites
+- [ ] Criar procedures tRPC: listar usuários, alterar role, desativar, criar convite, listar convites
+- [ ] Reescrever página de Usuários com tabela de usuários ativos e gerenciamento de roles
+- [ ] Adicionar formulário de convite por e-mail com seleção de nível de acesso
+- [ ] Criar página de aceite de convite (/convite/:token)
+- [ ] Integrar ComprovanteViewer na página de Pagamentos (individual + lote)
+- [ ] Integrar ComprovanteViewer na página de Recebimentos (individual + lote)
+- [ ] Adicionar checkboxes de seleção múltipla nas listagens
+- [ ] Botão "Imprimir Selecionados" nas listagens

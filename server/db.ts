@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { EmpresaConfig, empresaConfig, InsertEmpresaConfig, InsertPagamento, InsertRecebimento, InsertUser, pagamentos, recebimentos, users } from "../drizzle/schema";
+import { Convite, convites, EmpresaConfig, empresaConfig, InsertEmpresaConfig, InsertPagamento, InsertRecebimento, InsertUser, pagamentos, recebimentos, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -73,6 +73,12 @@ export async function updateUserRole(id: number, role: "admin" | "operador" | "u
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.update(users).set({ role }).where(eq(users.id, id));
+}
+
+export async function toggleUserAtivo(id: number, ativo: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(users).set({ ativo }).where(eq(users.id, id));
 }
 
 export async function deleteUser(id: number) {
@@ -291,4 +297,45 @@ export async function deleteRecebimentoParcelas(recebimentoId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.delete(recebimentoParcelas).where(eq(recebimentoParcelas.recebimentoId, recebimentoId));
+}
+
+// ─── Convites ─────────────────────────────────────────────────────────────────
+
+export async function listConvites() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(convites).orderBy(convites.createdAt);
+}
+
+export async function createConvite(data: { email: string; nome?: string; role: "admin" | "operador" | "user"; token: string; expiresAt: Date; createdBy?: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(convites).values({
+    email: data.email,
+    nome: data.nome,
+    role: data.role,
+    token: data.token,
+    expiresAt: data.expiresAt,
+    createdBy: data.createdBy,
+    status: "pendente",
+  });
+}
+
+export async function getConviteByToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(convites).where(eq(convites.token, token)).limit(1);
+  return result[0];
+}
+
+export async function markConviteAceito(token: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(convites).set({ status: "aceito", usedAt: new Date() }).where(eq(convites.token, token));
+}
+
+export async function deleteConvite(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(convites).where(eq(convites.id, id));
 }

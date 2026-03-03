@@ -10,6 +10,7 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  ativo: boolean("ativo").default(true).notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -118,3 +119,20 @@ export const recebimentoParcelas = mysqlTable("recebimento_parcelas", {
 
 export type RecebimentoParcela = typeof recebimentoParcelas.$inferSelect;
 export type InsertRecebimentoParcela = typeof recebimentoParcelas.$inferInsert;
+
+// Tabela de Convites de Usuários
+export const convites = mysqlTable("convites", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 320 }).notNull(),
+  nome: varchar("nome", { length: 255 }),
+  role: mysqlEnum("role", ["admin", "operador", "user"]).default("operador").notNull(),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  status: mysqlEnum("status", ["pendente", "aceito", "expirado"]).default("pendente").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  usedAt: timestamp("usedAt"),
+});
+
+export type Convite = typeof convites.$inferSelect;
+export type InsertConvite = typeof convites.$inferInsert;

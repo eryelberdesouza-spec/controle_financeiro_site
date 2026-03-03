@@ -12,7 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer } from "lucide-react";
+import { ComprovanteViewer, type ComprovantePagamento } from "@/components/ComprovanteViewer";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -146,7 +147,72 @@ export default function Pagamentos() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selecionados, setSelecionados] = useState<Set<number>>(new Set());
+  const [comprovanteOpen, setComprovanteOpen] = useState(false);
+  const [comprovanteRegistros, setComprovanteRegistros] = useState<ComprovantePagamento[]>([]);
   const utils = trpc.useUtils();
+
+  const handleImprimirUnico = (p: any) => {
+    setComprovanteRegistros([{
+      id: p.id,
+      numeroControle: p.numeroControle,
+      nomeCompleto: p.nomeCompleto,
+      cpf: p.cpf,
+      banco: p.banco,
+      chavePix: p.chavePix,
+      tipoChavePix: p.tipoPix,
+      tipoServico: p.tipoServico,
+      centroCusto: p.centroCusto,
+      valor: p.valor,
+      dataPagamento: p.dataPagamento,
+      status: p.status,
+      observacao: p.observacao,
+      parcelado: p.parcelado,
+      quantidadeParcelas: p.quantidadeParcelas,
+    }]);
+    setComprovanteOpen(true);
+  };
+
+  const handleImprimirLote = () => {
+    const registros = filtered
+      .filter(p => selecionados.has(p.id))
+      .map(p => ({
+        id: p.id,
+        numeroControle: p.numeroControle,
+        nomeCompleto: p.nomeCompleto,
+        cpf: p.cpf,
+        banco: p.banco,
+        chavePix: p.chavePix,
+        tipoChavePix: p.tipoPix,
+        tipoServico: p.tipoServico,
+        centroCusto: p.centroCusto,
+        valor: p.valor,
+        dataPagamento: p.dataPagamento,
+        status: p.status,
+        observacao: p.observacao,
+        parcelado: p.parcelado,
+        quantidadeParcelas: p.quantidadeParcelas,
+      }));
+    if (registros.length === 0) { toast.error("Selecione ao menos um pagamento."); return; }
+    setComprovanteRegistros(registros);
+    setComprovanteOpen(true);
+  };
+
+  const toggleSelecionado = (id: number) => {
+    setSelecionados(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleTodos = () => {
+    if (selecionados.size === filtered.length) {
+      setSelecionados(new Set());
+    } else {
+      setSelecionados(new Set(filtered.map(p => p.id)));
+    }
+  };
 
   const { data: pagamentos = [], isLoading } = trpc.pagamentos.list.useQuery();
 
@@ -270,7 +336,12 @@ export default function Pagamentos() {
             <h1 className="text-2xl font-bold text-foreground">Pagamentos</h1>
             <p className="text-muted-foreground text-sm mt-1">Controle e autorização de pagamentos via Pix</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {selecionados.size > 0 && (
+              <Button variant="outline" onClick={handleImprimirLote} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
+                <Printer className="h-4 w-4" /> Imprimir Selecionados ({selecionados.size})
+              </Button>
+            )}
             <Button variant="outline" onClick={() => exportToCSV(filtered)} className="gap-2">
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
@@ -319,6 +390,9 @@ export default function Pagamentos() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/50">
+                      <th className="p-3 w-10">
+                        <input type="checkbox" className="rounded" checked={selecionados.size === filtered.length && filtered.length > 0} onChange={toggleTodos} title="Selecionar todos" />
+                      </th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Nº Controle</th>
                       <th className="text-left p-3 font-medium text-muted-foreground">Nome</th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Banco</th>
@@ -332,7 +406,10 @@ export default function Pagamentos() {
                   <tbody>
                     {filtered.map((p) => (
                       <>
-                        <tr key={p.id} className="border-b hover:bg-muted/30 transition-colors">
+                        <tr key={p.id} className={`border-b hover:bg-muted/30 transition-colors ${selecionados.has(p.id) ? 'bg-blue-50' : ''}`}>
+                          <td className="p-3 w-10">
+                            <input type="checkbox" className="rounded" checked={selecionados.has(p.id)} onChange={() => toggleSelecionado(p.id)} />
+                          </td>
                           <td className="p-3 text-muted-foreground hidden lg:table-cell font-mono text-xs">{p.numeroControle || "-"}</td>
                           <td className="p-3 font-medium">
                             <div className="flex items-center gap-1.5">
@@ -362,6 +439,9 @@ export default function Pagamentos() {
                                   {expandedId === p.id ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                                 </Button>
                               )}
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" title="Imprimir comprovante" onClick={() => handleImprimirUnico(p)}>
+                                <Printer className="h-3.5 w-3.5" />
+                              </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(p)}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
@@ -533,6 +613,12 @@ export default function Pagamentos() {
           </form>
         </DialogContent>
       </Dialog>
+      <ComprovanteViewer
+        open={comprovanteOpen}
+        onClose={() => setComprovanteOpen(false)}
+        tipo="pagamento"
+        registros={comprovanteRegistros}
+      />
     </DashboardLayout>
   );
 }

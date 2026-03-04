@@ -262,8 +262,8 @@ export default function Recebimentos() {
 
   const handleGerarParcelas = () => {
     const valorLiquido = parseFloat(form.valorTotal || "0") + parseFloat(form.juros || "0") - parseFloat(form.desconto || "0");
-    if (!valorLiquido || !form.dataPrimeiroVencimento || form.quantidadeParcelas < 2) {
-      toast.error("Preencha valor total, data do primeiro vencimento e quantidade de parcelas (mín. 2).");
+    if (!valorLiquido || !form.dataPrimeiroVencimento || form.quantidadeParcelas < 1) {
+      toast.error("Preencha valor total e data de vencimento antes de gerar as parcelas.");
       return;
     }
     const geradas = gerarParcelas("recebimento", form.quantidadeParcelas, valorLiquido, form.dataPrimeiroVencimento);
@@ -577,11 +577,11 @@ export default function Recebimentos() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-sm">Recebimento Parcelado</p>
-                  <p className="text-xs text-muted-foreground">Gere as parcelas automaticamente e edite individualmente</p>
+                  <p className="text-xs text-muted-foreground">Defina a quantidade de parcelas e gere automaticamente com datas e valores individuais</p>
                 </div>
                 <Switch
                   checked={form.parcelado}
-                  onCheckedChange={v => { setForm(f => ({ ...f, parcelado: v })); if (!v) setParcelas([]); }}
+                  onCheckedChange={v => { setForm(f => ({ ...f, parcelado: v, quantidadeParcelas: v ? 1 : 1 })); if (!v) setParcelas([]); }}
                 />
               </div>
 
@@ -590,14 +590,21 @@ export default function Recebimentos() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <Label>Nº de Parcelas</Label>
-                      <Input
-                        type="number" min="2" max="120"
-                        value={form.quantidadeParcelas}
-                        onChange={e => setForm(f => ({ ...f, quantidadeParcelas: parseInt(e.target.value) || 2 }))}
-                      />
+                      <Select
+                        value={String(form.quantidadeParcelas)}
+                        onValueChange={v => setForm(f => ({ ...f, quantidadeParcelas: parseInt(v) }))}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Parcela Única</SelectItem>
+                          {Array.from({ length: 23 }, (_, i) => i + 2).map(n => (
+                            <SelectItem key={n} value={String(n)}>{n}x parcelas</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
-                      <Label>1º Vencimento</Label>
+                      <Label>{form.quantidadeParcelas === 1 ? "Data de Vencimento" : "1º Vencimento"}</Label>
                       <Input
                         type="date"
                         value={form.dataPrimeiroVencimento}
@@ -606,17 +613,24 @@ export default function Recebimentos() {
                     </div>
                     <div className="flex items-end">
                       <Button type="button" variant="outline" className="w-full" onClick={handleGerarParcelas}>
-                        Gerar Parcelas
+                        {form.quantidadeParcelas === 1 ? "Gerar Parcela" : "Gerar Parcelas"}
                       </Button>
                     </div>
                   </div>
 
                   {parcelas.length > 0 && (
-                    <TabelaParcelas
-                      tipo="recebimento"
-                      parcelas={parcelas}
-                      onChange={setParcelas}
-                    />
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        {parcelas.length === 1
+                          ? "1 parcela gerada — edite o valor e a data conforme necessário."
+                          : `${parcelas.length} parcelas geradas — edite individualmente o valor, vencimento, data de recebimento e status.`}
+                      </p>
+                      <TabelaParcelas
+                        tipo="recebimento"
+                        parcelas={parcelas}
+                        onChange={setParcelas}
+                      />
+                    </>
                   )}
                 </div>
               )}

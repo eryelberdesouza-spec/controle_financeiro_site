@@ -118,3 +118,10 @@
 - [x] Atualizar db helpers e procedures tRPC para pagamentos
 - [x] Reescrever formulário de Pagamentos com parcelamento (1-24 parcelas) e discriminação de valores
 - [x] Geração automática de parcelas ao salvar pagamento parcelado
+
+## Sistema de Parcelas Completo (v11)
+- [x] Auditar formulário de Recebimentos: parcela única + múltiplas (1-24x) com valor, vencimento e data de recebimento por parcela
+- [x] Auditar formulário de Pagamentos: parcela única + múltiplas (1-24x) com valor, vencimento e data de pagamento por parcela
+- [x] Garantir que o Select de parcelas inclua "Parcela Única" como primeira opção
+- [x] Garantir geração automática das parcelas ao clicar em "Gerar Parcelas"
+- [x] Garantir que cada parcela seja editável individualmente (valor, vencimento, pagamento, status)

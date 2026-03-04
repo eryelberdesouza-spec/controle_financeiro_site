@@ -284,8 +284,8 @@ export default function Pagamentos() {
   });
 
   const handleGerarParcelas = () => {
-    if (!form.valor || !form.dataPrimeiroVencimento || form.quantidadeParcelas < 2) {
-      toast.error("Preencha valor, data do primeiro vencimento e quantidade de parcelas.");
+    if (!form.valor || !form.dataPrimeiroVencimento || form.quantidadeParcelas < 1) {
+      toast.error("Preencha o valor e a data de vencimento antes de gerar as parcelas.");
       return;
     }
     const geradas = gerarParcelas("pagamento", form.quantidadeParcelas, parseFloat(form.valor), form.dataPrimeiroVencimento);
@@ -609,11 +609,11 @@ export default function Pagamentos() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-sm">Pagamento Parcelado</p>
-                  <p className="text-xs text-muted-foreground">Gere as parcelas automaticamente e edite individualmente</p>
+                  <p className="text-xs text-muted-foreground">Defina a quantidade de parcelas e gere automaticamente com datas e valores individuais</p>
                 </div>
                 <Switch
                   checked={form.parcelado}
-                  onCheckedChange={v => { setForm(f => ({ ...f, parcelado: v })); if (!v) setParcelas([]); }}
+                  onCheckedChange={v => { setForm(f => ({ ...f, parcelado: v, quantidadeParcelas: 1 })); if (!v) setParcelas([]); }}
                 />
               </div>
 
@@ -628,6 +628,7 @@ export default function Pagamentos() {
                       >
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="1">Parcela Única</SelectItem>
                           {Array.from({ length: 23 }, (_, i) => i + 2).map(n => (
                             <SelectItem key={n} value={String(n)}>{n}x parcelas</SelectItem>
                           ))}
@@ -635,7 +636,7 @@ export default function Pagamentos() {
                       </Select>
                     </div>
                     <div>
-                      <Label>1º Vencimento</Label>
+                      <Label>{form.quantidadeParcelas === 1 ? "Data de Vencimento" : "1º Vencimento"}</Label>
                       <Input
                         type="date"
                         value={form.dataPrimeiroVencimento}
@@ -644,17 +645,24 @@ export default function Pagamentos() {
                     </div>
                     <div className="flex items-end">
                       <Button type="button" variant="outline" className="w-full" onClick={handleGerarParcelas}>
-                        Gerar Parcelas
+                        {form.quantidadeParcelas === 1 ? "Gerar Parcela" : "Gerar Parcelas"}
                       </Button>
                     </div>
                   </div>
 
                   {parcelas.length > 0 && (
-                    <TabelaParcelas
-                      tipo="pagamento"
-                      parcelas={parcelas}
-                      onChange={setParcelas}
-                    />
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        {parcelas.length === 1
+                          ? "1 parcela gerada — edite o valor e a data conforme necessário."
+                          : `${parcelas.length} parcelas geradas — edite individualmente o valor, vencimento, data de pagamento e status.`}
+                      </p>
+                      <TabelaParcelas
+                        tipo="pagamento"
+                        parcelas={parcelas}
+                        onChange={setParcelas}
+                      />
+                    </>
                   )}
                 </div>
               )}

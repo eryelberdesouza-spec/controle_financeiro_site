@@ -1,3 +1,4 @@
+import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { TabelaParcelas, gerarParcelas, type ParcelaLocal } from "@/components/TabelaParcelas";
 import { Button } from "@/components/ui/button";
@@ -407,8 +408,8 @@ export default function Recebimentos() {
                   </thead>
                   <tbody>
                     {filtered.map((r) => (
-                      <>
-                        <tr key={r.id} className={`border-b hover:bg-muted/30 transition-colors ${selecionados.has(r.id) ? 'bg-blue-50' : ''}`}>
+                      <React.Fragment key={r.id}>
+                        <tr className={`border-b hover:bg-muted/30 transition-colors ${selecionados.has(r.id) ? 'bg-blue-50' : ''}`}>
                           <td className="p-3 w-10">
                             <input type="checkbox" className="rounded" checked={selecionados.has(r.id)} onChange={() => toggleSelecionado(r.id)} />
                           </td>
@@ -460,14 +461,14 @@ export default function Recebimentos() {
                           </td>
                         </tr>
                         {expandedId === r.id && (
-                          <tr key={`parcelas-${r.id}`} className="bg-muted/20">
+                          <tr className="bg-muted/20">
                             <td colSpan={9} className="p-4">
                               <p className="text-sm font-medium text-muted-foreground mb-3">Parcelas de {r.nomeRazaoSocial}</p>
                               <ParcelasRow recebimentoId={r.id} />
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>

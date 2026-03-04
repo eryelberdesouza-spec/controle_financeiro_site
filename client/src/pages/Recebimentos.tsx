@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -31,7 +30,6 @@ function formatCurrency(value: any) {
 }
 function formatDate(date: Date | string | null | undefined) {
   if (!date) return "-";
-  // Extrai YYYY-MM-DD sem conversão de fuso horário (evita recuo de 1 dia em GMT-3)
   const iso = date instanceof Date ? date.toISOString() : String(date);
   const parts = iso.substring(0, 10).split("-");
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
@@ -61,8 +59,8 @@ type FormData = {
 
 const defaultForm: FormData = {
   numeroControle: "", numeroContrato: "", nomeRazaoSocial: "", descricao: "",
-  tipoRecebimento: "Pix", valorTotal: "", valorEquipamento: "0",
-  valorServico: "0", juros: "0", desconto: "0",
+  tipoRecebimento: "Pix", valorTotal: "", valorEquipamento: "",
+  valorServico: "", juros: "0", desconto: "0",
   quantidadeParcelas: 1, parcelaAtual: 1,
   dataVencimento: "", dataRecebimento: "", status: "Pendente", observacao: "",
   parcelado: false, dataPrimeiroVencimento: "",
@@ -268,18 +266,24 @@ export default function Recebimentos() {
     }
     const geradas = gerarParcelas("recebimento", form.quantidadeParcelas, valorLiquido, form.dataPrimeiroVencimento);
     setParcelas(geradas);
-    toast.success(`${geradas.length} parcelas geradas automaticamente!`);
+    toast.success(`${geradas.length === 1 ? "1 parcela gerada" : `${geradas.length} parcelas geradas`} automaticamente!`);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nomeRazaoSocial || !form.valorTotal) { toast.error("Preencha os campos obrigatórios"); return; }
     if (form.parcelado && parcelas.length === 0) { toast.error("Gere as parcelas antes de salvar."); return; }
+
+    // Quando parcelado, usa a data do primeiro vencimento; quando não parcelado, usa dataVencimento
+    const dataVencimentoFinal = form.parcelado
+      ? (form.dataPrimeiroVencimento ? new Date(form.dataPrimeiroVencimento + "T12:00:00") : new Date())
+      : (form.dataVencimento ? new Date(form.dataVencimento + "T12:00:00") : new Date());
+
     const payload = {
       ...form,
-      dataVencimento: form.dataVencimento ? new Date(form.dataVencimento + "T12:00:00") : new Date(),
+      dataVencimento: dataVencimentoFinal,
       dataRecebimento: form.dataRecebimento ? new Date(form.dataRecebimento + "T12:00:00") : undefined,
-      quantidadeParcelas: form.parcelado ? form.quantidadeParcelas : (form.quantidadeParcelas || 1),
+      quantidadeParcelas: form.parcelado ? form.quantidadeParcelas : 1,
     };
     if (editId) updateMutation.mutate({ id: editId, ...payload });
     else createMutation.mutate(payload);
@@ -291,15 +295,15 @@ export default function Recebimentos() {
       numeroControle: r.numeroControle ?? "", numeroContrato: r.numeroContrato ?? "",
       nomeRazaoSocial: r.nomeRazaoSocial ?? "", descricao: r.descricao ?? "",
       tipoRecebimento: r.tipoRecebimento ?? "Pix",
-      valorTotal: String(r.valorTotal ?? ""), valorEquipamento: String(r.valorEquipamento ?? "0"),
-      valorServico: String(r.valorServico ?? "0"), juros: String(r.juros ?? "0"),
+      valorTotal: String(r.valorTotal ?? ""), valorEquipamento: String(r.valorEquipamento ?? ""),
+      valorServico: String(r.valorServico ?? ""), juros: String(r.juros ?? "0"),
       desconto: String(r.desconto ?? "0"),
       quantidadeParcelas: r.quantidadeParcelas ?? 1, parcelaAtual: r.parcelaAtual ?? 1,
       dataVencimento: r.dataVencimento ? new Date(r.dataVencimento).toISOString().split("T")[0] : "",
       dataRecebimento: r.dataRecebimento ? new Date(r.dataRecebimento).toISOString().split("T")[0] : "",
       status: r.status ?? "Pendente", observacao: r.observacao ?? "",
       parcelado: r.quantidadeParcelas > 1,
-      dataPrimeiroVencimento: "",
+      dataPrimeiroVencimento: r.dataVencimento ? new Date(r.dataVencimento).toISOString().split("T")[0] : "",
     });
     setParcelas([]);
     setOpen(true);
@@ -509,44 +513,74 @@ export default function Recebimentos() {
                 </Select>
               </div>
 
-              {/* Valores */}
+              {/* Composição do Valor */}
               <div className="md:col-span-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Valores</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <div>
-                    <Label>Valor Total (R$) *</Label>
-                    <Input type="number" step="0.01" min="0" value={form.valorTotal} onChange={e => setForm(f => ({ ...f, valorTotal: e.target.value }))} placeholder="0,00" required />
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                  <p className="text-sm font-medium">Composição do Valor</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <Label>Valor Equipamento (R$)</Label>
+                      <Input
+                        type="number" step="0.01" min="0"
+                        value={form.valorEquipamento}
+                        onChange={e => {
+                          const eq = parseFloat(e.target.value) || 0;
+                          const sv = parseFloat(form.valorServico) || 0;
+                          setForm(f => ({ ...f, valorEquipamento: e.target.value, valorTotal: (eq + sv).toFixed(2) }));
+                        }}
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <div>
+                      <Label>Valor Serviços (R$)</Label>
+                      <Input
+                        type="number" step="0.01" min="0"
+                        value={form.valorServico}
+                        onChange={e => {
+                          const sv = parseFloat(e.target.value) || 0;
+                          const eq = parseFloat(form.valorEquipamento) || 0;
+                          setForm(f => ({ ...f, valorServico: e.target.value, valorTotal: (eq + sv).toFixed(2) }));
+                        }}
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <div>
+                      <Label>Valor Total (R$) *</Label>
+                      <Input
+                        type="number" step="0.01" min="0"
+                        value={form.valorTotal}
+                        onChange={e => setForm(f => ({ ...f, valorTotal: e.target.value }))}
+                        placeholder="0,00"
+                        required
+                        className="font-semibold"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente ou edite manualmente</p>
+                    </div>
                   </div>
-                  <div>
-                    <Label>Equipamentos (R$)</Label>
-                    <Input type="number" step="0.01" min="0" value={form.valorEquipamento} onChange={e => setForm(f => ({ ...f, valorEquipamento: e.target.value }))} placeholder="0,00" />
-                  </div>
-                  <div>
-                    <Label>Serviços (R$)</Label>
-                    <Input type="number" step="0.01" min="0" value={form.valorServico} onChange={e => setForm(f => ({ ...f, valorServico: e.target.value }))} placeholder="0,00" />
-                  </div>
-                  <div>
-                    <Label>Juros (R$)</Label>
-                    <Input type="number" step="0.01" min="0" value={form.juros} onChange={e => setForm(f => ({ ...f, juros: e.target.value }))} placeholder="0,00" />
-                  </div>
-                  <div>
-                    <Label>Desconto (R$)</Label>
-                    <Input type="number" step="0.01" min="0" value={form.desconto} onChange={e => setForm(f => ({ ...f, desconto: e.target.value }))} placeholder="0,00" />
-                  </div>
-                  <div className="flex items-end">
-                    <div className="w-full p-2 bg-muted rounded-md">
-                      <p className="text-xs text-muted-foreground">Valor Líquido</p>
-                      <p className="font-bold text-foreground">
-                        {formatCurrency(
-                          parseFloat(form.valorTotal || "0") + parseFloat(form.juros || "0") - parseFloat(form.desconto || "0")
-                        )}
-                      </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <Label>Juros (R$)</Label>
+                      <Input type="number" step="0.01" min="0" value={form.juros} onChange={e => setForm(f => ({ ...f, juros: e.target.value }))} placeholder="0,00" />
+                    </div>
+                    <div>
+                      <Label>Desconto (R$)</Label>
+                      <Input type="number" step="0.01" min="0" value={form.desconto} onChange={e => setForm(f => ({ ...f, desconto: e.target.value }))} placeholder="0,00" />
+                    </div>
+                    <div className="flex items-end">
+                      <div className="w-full p-2 bg-muted rounded-md">
+                        <p className="text-xs text-muted-foreground">Valor Líquido</p>
+                        <p className="font-bold text-foreground">
+                          {formatCurrency(
+                            parseFloat(form.valorTotal || "0") + parseFloat(form.juros || "0") - parseFloat(form.desconto || "0")
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Datas e parcelas simples (quando não parcelado) */}
+              {/* Datas (apenas quando não parcelado) */}
               {!form.parcelado && (
                 <>
                   <div>
@@ -574,66 +608,68 @@ export default function Recebimentos() {
 
             {/* Seção de Parcelamento */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">Recebimento Parcelado</p>
-                  <p className="text-xs text-muted-foreground">Defina a quantidade de parcelas e gere automaticamente com datas e valores individuais</p>
-                </div>
-                <Switch
-                  checked={form.parcelado}
-                  onCheckedChange={v => { setForm(f => ({ ...f, parcelado: v, quantidadeParcelas: v ? 1 : 1 })); if (!v) setParcelas([]); }}
-                />
+              <div>
+                <p className="font-medium text-sm">Parcelamento</p>
+                <p className="text-xs text-muted-foreground">Selecione a quantidade de parcelas e gere automaticamente com datas e valores individuais</p>
               </div>
 
-              {form.parcelado && (
-                <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <Label>Nº de Parcelas</Label>
-                      <Select
-                        value={String(form.quantidadeParcelas)}
-                        onValueChange={v => setForm(f => ({ ...f, quantidadeParcelas: parseInt(v) }))}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">Parcela Única</SelectItem>
-                          {Array.from({ length: 23 }, (_, i) => i + 2).map(n => (
-                            <SelectItem key={n} value={String(n)}>{n}x parcelas</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>{form.quantidadeParcelas === 1 ? "Data de Vencimento" : "1º Vencimento"}</Label>
-                      <Input
-                        type="date"
-                        value={form.dataPrimeiroVencimento}
-                        onChange={e => setForm(f => ({ ...f, dataPrimeiroVencimento: e.target.value }))}
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <Button type="button" variant="outline" className="w-full" onClick={handleGerarParcelas}>
-                        {form.quantidadeParcelas === 1 ? "Gerar Parcela" : "Gerar Parcelas"}
-                      </Button>
-                    </div>
+              <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Nº de Parcelas</Label>
+                    <Select
+                      value={String(form.quantidadeParcelas)}
+                      onValueChange={v => {
+                        const n = parseInt(v);
+                        setForm(f => ({ ...f, quantidadeParcelas: n, parcelado: n > 1 }));
+                        if (n === 1) setParcelas([]);
+                      }}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Parcela Única (1x)</SelectItem>
+                        {Array.from({ length: 23 }, (_, i) => i + 2).map(n => (
+                          <SelectItem key={n} value={String(n)}>{n}x parcelas</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-
-                  {parcelas.length > 0 && (
-                    <>
-                      <p className="text-xs text-muted-foreground">
-                        {parcelas.length === 1
-                          ? "1 parcela gerada — edite o valor e a data conforme necessário."
-                          : `${parcelas.length} parcelas geradas — edite individualmente o valor, vencimento, data de recebimento e status.`}
-                      </p>
-                      <TabelaParcelas
-                        tipo="recebimento"
-                        parcelas={parcelas}
-                        onChange={setParcelas}
-                      />
-                    </>
-                  )}
+                  <div>
+                    <Label>{form.quantidadeParcelas === 1 ? "Data de Vencimento" : "1º Vencimento"}</Label>
+                    <Input
+                      type="date"
+                      value={form.parcelado ? form.dataPrimeiroVencimento : form.dataVencimento}
+                      onChange={e => {
+                        if (form.parcelado) {
+                          setForm(f => ({ ...f, dataPrimeiroVencimento: e.target.value }));
+                        } else {
+                          setForm(f => ({ ...f, dataVencimento: e.target.value, dataPrimeiroVencimento: e.target.value }));
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button type="button" variant="outline" className="w-full" onClick={handleGerarParcelas}>
+                      {form.quantidadeParcelas === 1 ? "Gerar Parcela" : "Gerar Parcelas"}
+                    </Button>
+                  </div>
                 </div>
-              )}
+
+                {parcelas.length > 0 && (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      {parcelas.length === 1
+                        ? "1 parcela gerada — edite o valor e a data conforme necessário."
+                        : `${parcelas.length} parcelas geradas — edite individualmente o valor, vencimento, data de recebimento e status.`}
+                    </p>
+                    <TabelaParcelas
+                      tipo="recebimento"
+                      parcelas={parcelas}
+                      onChange={setParcelas}
+                    />
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

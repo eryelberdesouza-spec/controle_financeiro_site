@@ -102,3 +102,6 @@
 - [ ] Integrar ComprovanteViewer na página de Recebimentos (individual + lote)
 - [ ] Adicionar checkboxes de seleção múltipla nas listagens
 - [ ] Botão "Imprimir Selecionados" nas listagens
+
+## Correção de Bug (v7)
+- [x] Corrigir bug de fuso horário nas datas de pagamento e recebimento (data aparece 1 dia a menos)

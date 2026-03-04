@@ -35,6 +35,10 @@ function formatCurrency(value: any) {
 }
 function formatDate(date: Date | string | null | undefined) {
   if (!date) return "-";
+  // Extrai YYYY-MM-DD sem conversão de fuso horário (evita recuo de 1 dia em GMT-3)
+  const iso = date instanceof Date ? date.toISOString() : String(date);
+  const parts = iso.substring(0, 10).split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return new Date(date).toLocaleDateString("pt-BR");
 }
 
@@ -292,7 +296,7 @@ export default function Pagamentos() {
     if (form.parcelado && parcelas.length === 0) { toast.error("Gere as parcelas antes de salvar."); return; }
     const payload = {
       ...form,
-      dataPagamento: form.dataPagamento ? new Date(form.dataPagamento) : new Date(),
+      dataPagamento: form.dataPagamento ? new Date(form.dataPagamento + "T12:00:00") : new Date(),
       quantidadeParcelas: form.parcelado ? form.quantidadeParcelas : 1,
     };
     if (editId) updateMutation.mutate({ id: editId, ...payload });

@@ -31,6 +31,10 @@ function formatCurrency(value: any) {
 }
 function formatDate(date: Date | string | null | undefined) {
   if (!date) return "-";
+  // Extrai YYYY-MM-DD sem conversão de fuso horário (evita recuo de 1 dia em GMT-3)
+  const iso = date instanceof Date ? date.toISOString() : String(date);
+  const parts = iso.substring(0, 10).split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return new Date(date).toLocaleDateString("pt-BR");
 }
 
@@ -273,8 +277,8 @@ export default function Recebimentos() {
     if (form.parcelado && parcelas.length === 0) { toast.error("Gere as parcelas antes de salvar."); return; }
     const payload = {
       ...form,
-      dataVencimento: form.dataVencimento ? new Date(form.dataVencimento) : new Date(),
-      dataRecebimento: form.dataRecebimento ? new Date(form.dataRecebimento) : undefined,
+      dataVencimento: form.dataVencimento ? new Date(form.dataVencimento + "T12:00:00") : new Date(),
+      dataRecebimento: form.dataRecebimento ? new Date(form.dataRecebimento + "T12:00:00") : undefined,
       quantidadeParcelas: form.parcelado ? form.quantidadeParcelas : (form.quantidadeParcelas || 1),
     };
     if (editId) updateMutation.mutate({ id: editId, ...payload });

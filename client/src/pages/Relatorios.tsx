@@ -14,6 +14,9 @@ function formatCurrency(value: any) {
 }
 function formatDate(date: Date | string | null | undefined) {
   if (!date) return "-";
+  const iso = date instanceof Date ? date.toISOString() : String(date);
+  const parts = iso.substring(0, 10).split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return new Date(date).toLocaleDateString("pt-BR");
 }
 function pct(part: any, total: any) {

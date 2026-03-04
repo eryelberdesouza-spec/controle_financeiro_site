@@ -130,3 +130,10 @@
 - [x] Corrigir campos Equipamento e Serviços para serem totalmente opcionais (aceitar só um ou nenhum)
 - [x] Corrigir erro "Preencha valor total e data de vencimento" ao gerar parcelas com Parcela Única (1x) — dataPrimeiroVencimento não estava sendo preenchida quando o campo de data é o dataVencimento
 - [x] Garantir que o cálculo de parcelas use o valorTotal diretamente (sem depender de equipamento/serviço)
+
+## Ajustes de Relatórios e Impressão (v14)
+- [x] Ajustar CSS de impressão de Pagamentos para caber em 1 página (font-size menor, padding reduzido)
+- [x] Reescrever comprovante de Recebimentos: incluir tabela de parcelas com status, descrição e observação
+- [x] Nº de Controle no comprovante de Recebimentos em azul e fonte maior
+- [x] Remover campo de assinatura do comprovante de Recebimentos
+- [x] Corrigir status na listagem de Recebimentos: mostrar "X/N pagas" quando parcelado, e só "Recebido" quando todas as parcelas estiverem pagas

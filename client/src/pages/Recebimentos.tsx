@@ -88,6 +88,36 @@ function exportToCSV(data: any[]) {
   a.click(); URL.revokeObjectURL(url);
 }
 
+/**
+ * Exibe o status real de um recebimento parcelado na listagem:
+ * - Se todas as parcelas estiverem pagas: badge "Recebido" verde
+ * - Caso contrário: "X/N pagas" com badge amarelo ou vermelho
+ */
+function StatusParcelasInline({ recebimentoId, quantidadeParcelas, statusGeral }: { recebimentoId: number; quantidadeParcelas: number; statusGeral: string }) {
+  const { data: parcelas = [] } = trpc.recebimentoParcelas.list.useQuery({ recebimentoId });
+
+  if (parcelas.length === 0) {
+    // Ainda carregando ou sem parcelas — mostra o status geral
+    return <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[statusGeral] ?? "bg-gray-100 text-gray-600"}`}>{statusGeral}</span>;
+  }
+
+  const pagas = parcelas.filter((p: any) => p.status === "Recebido" || p.status === "Pago").length;
+  const total = parcelas.length;
+  const todasPagas = pagas === total;
+  const algumAtrasado = parcelas.some((p: any) => p.status === "Atrasado");
+
+  if (todasPagas) {
+    return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Recebido</span>;
+  }
+
+  const cor = algumAtrasado ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800";
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${cor}`}>
+      {pagas}/{total} pagas
+    </span>
+  );
+}
+
 function ParcelasRow({ recebimentoId }: { recebimentoId: number }) {
   const { data: parcelas = [] } = trpc.recebimentoParcelas.list.useQuery({ recebimentoId });
   const utils = trpc.useUtils();
@@ -435,7 +465,15 @@ export default function Recebimentos() {
                           </td>
                           <td className="p-3 text-muted-foreground hidden md:table-cell">{formatDate(r.dataVencimento)}</td>
                           <td className="p-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>{r.status}</span>
+                            {r.quantidadeParcelas > 1 ? (
+                              <StatusParcelasInline
+                                recebimentoId={r.id}
+                                quantidadeParcelas={r.quantidadeParcelas}
+                                statusGeral={r.status}
+                              />
+                            ) : (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[r.status] ?? "bg-gray-100 text-gray-600"}`}>{r.status}</span>
+                            )}
                           </td>
                           <td className="p-3 text-right">
                             <div className="flex justify-end gap-1">

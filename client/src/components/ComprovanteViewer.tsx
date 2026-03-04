@@ -102,40 +102,40 @@ const PRINT_CSS = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   color: #111827;
   background: #fff;
-  padding: 20px 24px;
+  padding: 14px 18px;
 }
 .comp-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border-bottom: 2px solid #1f2937;
-  padding-bottom: 10px;
-  margin-bottom: 14px;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
 }
 .comp-header img {
-  height: 52px !important;
-  max-height: 52px !important;
+  height: 44px !important;
+  max-height: 44px !important;
   width: auto !important;
-  max-width: 120px !important;
+  max-width: 100px !important;
   object-fit: contain !important;
 }
 .comp-header-info { flex: 1; }
-.comp-header-info h1 { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
-.comp-header-info p { font-size: 10px; color: #4b5563; line-height: 1.4; }
-.comp-header-date { text-align: right; font-size: 10px; color: #6b7280; white-space: nowrap; }
-.comp-header-date strong { display: block; font-size: 11px; color: #374151; }
+.comp-header-info h1 { font-size: 12px; font-weight: 700; margin-bottom: 1px; }
+.comp-header-info p { font-size: 9px; color: #4b5563; line-height: 1.3; }
+.comp-header-date { text-align: right; font-size: 9px; color: #6b7280; white-space: nowrap; }
+.comp-header-date strong { display: block; font-size: 10px; color: #374151; }
 .comp-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
-.comp-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-.comp-badge-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.comp-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.comp-badge-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 9px; font-weight: 700; }
 .badge-green  { background: #dcfce7; color: #166534; }
 .badge-yellow { background: #fef9c3; color: #854d0e; }
 .badge-red    { background: #fee2e2; color: #991b1b; }
@@ -143,36 +143,51 @@ body {
 .badge-blue   { background: #dbeafe; color: #1e40af; }
 .mono {
   font-family: monospace;
-  font-size: 10px;
+  font-size: 9px;
   color: #6b7280;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 3px;
+}
+.ctrl-num {
+  font-family: monospace;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  padding: 2px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
 }
 .comp-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px 24px;
-  margin-bottom: 12px;
+  gap: 6px 20px;
+  margin-bottom: 10px;
 }
-.comp-field-label { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1px; }
-.comp-field-value { font-size: 11px; font-weight: 600; color: #111827; line-height: 1.3; }
-.comp-field-value.highlight { font-size: 14px; font-weight: 700; color: #1d4ed8; }
+.comp-field-label { font-size: 8px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1px; }
+.comp-field-value { font-size: 10px; font-weight: 600; color: #111827; line-height: 1.3; }
+.comp-field-value.highlight { font-size: 13px; font-weight: 700; color: #1d4ed8; }
 .span2 { grid-column: span 2; }
-.comp-separator { border-top: 2px dashed #d1d5db; margin: 20px 0; }
-.comp-parcelas-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #374151; margin-bottom: 5px; margin-top: 10px; }
-table { width: 100%; border-collapse: collapse; font-size: 10px; }
-th, td { border: 1px solid #d1d5db; padding: 4px 8px; text-align: left; }
+.comp-separator { border-top: 2px dashed #d1d5db; margin: 16px 0; }
+.comp-parcelas-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #374151; margin-bottom: 4px; margin-top: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 9px; }
+th, td { border: 1px solid #d1d5db; padding: 3px 6px; text-align: left; }
 th { background: #f3f4f6; font-weight: 700; }
 tr:nth-child(even) td { background: #fafafa; }
 tfoot td { background: #f3f4f6; font-weight: 700; }
 td.right, th.right { text-align: right; }
 td.center, th.center { text-align: center; }
-.comp-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; padding-top: 16px; }
-.comp-sig-line { border-top: 1px solid #9ca3af; padding-top: 6px; text-align: center; font-size: 10px; color: #6b7280; }
-@page { size: A4 portrait; margin: 15mm; }
-@media print { body { padding: 0; } }
+.status-pago { color: #166534; font-weight: 700; }
+.status-pendente { color: #854d0e; font-weight: 700; }
+.status-atrasado { color: #991b1b; font-weight: 700; }
+.status-cancelado { color: #374151; }
+.comp-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 20px; padding-top: 14px; }
+.comp-sig-line { border-top: 1px solid #9ca3af; padding-top: 5px; text-align: center; font-size: 9px; color: #6b7280; }
+@page { size: A4 portrait; margin: 12mm; }
+@media print { body { padding: 0; } html, body { height: auto; } }
 `;
 
 // ─── Builders de HTML para impressão ─────────────────────────────────────────
@@ -312,9 +327,55 @@ function buildPagamentoHTML(r: ComprovantePagamento, empresa: any, parcelas: any
   `;
 }
 
+function statusClassParcela(status: string) {
+  if (status === "Recebido" || status === "Pago") return "status-pago";
+  if (status === "Pendente") return "status-pendente";
+  if (status === "Atrasado") return "status-atrasado";
+  return "status-cancelado";
+}
+
 function buildRecebimentoHTML(r: ComprovanteRecebimento, empresa: any, parcelas: any[], index: number, total: number) {
   const statusClass = r.status === "Recebido" ? "badge-green" : r.status === "Pendente" ? "badge-yellow" : r.status === "Atrasado" ? "badge-red" : "badge-gray";
   const valorLiquido = parseFloat(String(r.valorTotal ?? 0)) + parseFloat(String(r.juros ?? 0)) - parseFloat(String(r.desconto ?? 0));
+  const temParcelas = parcelas && parcelas.length > 0;
+
+  const parcelasHTML = temParcelas ? (() => {
+    const totalParcelas = parcelas.reduce((acc: number, p: any) => acc + parseFloat(String(p.valor ?? 0)), 0);
+    const pagas = parcelas.filter((p: any) => p.status === "Recebido" || p.status === "Pago").length;
+    return `
+      <p class="comp-parcelas-title">Parcelas (${pagas} de ${parcelas.length} recebidas)</p>
+      <table>
+        <thead>
+          <tr>
+            <th class="center">Nº</th>
+            <th class="right">Valor</th>
+            <th>Vencimento</th>
+            <th>Recebimento</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${parcelas.map((p: any) => `
+            <tr>
+              <td class="center">${p.numeroParcela}</td>
+              <td class="right">${formatCurrency(p.valor)}</td>
+              <td>${formatDate(p.dataVencimento)}</td>
+              <td>${formatDate(p.dataRecebimento)}</td>
+              <td class="${statusClassParcela(p.status)}">${p.status}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="1">Total</td>
+            <td class="right">${formatCurrency(totalParcelas)}</td>
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+  })() : "";
+
   return `
     ${index > 0 ? '<div class="comp-separator"></div>' : ""}
     ${buildHeaderHTML(empresa)}
@@ -324,7 +385,7 @@ function buildRecebimentoHTML(r: ComprovanteRecebimento, empresa: any, parcelas:
     </div>
     <div class="comp-badge-row">
       <span class="badge ${statusClass}">${r.status}</span>
-      ${r.numeroControle ? `<span class="mono">Nº ${r.numeroControle}</span>` : ""}
+      ${r.numeroControle ? `<span class="ctrl-num">Nº ${r.numeroControle}</span>` : ""}
       ${r.numeroContrato ? `<span class="mono">Contrato: ${r.numeroContrato}</span>` : ""}
     </div>
     <div class="comp-grid">
@@ -336,20 +397,21 @@ function buildRecebimentoHTML(r: ComprovanteRecebimento, empresa: any, parcelas:
         <div class="comp-field-label">Tipo de Recebimento</div>
         <div class="comp-field-value">${r.tipoRecebimento}</div>
       </div>
-      <div>
-        <div class="comp-field-label">Data de Vencimento</div>
-        <div class="comp-field-value">${formatDate(r.dataVencimento)}</div>
-      </div>
-      ${r.dataRecebimento ? `
+      ${(r.quantidadeParcelas ?? 1) > 1 ? `
+        <div>
+          <div class="comp-field-label">Total de Parcelas</div>
+          <div class="comp-field-value">${r.quantidadeParcelas}x parcelas</div>
+        </div>
+      ` : `
+        <div>
+          <div class="comp-field-label">Data de Vencimento</div>
+          <div class="comp-field-value">${formatDate(r.dataVencimento)}</div>
+        </div>
+      `}
+      ${r.dataRecebimento && (r.quantidadeParcelas ?? 1) === 1 ? `
         <div>
           <div class="comp-field-label">Data de Recebimento</div>
           <div class="comp-field-value">${formatDate(r.dataRecebimento)}</div>
-        </div>
-      ` : ""}
-      ${(r.quantidadeParcelas ?? 1) > 1 ? `
-        <div>
-          <div class="comp-field-label">Parcela</div>
-          <div class="comp-field-value">${r.parcelaAtual ?? 1} de ${r.quantidadeParcelas}</div>
         </div>
       ` : ""}
       <div>
@@ -387,21 +449,17 @@ function buildRecebimentoHTML(r: ComprovanteRecebimento, empresa: any, parcelas:
       ${r.descricao ? `
         <div class="span2">
           <div class="comp-field-label">Descrição</div>
-          <div class="comp-field-value">${r.descricao}</div>
+          <div class="comp-field-value">${r.descricao.replace(/\n/g, "<br/>")}</div>
         </div>
       ` : ""}
       ${r.observacao ? `
         <div class="span2">
           <div class="comp-field-label">Observação</div>
-          <div class="comp-field-value">${r.observacao}</div>
+          <div class="comp-field-value">${r.observacao.replace(/\n/g, "<br/>")}</div>
         </div>
       ` : ""}
     </div>
-    ${buildParcelasTableHTML(parcelas, "Recebimento")}
-    <div class="comp-signatures">
-      <div class="comp-sig-line">Responsável pelo Recebimento</div>
-      <div class="comp-sig-line">Cliente / Pagador</div>
-    </div>
+    ${parcelasHTML}
   `;
 }
 
@@ -530,10 +588,9 @@ function PreviewRecebimentoCard({
   empresa: any;
   onGetParcelas: (id: number, parcelas: any[]) => void;
 }) {
-  const temParcelas = (registro.quantidadeParcelas ?? 1) > 1;
+  // Sempre busca parcelas (mesmo parcela única pode ter sido gerada)
   const { data: parcelas = [] } = trpc.recebimentoParcelas.list.useQuery(
-    { recebimentoId: registro.id },
-    { enabled: temParcelas }
+    { recebimentoId: registro.id }
   );
 
   // Notifica o pai sempre que as parcelas chegarem
@@ -548,6 +605,13 @@ function PreviewRecebimentoCard({
     registro.status === "Recebido" ? "bg-green-100 text-green-800" :
     registro.status === "Pendente" ? "bg-yellow-100 text-yellow-800" :
     registro.status === "Atrasado" ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-600";
+
+  const statusParcelaColor = (s: string) =>
+    s === "Recebido" || s === "Pago" ? "text-green-700 font-semibold" :
+    s === "Pendente" ? "text-yellow-700 font-semibold" :
+    s === "Atrasado" ? "text-red-700 font-semibold" : "text-gray-500";
+
+  const pagas = parcelas.filter((p: any) => p.status === "Recebido" || p.status === "Pago").length;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5 text-sm text-gray-900 shadow-sm">
@@ -573,10 +637,11 @@ function PreviewRecebimentoCard({
         <h2 className="font-bold text-sm uppercase tracking-wide">Comprovante de Recebimento</h2>
       </div>
 
-      <div className="flex items-center gap-2 mb-3">
+      {/* Badge de status + Nº Controle em destaque azul */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${statusColor}`}>{registro.status}</span>
         {registro.numeroControle && (
-          <span className="font-mono text-xs text-gray-500 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded">
+          <span className="font-mono text-base font-extrabold text-blue-700 bg-blue-50 border-2 border-blue-200 px-3 py-0.5 rounded">
             Nº {registro.numeroControle}
           </span>
         )}
@@ -590,12 +655,13 @@ function PreviewRecebimentoCard({
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-3">
         <Field label="Nome / Razão Social" value={registro.nomeRazaoSocial} className="col-span-2" />
         <Field label="Tipo de Recebimento" value={registro.tipoRecebimento} />
-        <Field label="Data de Vencimento" value={formatDate(registro.dataVencimento)} />
-        {registro.dataRecebimento && (
-          <Field label="Data de Recebimento" value={formatDate(registro.dataRecebimento)} />
+        {(registro.quantidadeParcelas ?? 1) > 1 ? (
+          <Field label="Total de Parcelas" value={`${registro.quantidadeParcelas}x parcelas`} />
+        ) : (
+          <Field label="Data de Vencimento" value={formatDate(registro.dataVencimento)} />
         )}
-        {(registro.quantidadeParcelas ?? 1) > 1 && (
-          <Field label="Parcela" value={`${registro.parcelaAtual ?? 1} de ${registro.quantidadeParcelas}`} />
+        {registro.dataRecebimento && (registro.quantidadeParcelas ?? 1) === 1 && (
+          <Field label="Data de Recebimento" value={formatDate(registro.dataRecebimento)} />
         )}
         <Field label="Valor Total" value={formatCurrency(registro.valorTotal)} />
         {parseFloat(String(registro.valorEquipamento ?? 0)) > 0 && (
@@ -617,7 +683,9 @@ function PreviewRecebimentoCard({
 
       {parcelas.length > 0 && (
         <div className="mt-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-gray-600 mb-1">Parcelas</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-gray-600 mb-1">
+            Parcelas ({pagas} de {parcelas.length} recebidas)
+          </p>
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="bg-gray-100">
@@ -635,22 +703,22 @@ function PreviewRecebimentoCard({
                   <td className="border border-gray-300 px-2 py-1 text-right font-medium">{formatCurrency(p.valor)}</td>
                   <td className="border border-gray-300 px-2 py-1">{formatDate(p.dataVencimento)}</td>
                   <td className="border border-gray-300 px-2 py-1">{formatDate(p.dataRecebimento)}</td>
-                  <td className="border border-gray-300 px-2 py-1">{p.status}</td>
+                  <td className={`border border-gray-300 px-2 py-1 ${statusParcelaColor(p.status)}`}>{p.status}</td>
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="bg-gray-100 font-bold">
+                <td className="border border-gray-300 px-2 py-1">Total</td>
+                <td className="border border-gray-300 px-2 py-1 text-right">
+                  {formatCurrency(parcelas.reduce((acc: number, p: any) => acc + parseFloat(String(p.valor ?? 0)), 0))}
+                </td>
+                <td colSpan={3} className="border border-gray-300 px-2 py-1"></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
-
-      <div className="grid grid-cols-2 gap-8 mt-6 pt-4">
-        <div className="text-center border-t border-gray-400 pt-2">
-          <p className="text-xs text-gray-500">Responsável pelo Recebimento</p>
-        </div>
-        <div className="text-center border-t border-gray-400 pt-2">
-          <p className="text-xs text-gray-500">Cliente / Pagador</p>
-        </div>
-      </div>
     </div>
   );
 }

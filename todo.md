@@ -108,3 +108,6 @@
 
 ## Correção de Layout de Impressão (v8)
 - [x] Corrigir CSS de impressão do ComprovanteViewer (logo enorme, campos sem formatação, conteúdo em 2 páginas)
+
+## Correção de Bug (v9)
+- [x] Corrigir erro React #310 no ComprovanteViewer (hooks chamados dentro de loops .map())

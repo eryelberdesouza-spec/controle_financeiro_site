@@ -111,3 +111,10 @@
 
 ## Correção de Bug (v9)
 - [x] Corrigir erro React #310 no ComprovanteViewer (hooks chamados dentro de loops .map())
+
+## Melhorias Pagamentos v10
+- [x] Adicionar campos valorEquipamento e valorServicos no schema de pagamentos
+- [x] Migrar banco com novos campos
+- [x] Atualizar db helpers e procedures tRPC para pagamentos
+- [x] Reescrever formulário de Pagamentos com parcelamento (1-24 parcelas) e discriminação de valores
+- [x] Geração automática de parcelas ao salvar pagamento parcelado

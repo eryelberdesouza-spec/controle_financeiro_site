@@ -52,6 +52,8 @@ type FormData = {
   tipoServico: string;
   centroCusto: string;
   valor: string;
+  valorEquipamento: string;
+  valorServico: string;
   dataPagamento: string;
   status: "Pendente" | "Processando" | "Pago" | "Cancelado";
   descricao: string;
@@ -65,6 +67,7 @@ type FormData = {
 const defaultForm: FormData = {
   numeroControle: "", nomeCompleto: "", cpf: "", banco: "", tipoPix: "CPF",
   chavePix: "", tipoServico: "", centroCusto: "", valor: "",
+  valorEquipamento: "", valorServico: "",
   dataPagamento: "", status: "Pendente", descricao: "", observacao: "", autorizadoPor: "",
   parcelado: false, quantidadeParcelas: 2, dataPrimeiroVencimento: "",
 };
@@ -310,6 +313,8 @@ export default function Pagamentos() {
       cpf: p.cpf ?? "", banco: p.banco ?? "", tipoPix: p.tipoPix ?? "CPF",
       chavePix: p.chavePix ?? "", tipoServico: p.tipoServico ?? "",
       centroCusto: p.centroCusto ?? "", valor: String(p.valor ?? ""),
+      valorEquipamento: String(p.valorEquipamento ?? ""),
+      valorServico: String(p.valorServico ?? ""),
       dataPagamento: p.dataPagamento ? new Date(p.dataPagamento).toISOString().split("T")[0] : "",
       status: p.status ?? "Pendente", descricao: p.descricao ?? "",
       observacao: p.observacao ?? "", autorizadoPor: p.autorizadoPor ?? "",
@@ -525,9 +530,50 @@ export default function Pagamentos() {
                 <Label>Centro de Custo</Label>
                 <Input value={form.centroCusto} onChange={e => setForm(f => ({ ...f, centroCusto: e.target.value }))} placeholder="Ex: TI, RH, Comercial..." />
               </div>
-              <div>
-                <Label>Valor Total (R$) *</Label>
-                <Input type="number" step="0.01" min="0" value={form.valor} onChange={e => setForm(f => ({ ...f, valor: e.target.value }))} placeholder="0,00" required />
+              <div className="md:col-span-2">
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                  <p className="text-sm font-medium">Composição do Valor</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <Label>Valor Equipamento (R$)</Label>
+                      <Input
+                        type="number" step="0.01" min="0"
+                        value={form.valorEquipamento}
+                        onChange={e => {
+                          const eq = parseFloat(e.target.value) || 0;
+                          const sv = parseFloat(form.valorServico) || 0;
+                          setForm(f => ({ ...f, valorEquipamento: e.target.value, valor: (eq + sv).toFixed(2) }));
+                        }}
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <div>
+                      <Label>Valor Serviços (R$)</Label>
+                      <Input
+                        type="number" step="0.01" min="0"
+                        value={form.valorServico}
+                        onChange={e => {
+                          const sv = parseFloat(e.target.value) || 0;
+                          const eq = parseFloat(form.valorEquipamento) || 0;
+                          setForm(f => ({ ...f, valorServico: e.target.value, valor: (eq + sv).toFixed(2) }));
+                        }}
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <div>
+                      <Label>Valor Total (R$) *</Label>
+                      <Input
+                        type="number" step="0.01" min="0"
+                        value={form.valor}
+                        onChange={e => setForm(f => ({ ...f, valor: e.target.value }))}
+                        placeholder="0,00"
+                        required
+                        className="font-semibold"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente ou edite manualmente</p>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div>
                 <Label>Data de Pagamento</Label>
@@ -576,11 +622,17 @@ export default function Pagamentos() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <Label>Nº de Parcelas</Label>
-                      <Input
-                        type="number" min="2" max="120"
-                        value={form.quantidadeParcelas}
-                        onChange={e => setForm(f => ({ ...f, quantidadeParcelas: parseInt(e.target.value) || 2 }))}
-                      />
+                      <Select
+                        value={String(form.quantidadeParcelas)}
+                        onValueChange={v => setForm(f => ({ ...f, quantidadeParcelas: parseInt(v) }))}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 23 }, (_, i) => i + 2).map(n => (
+                            <SelectItem key={n} value={String(n)}>{n}x parcelas</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label>1º Vencimento</Label>

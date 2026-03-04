@@ -28,6 +28,8 @@ export const pagamentos = mysqlTable("pagamentos", {
   tipoServico: varchar("tipoServico", { length: 100 }),
   centroCusto: varchar("centroCusto", { length: 100 }),
   valor: decimal("valor", { precision: 15, scale: 2 }).notNull(),
+  valorEquipamento: decimal("valorEquipamento", { precision: 15, scale: 2 }).default("0"),
+  valorServico: decimal("valorServico", { precision: 15, scale: 2 }).default("0"),
   dataPagamento: timestamp("dataPagamento").notNull(),
   status: mysqlEnum("status", ["Pendente", "Processando", "Pago", "Cancelado"]).default("Pendente").notNull(),
   descricao: text("descricao"),

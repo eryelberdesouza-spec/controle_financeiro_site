@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { Printer, X } from "lucide-react";
+import { useRef, useState } from "react";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -727,29 +728,54 @@ function PreviewRecebimentoCard({
 
 export function ComprovanteViewer({ open, onClose, tipo, registros }: Props) {
   const { data: empresa } = trpc.empresa.get.useQuery();
+  const [printing, setPrinting] = useState(false);
 
-  // Mapa de parcelas coletadas pelos filhos via callback (para uso no print)
-  const parcelasMap = new Map<number, any[]>();
+  // useRef garante que o mapa persiste entre re-renders sem causar re-renders
+  const parcelasMapRef = useRef<Map<number, any[]>>(new Map());
   const handleGetParcelas = (id: number, parcelas: any[]) => {
-    parcelasMap.set(id, parcelas);
+    parcelasMapRef.current.set(id, parcelas);
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open("", "_blank", "width=900,height=700");
-    if (!printWindow) return;
+  const handlePrint = async () => {
+    setPrinting(true);
+    try {
+      // Para recebimentos, garante que todas as parcelas foram carregadas
+      // buscando via fetch direto para os registros que ainda não têm parcelas no mapa
+      if (tipo === "recebimento") {
+        const pendentes = (registros as ComprovanteRecebimento[]).filter(
+          r => !parcelasMapRef.current.has(r.id)
+        );
+        if (pendentes.length > 0) {
+          await Promise.all(
+            pendentes.map(async (r) => {
+              try {
+                const res = await fetch(`/api/trpc/recebimentoParcelas.list?input=${encodeURIComponent(JSON.stringify({ json: { recebimentoId: r.id } }))}`, {
+                  credentials: "include",
+                });
+                const json = await res.json();
+                const parcelas = json?.result?.data?.json ?? [];
+                if (parcelas.length > 0) parcelasMapRef.current.set(r.id, parcelas);
+              } catch {}
+            })
+          );
+        }
+      }
 
-    let bodyHTML = "";
-    if (tipo === "pagamento") {
-      (registros as ComprovantePagamento[]).forEach((r, i) => {
-        bodyHTML += buildPagamentoHTML(r, empresa, parcelasMap.get(r.id) ?? [], i, registros.length);
-      });
-    } else {
-      (registros as ComprovanteRecebimento[]).forEach((r, i) => {
-        bodyHTML += buildRecebimentoHTML(r, empresa, parcelasMap.get(r.id) ?? [], i, registros.length);
-      });
-    }
+      const printWindow = window.open("", "_blank", "width=900,height=700");
+      if (!printWindow) return;
 
-    printWindow.document.write(`<!DOCTYPE html>
+      let bodyHTML = "";
+      if (tipo === "pagamento") {
+        (registros as ComprovantePagamento[]).forEach((r, i) => {
+          bodyHTML += buildPagamentoHTML(r, empresa, parcelasMapRef.current.get(r.id) ?? [], i, registros.length);
+        });
+      } else {
+        (registros as ComprovanteRecebimento[]).forEach((r, i) => {
+          bodyHTML += buildRecebimentoHTML(r, empresa, parcelasMapRef.current.get(r.id) ?? [], i, registros.length);
+        });
+      }
+
+      printWindow.document.write(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -758,9 +784,12 @@ export function ComprovanteViewer({ open, onClose, tipo, registros }: Props) {
 </head>
 <body>${bodyHTML}</body>
 </html>`);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => { printWindow.print(); }, 600);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); }, 600);
+    } finally {
+      setPrinting(false);
+    }
   };
 
   const title = tipo === "pagamento"
@@ -777,9 +806,9 @@ export function ComprovanteViewer({ open, onClose, tipo, registros }: Props) {
         </DialogHeader>
 
         <div className="flex gap-2 pb-4 border-b">
-          <Button onClick={handlePrint} className="gap-2">
+          <Button onClick={handlePrint} disabled={printing} className="gap-2">
             <Printer className="h-4 w-4" />
-            Imprimir / Salvar PDF
+            {printing ? "Preparando..." : "Imprimir / Salvar PDF"}
           </Button>
           <Button variant="outline" onClick={onClose} className="gap-2">
             <X className="h-4 w-4" />

@@ -138,6 +138,15 @@ function ParcelasRow({ recebimentoId }: { recebimentoId: number }) {
     observacao: p.observacao ?? "",
   }));
 
+  // Extrai apenas YYYY-MM-DD de qualquer formato de data (ISO, timestamp, etc.)
+  const toDateOnly = (val: string | undefined | null): string | undefined => {
+    if (!val) return undefined;
+    // Se já é YYYY-MM-DD puro, retorna direto
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    // Caso contrário, extrai os primeiros 10 caracteres (YYYY-MM-DD)
+    return val.substring(0, 10);
+  };
+
   const handleChange = (updated: ParcelaLocal[]) => {
     updated.forEach((p, i) => {
       const original = localParcelas[i];
@@ -149,12 +158,14 @@ function ParcelasRow({ recebimentoId }: { recebimentoId: number }) {
         p.status !== original.status ||
         p.observacao !== original.observacao;
       if (changed) {
+        const dateVenc = toDateOnly(p.dataVencimento);
+        const dateRec = toDateOnly(p.dataRecebimento);
         updateMutation.mutate({
           id: p.id,
           data: {
             valor: p.valor,
-            dataVencimento: new Date(p.dataVencimento + "T12:00:00"),
-            dataRecebimento: p.dataRecebimento ? new Date(p.dataRecebimento + "T12:00:00") : undefined,
+            dataVencimento: dateVenc ? new Date(dateVenc + "T12:00:00") : new Date(),
+            dataRecebimento: dateRec ? new Date(dateRec + "T12:00:00") : undefined,
             status: p.status as any,
             observacao: p.observacao,
           },

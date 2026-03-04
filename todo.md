@@ -137,3 +137,8 @@
 - [x] Nº de Controle no comprovante de Recebimentos em azul e fonte maior
 - [x] Remover campo de assinatura do comprovante de Recebimentos
 - [x] Corrigir status na listagem de Recebimentos: mostrar "X/N pagas" quando parcelado, e só "Recebido" quando todas as parcelas estiverem pagas
+
+## Correções Críticas (v15)
+- [x] Corrigir impressão: parcelas não aparecem no PDF (parcelasMap vazio no momento do print)
+- [x] Corrigir erro ao atualizar recebimentos
+- [x] Garantir que descrição e observação apareçam no comprovante impresso

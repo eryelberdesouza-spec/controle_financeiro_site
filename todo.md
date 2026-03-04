@@ -105,3 +105,6 @@
 
 ## Correção de Bug (v7)
 - [x] Corrigir bug de fuso horário nas datas de pagamento e recebimento (data aparece 1 dia a menos)
+
+## Correção de Layout de Impressão (v8)
+- [x] Corrigir CSS de impressão do ComprovanteViewer (logo enorme, campos sem formatação, conteúdo em 2 páginas)

@@ -125,3 +125,8 @@
 - [x] Garantir que o Select de parcelas inclua "Parcela Única" como primeira opção
 - [x] Garantir geração automática das parcelas ao clicar em "Gerar Parcelas"
 - [x] Garantir que cada parcela seja editável individualmente (valor, vencimento, pagamento, status)
+
+## Correções Formulário Recebimentos (v12)
+- [x] Corrigir campos Equipamento e Serviços para serem totalmente opcionais (aceitar só um ou nenhum)
+- [x] Corrigir erro "Preencha valor total e data de vencimento" ao gerar parcelas com Parcela Única (1x) — dataPrimeiroVencimento não estava sendo preenchida quando o campo de data é o dataVencimento
+- [x] Garantir que o cálculo de parcelas use o valorTotal diretamente (sem depender de equipamento/serviço)

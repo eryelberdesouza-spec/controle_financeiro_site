@@ -260,11 +260,13 @@ export default function Recebimentos() {
 
   const handleGerarParcelas = () => {
     const valorLiquido = parseFloat(form.valorTotal || "0") + parseFloat(form.juros || "0") - parseFloat(form.desconto || "0");
-    if (!valorLiquido || !form.dataPrimeiroVencimento || form.quantidadeParcelas < 1) {
+    // Usa dataPrimeiroVencimento se parcelado, senão usa dataVencimento (ambos sincronizados no onChange do campo)
+    const dataRef = form.dataPrimeiroVencimento || form.dataVencimento;
+    if (!valorLiquido || !dataRef || form.quantidadeParcelas < 1) {
       toast.error("Preencha valor total e data de vencimento antes de gerar as parcelas.");
       return;
     }
-    const geradas = gerarParcelas("recebimento", form.quantidadeParcelas, valorLiquido, form.dataPrimeiroVencimento);
+    const geradas = gerarParcelas("recebimento", form.quantidadeParcelas, valorLiquido, dataRef);
     setParcelas(geradas);
     toast.success(`${geradas.length === 1 ? "1 parcela gerada" : `${geradas.length} parcelas geradas`} automaticamente!`);
   };
@@ -528,7 +530,7 @@ export default function Recebimentos() {
                           const sv = parseFloat(form.valorServico) || 0;
                           setForm(f => ({ ...f, valorEquipamento: e.target.value, valorTotal: (eq + sv).toFixed(2) }));
                         }}
-                        placeholder="0,00"
+                        placeholder="Opcional"
                       />
                     </div>
                     <div>
@@ -541,7 +543,7 @@ export default function Recebimentos() {
                           const eq = parseFloat(form.valorEquipamento) || 0;
                           setForm(f => ({ ...f, valorServico: e.target.value, valorTotal: (eq + sv).toFixed(2) }));
                         }}
-                        placeholder="0,00"
+                        placeholder="Opcional"
                       />
                     </div>
                     <div>
@@ -638,13 +640,10 @@ export default function Recebimentos() {
                     <Label>{form.quantidadeParcelas === 1 ? "Data de Vencimento" : "1º Vencimento"}</Label>
                     <Input
                       type="date"
-                      value={form.parcelado ? form.dataPrimeiroVencimento : form.dataVencimento}
+                      value={form.dataPrimeiroVencimento || form.dataVencimento}
                       onChange={e => {
-                        if (form.parcelado) {
-                          setForm(f => ({ ...f, dataPrimeiroVencimento: e.target.value }));
-                        } else {
-                          setForm(f => ({ ...f, dataVencimento: e.target.value, dataPrimeiroVencimento: e.target.value }));
-                        }
+                        // Sempre sincroniza ambos os campos de data para evitar inconsistência
+                        setForm(f => ({ ...f, dataVencimento: e.target.value, dataPrimeiroVencimento: e.target.value }));
                       }}
                     />
                   </div>

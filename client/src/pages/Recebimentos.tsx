@@ -122,14 +122,18 @@ function StatusParcelasInline({ recebimentoId, quantidadeParcelas, statusGeral }
 }
 
 function ParcelasRow({ recebimentoId }: { recebimentoId: number }) {
-  const { data: parcelas = [] } = trpc.recebimentoParcelas.list.useQuery({ recebimentoId });
+  const { data: parcelas = [], isLoading } = trpc.recebimentoParcelas.list.useQuery({ recebimentoId });
   const utils = trpc.useUtils();
   const updateMutation = trpc.recebimentoParcelas.update.useMutation({
-    onSuccess: () => { utils.recebimentoParcelas.list.invalidate(); toast.success("Parcela atualizada!"); },
+    onSuccess: () => {
+      utils.recebimentoParcelas.list.invalidate();
+      toast.success("Parcela atualizada!");
+    },
     onError: (e) => toast.error(e.message),
   });
 
-  if (parcelas.length === 0) return <p className="text-sm text-muted-foreground py-2">Nenhuma parcela cadastrada.</p>;
+  // Referência estável das parcelas para comparação de mudanças
+  const parcelasRef = React.useRef<ParcelaLocal[]>([]);
 
   const localParcelas: ParcelaLocal[] = parcelas.map(p => ({
     id: p.id,
@@ -141,20 +145,19 @@ function ParcelasRow({ recebimentoId }: { recebimentoId: number }) {
     observacao: p.observacao ?? "",
   }));
 
-  /**
-   * Valida e extrai YYYY-MM-DD de qualquer formato.
-   * Retorna undefined se a data for inválida, incompleta ou o ano tiver menos de 4 dígitos.
-   */
+  // Atualiza a referência sempre que os dados do servidor chegarem
+  React.useEffect(() => {
+    if (parcelas.length > 0) {
+      parcelasRef.current = localParcelas;
+    }
+  }, [parcelas]);
+
   const toValidDateOnly = (val: string | undefined | null): string | undefined => {
     if (!val) return undefined;
-    // Extrai apenas a parte de data (primeiros 10 chars)
     const raw = val.length > 10 ? val.substring(0, 10) : val;
-    // Deve ser exatamente YYYY-MM-DD
     if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return undefined;
-    // Garante que o ano tem exatamente 4 dígitos e é razoável (>= 1900)
     const year = parseInt(raw.substring(0, 4), 10);
     if (year < 1900 || year > 2100) return undefined;
-    // Valida se a data é real (ex: não 2026-02-30)
     const d = new Date(raw + "T12:00:00");
     if (isNaN(d.getTime())) return undefined;
     return raw;
@@ -162,24 +165,29 @@ function ParcelasRow({ recebimentoId }: { recebimentoId: number }) {
 
   const handleChange = (updated: ParcelaLocal[]) => {
     updated.forEach((p, i) => {
-      const original = localParcelas[i];
-      if (!p.id) return;
+      // Usa a referência estável para comparar
+      const original = parcelasRef.current[i] ?? localParcelas[i];
+      if (!p.id || !original) return;
+
       const changed =
         p.valor !== original.valor ||
         p.dataVencimento !== original.dataVencimento ||
-        p.dataRecebimento !== original.dataRecebimento ||
+        (p.dataRecebimento ?? "") !== (original.dataRecebimento ?? "") ||
         p.status !== original.status ||
-        p.observacao !== original.observacao;
+        (p.observacao ?? "") !== (original.observacao ?? "");
+
       if (!changed) return;
 
       const dateVenc = toValidDateOnly(p.dataVencimento);
       const dateRec = toValidDateOnly(p.dataRecebimento);
 
-      // Não envia se a data de vencimento ainda está incompleta
       if (!dateVenc) return;
-      // Não envia se o usuário está digitando a data de recebimento (ainda incompleta)
-      // mas só bloqueia se o campo não está vazio (vazio = sem data, é válido)
       if (p.dataRecebimento && !dateRec) return;
+
+      // Atualiza a referência imediatamente para evitar disparos duplicados
+      parcelasRef.current = parcelasRef.current.map((orig, idx) =>
+        idx === i ? { ...orig, ...p } : orig
+      );
 
       updateMutation.mutate({
         id: p.id,
@@ -193,6 +201,9 @@ function ParcelasRow({ recebimentoId }: { recebimentoId: number }) {
       });
     });
   };
+
+  if (isLoading) return <p className="text-sm text-muted-foreground py-2">Carregando parcelas...</p>;
+  if (localParcelas.length === 0) return <p className="text-sm text-muted-foreground py-2">Nenhuma parcela cadastrada.</p>;
 
   return (
     <TabelaParcelas

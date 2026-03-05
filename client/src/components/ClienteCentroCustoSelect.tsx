@@ -31,6 +31,9 @@ type ClienteItem = {
   cpfCnpj?: string | null;
   email?: string | null;
   telefone?: string | null;
+  tipoPix?: string | null;
+  chavePix?: string | null;
+  banco?: string | null;
 };
 
 interface ClienteSelectProps {

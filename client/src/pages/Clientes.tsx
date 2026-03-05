@@ -33,6 +33,9 @@ const tipoColors: Record<Tipo, string> = {
   "Outro": "bg-gray-100 text-gray-700 border-gray-200",
 };
 
+const TIPOS_PIX = ["CPF", "CNPJ", "Email", "Telefone", "Chave Aleatória"] as const;
+type TipoPix = typeof TIPOS_PIX[number];
+
 type FormData = {
   nome: string;
   tipo: Tipo;
@@ -43,11 +46,15 @@ type FormData = {
   cidade: string;
   estado: string;
   observacao: string;
+  tipoPix: TipoPix | "";
+  chavePix: string;
+  banco: string;
 };
 
 const emptyForm: FormData = {
   nome: "", tipo: "Cliente", cpfCnpj: "", email: "", telefone: "",
   endereco: "", cidade: "", estado: "", observacao: "",
+  tipoPix: "", chavePix: "", banco: "",
 };
 
 export default function Clientes() {
@@ -90,6 +97,9 @@ export default function Clientes() {
       cidade: c.cidade ?? "",
       estado: c.estado ?? "",
       observacao: c.observacao ?? "",
+      tipoPix: (c.tipoPix as TipoPix) ?? "",
+      chavePix: c.chavePix ?? "",
+      banco: c.banco ?? "",
     });
     setEditandoId(c.id);
     setDialogAberto(true);
@@ -97,10 +107,16 @@ export default function Clientes() {
 
   const handleSubmit = () => {
     if (!form.nome.trim()) { toast.error("Nome é obrigatório."); return; }
+    const payload = {
+      ...form,
+      tipoPix: form.tipoPix || undefined,
+      chavePix: form.chavePix || undefined,
+      banco: form.banco || undefined,
+    };
     if (editandoId) {
-      updateMutation.mutate({ id: editandoId, ...form });
+      updateMutation.mutate({ id: editandoId, ...payload });
     } else {
-      createMutation.mutate(form);
+      createMutation.mutate(payload);
     }
   };
 
@@ -302,6 +318,45 @@ export default function Clientes() {
                 placeholder="DF"
                 maxLength={2}
               />
+            </div>
+            {/* Dados de Pix */}
+            <div className="sm:col-span-2">
+              <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Dados de Pix / Banco
+                  <span className="ml-2 text-xs font-normal normal-case">(preenchimento automático em Pagamentos)</span>
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Banco</Label>
+                    <Input
+                      value={form.banco}
+                      onChange={(e) => setForm(f => ({ ...f, banco: e.target.value }))}
+                      placeholder="Ex: Nubank, Bradesco"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Tipo de Chave Pix</Label>
+                    <Select
+                      value={form.tipoPix || "_none"}
+                      onValueChange={(v) => setForm(f => ({ ...f, tipoPix: v === "_none" ? "" : v as TipoPix }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">Não informar</SelectItem>
+                        {TIPOS_PIX.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Chave Pix</Label>
+                    <Input
+                      value={form.chavePix}
+                      onChange={(e) => setForm(f => ({ ...f, chavePix: e.target.value }))}
+                      placeholder="CPF, e-mail, telefone..."
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
             {/* Observação */}
             <div className="sm:col-span-2 space-y-1.5">

@@ -252,6 +252,11 @@ export default function Pagamentos() {
   };
 
   const { data: pagamentos = [], isLoading } = trpc.pagamentos.list.useQuery();
+  const { data: nextNumeroControle } = trpc.pagamentos.nextNumeroControle.useQuery(undefined, {
+    // Só busca quando o formulário está aberto para novo pagamento
+    enabled: open && !editId,
+    staleTime: 0, // Sempre busca o mais recente
+  });
 
   const createParcelasMutation = trpc.pagamentoParcelas.createBulk.useMutation();
   const deleteParcelasMutation = trpc.pagamentoParcelas.deleteBulk.useMutation();
@@ -384,7 +389,7 @@ export default function Pagamentos() {
             <Button variant="outline" onClick={() => exportToCSV(filtered)} className="gap-2">
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
-            <Button onClick={() => { setEditId(null); setForm(defaultForm); setParcelas([]); setOpen(true); }} className="gap-2">
+            <Button onClick={() => { setEditId(null); setForm({ ...defaultForm, numeroControle: nextNumeroControle ?? "" }); setParcelas([]); setOpen(true); }} className="gap-2">
               <Plus className="h-4 w-4" /> Novo Pagamento
             </Button>
           </div>
@@ -420,7 +425,7 @@ export default function Pagamentos() {
             ) : filtered.length === 0 ? (
               <div className="p-12 text-center">
                 <p className="text-muted-foreground">Nenhum pagamento encontrado.</p>
-                <Button variant="outline" className="mt-4" onClick={() => { setEditId(null); setForm(defaultForm); setParcelas([]); setOpen(true); }}>
+                <Button variant="outline" className="mt-4" onClick={() => { setEditId(null); setForm({ ...defaultForm, numeroControle: nextNumeroControle ?? "" }); setParcelas([]); setOpen(true); }}>
                   <Plus className="h-4 w-4 mr-2" /> Cadastrar primeiro pagamento
                 </Button>
               </div>
@@ -540,6 +545,10 @@ export default function Pagamentos() {
                       clienteId: id,
                       nomeCompleto: f.nomeCompleto || cliente.nome,
                       cpf: f.cpf || (cliente.cpfCnpj ?? ""),
+                      // Preenche dados de Pix/Banco do cadastro do cliente
+                      banco: f.banco || (cliente.banco ?? ""),
+                      tipoPix: (f.tipoPix && f.tipoPix !== "CPF") ? f.tipoPix : ((cliente.tipoPix as any) ?? f.tipoPix),
+                      chavePix: f.chavePix || (cliente.chavePix ?? ""),
                     }));
                   } else {
                     setForm(f => ({ ...f, clienteId: null }));
@@ -547,7 +556,7 @@ export default function Pagamentos() {
                 }}
                 placeholder="Buscar por nome ou CPF/CNPJ..."
               />
-              <p className="text-xs text-muted-foreground">Selecione um cliente para preencher Nome e CPF automaticamente</p>
+              <p className="text-xs text-muted-foreground">Selecione um cliente para preencher Nome, CPF, Banco e Chave Pix automaticamente</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

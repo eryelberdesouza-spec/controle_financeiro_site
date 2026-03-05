@@ -221,3 +221,13 @@
 ## Descrição no Comprovante Impresso (v26)
 - [x] Garantir que o campo Descrição aparece no comprovante impresso de Pagamentos
 - [x] Garantir que o campo Descrição aparece no comprovante impresso de Recebimentos
+
+## 5 Ajustes v27
+
+- [x] Ajuste 1: Permitir edição de parcelas individuais em Recebimentos (valor, vencimento, data recebimento, status)
+- [x] Ajuste 2a: Adicionar campos de Pix (tipo de chave, chave Pix) no cadastro de Clientes/Prestadores no schema e router
+- [x] Ajuste 2b: Preencher automaticamente Tipo de Chave Pix e Chave Pix em Pagamentos ao selecionar cliente cadastrado
+- [x] Ajuste 3a: Criar procedure no backend para retornar o próximo número de controle de Pagamentos
+- [x] Ajuste 3b: Preencher automaticamente o Nº de Controle ao abrir formulário de novo Pagamento (editável)
+- [x] Ajuste 4: Corrigir query de pagamentos pendentes no Dashboard para incluir status "Em Processamento"
+- [x] Ajuste 5: Adicionar seção de alertas de vencimento próximo no Dashboard (Pagamentos e Recebimentos vencendo em até 7 dias)

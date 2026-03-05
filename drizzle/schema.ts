@@ -49,6 +49,10 @@ export const clientes = mysqlTable("clientes", {
   cidade: varchar("cidade", { length: 100 }),
   estado: varchar("estado", { length: 2 }),
   observacao: text("observacao"),
+  // Dados de Pix para preenchimento automático em Pagamentos
+  tipoPix: mysqlEnum("tipoPix", ["CPF", "CNPJ", "Email", "Telefone", "Chave Aleatória"]),
+  chavePix: varchar("chavePix", { length: 255 }),
+  banco: varchar("banco", { length: 100 }),
   ativo: boolean("ativo").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

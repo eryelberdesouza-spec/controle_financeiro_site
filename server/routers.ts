@@ -48,6 +48,8 @@ import {
   updateRecebimentoParcela,
   updateUserRole,
   upsertEmpresaConfig,
+  getNextNumeroControlePagamento,
+  getVencimentosProximos,
 } from "./db";
 
 // Procedure que exige role admin
@@ -127,6 +129,9 @@ const pagamentosRouter = router({
     .mutation(({ input }) => deletePagamento(input.id)),
 
   stats: staffProcedure.query(() => getPagamentosStats()),
+
+  // Retorna o próximo número de controle sugerido (ex: PAG-2026-042)
+  nextNumeroControle: staffProcedure.query(() => getNextNumeroControlePagamento()),
 });
 
 const recebimentosRouter = router({
@@ -210,6 +215,9 @@ const dashboardRouter = router({
       dataFim: z.date().optional(),
     }).optional())
     .query(({ input }) => getDashboardPorCentroCusto(input?.dataInicio, input?.dataFim)),
+  vencimentosProximos: staffProcedure
+    .input(z.object({ dias: z.number().min(1).max(30).default(7) }).optional())
+    .query(({ input }) => getVencimentosProximos(input?.dias ?? 7)),
 });
 
 // ─── Clientes ─────────────────────────────────────────────────────────────────
@@ -226,6 +234,9 @@ const clientesRouter = router({
       cidade: z.string().optional(),
       estado: z.string().max(2).optional(),
       observacao: z.string().optional(),
+      tipoPix: z.enum(["CPF", "CNPJ", "Email", "Telefone", "Chave Aleatória"]).optional(),
+      chavePix: z.string().optional(),
+      banco: z.string().optional(),
     }))
     .mutation(({ input, ctx }) => createCliente({ ...input, createdBy: ctx.user.id })),
   update: staffProcedure
@@ -241,6 +252,9 @@ const clientesRouter = router({
       estado: z.string().max(2).optional(),
       observacao: z.string().optional(),
       ativo: z.boolean().optional(),
+      tipoPix: z.enum(["CPF", "CNPJ", "Email", "Telefone", "Chave Aleatória"]).optional(),
+      chavePix: z.string().optional(),
+      banco: z.string().optional(),
     }))
     .mutation(({ input }) => { const { id, ...data } = input; return updateCliente(id, data); }),
   delete: adminProcedure

@@ -154,6 +154,30 @@ export async function deletePagamento(id: number) {
   return db.delete(pagamentos).where(eq(pagamentos.id, id));
 }
 
+/**
+ * Retorna o próximo número de controle sugerido para Pagamentos.
+ * Extrai o maior número numérico de todos os campos numeroControle e retorna o próximo.
+ * Formato: PAG-YYYY-NNN (ex: PAG-2026-042)
+ */
+export async function getNextNumeroControlePagamento(): Promise<string> {
+  const db = await getDb();
+  if (!db) return `PAG-${new Date().getFullYear()}-001`;
+  const result = await db.select({ numeroControle: pagamentos.numeroControle }).from(pagamentos);
+  let maxNum = 0;
+  for (const row of result) {
+    if (!row.numeroControle) continue;
+    // Extrai o último segmento numérico (ex: PAG-2026-042 -> 42, ou 42 -> 42)
+    const match = row.numeroControle.match(/(\d+)\s*$/);
+    if (match) {
+      const n = parseInt(match[1], 10);
+      if (n > maxNum) maxNum = n;
+    }
+  }
+  const next = maxNum + 1;
+  const year = new Date().getFullYear();
+  return `PAG-${year}-${String(next).padStart(3, "0")}`;
+}
+
 export async function getPagamentosStats() {
   const db = await getDb();
   if (!db) return null;
@@ -284,7 +308,10 @@ export async function getDashboardStats(dataInicio?: Date, dataFim?: Date) {
   const [pagStats, recStats] = await Promise.all([
     db.select({
       totalPago: sql<number>`SUM(CASE WHEN ${pagamentos.status} = 'Pago' THEN ${pagamentos.valor} ELSE 0 END)`,
-      totalPendente: sql<number>`SUM(CASE WHEN ${pagamentos.status} = 'Pendente' THEN ${pagamentos.valor} ELSE 0 END)`,
+      // Pendente inclui 'Pendente' E 'Processando' — ambos são pagamentos ainda não efetivados
+      totalPendente: sql<number>`SUM(CASE WHEN ${pagamentos.status} IN ('Pendente', 'Processando') THEN ${pagamentos.valor} ELSE 0 END)`,
+      totalProcessando: sql<number>`SUM(CASE WHEN ${pagamentos.status} = 'Processando' THEN ${pagamentos.valor} ELSE 0 END)`,
+      countPendente: sql<number>`SUM(CASE WHEN ${pagamentos.status} IN ('Pendente', 'Processando') THEN 1 ELSE 0 END)`,
       totalGeral: sql<number>`SUM(${pagamentos.valor})`,
       count: sql<number>`COUNT(*)`,
     }).from(pagamentos).where(pagWhere),
@@ -299,6 +326,62 @@ export async function getDashboardStats(dataInicio?: Date, dataFim?: Date) {
     }).from(recebimentos).where(recWhere),
   ]);
   return { pagamentos: pagStats[0], recebimentos: recStats[0] };
+}
+
+/**
+ * Retorna pagamentos e recebimentos com vencimento nos próximos N dias ou já atrasados.
+ * Usado para alertas no Dashboard.
+ */
+export async function getVencimentosProximos(diasAntecedencia: number = 7) {
+  const db = await getDb();
+  if (!db) return { pagamentos: [], recebimentos: [] };
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const limite = new Date(hoje);
+  limite.setDate(limite.getDate() + diasAntecedencia);
+  limite.setHours(23, 59, 59, 999);
+
+  const [pagVenc, recVenc] = await Promise.all([
+    // Pagamentos pendentes ou em processamento com vencimento até o limite
+    db.select({
+      id: pagamentos.id,
+      numeroControle: pagamentos.numeroControle,
+      nomeCompleto: pagamentos.nomeCompleto,
+      valor: pagamentos.valor,
+      dataPagamento: pagamentos.dataPagamento,
+      status: pagamentos.status,
+    })
+      .from(pagamentos)
+      .where(
+        and(
+          sql`${pagamentos.status} IN ('Pendente', 'Processando')`,
+          lte(pagamentos.dataPagamento, limite)
+        )
+      )
+      .orderBy(pagamentos.dataPagamento)
+      .limit(10),
+    // Recebimentos pendentes com vencimento até o limite
+    db.select({
+      id: recebimentos.id,
+      numeroControle: recebimentos.numeroControle,
+      nomeRazaoSocial: recebimentos.nomeRazaoSocial,
+      valorTotal: recebimentos.valorTotal,
+      dataVencimento: recebimentos.dataVencimento,
+      status: recebimentos.status,
+    })
+      .from(recebimentos)
+      .where(
+        and(
+          sql`${recebimentos.status} IN ('Pendente', 'Atrasado')`,
+          lte(recebimentos.dataVencimento, limite)
+        )
+      )
+      .orderBy(recebimentos.dataVencimento)
+      .limit(10),
+  ]);
+
+  return { pagamentos: pagVenc, recebimentos: recVenc };
 }
 
 /**

@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import {
   ArrowDownCircle, ArrowUpCircle, TrendingUp, Wallet,
-  AlertTriangle, CheckCircle2, Clock, CalendarDays,
+  AlertTriangle, CheckCircle2, Clock, CalendarDays, Bell, BellRing,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -45,6 +45,10 @@ export default function Home() {
   }, [mes, ano]);
 
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery(periodoInput);
+  const { data: vencimentos } = trpc.dashboard.vencimentosProximos.useQuery({ dias: 7 });
+  const vencPagamentos = (vencimentos as any)?.pagamentos ?? [];
+  const vencRecebimentos = (vencimentos as any)?.recebimentos ?? [];
+  const totalAlertas = vencPagamentos.length + vencRecebimentos.length;
   const { data: historicoRaw } = trpc.dashboard.historicoMensal.useQuery({ meses: 6 });
   const pagMensal = (historicoRaw as any)?.pagMensal ?? [];
   const recMensal = (historicoRaw as any)?.recMensal ?? [];
@@ -204,6 +208,99 @@ export default function Home() {
           </div>
         )}
 
+        {/* Painel de Alertas de Vencimento */}
+        {totalAlertas > 0 && (
+          <Card className="border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-900/10">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                <BellRing className="h-5 w-5" />
+                Alertas de Vencimento — Próximos 7 dias
+                <span className="ml-auto text-xs font-normal bg-orange-200 dark:bg-orange-800 text-orange-800 dark:text-orange-200 px-2 py-0.5 rounded-full">
+                  {totalAlertas} {totalAlertas === 1 ? "item" : "itens"}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Pagamentos a vencer */}
+                {vencPagamentos.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <AlertTriangle className="h-3.5 w-3.5" /> Pagamentos a Efetuar
+                    </p>
+                    <div className="space-y-2">
+                      {vencPagamentos.map((p: any) => {
+                        const data = p.dataPagamento ? new Date(p.dataPagamento) : null;
+                        const hoje = new Date(); hoje.setHours(0,0,0,0);
+                        const atrasado = data && data < hoje;
+                        return (
+                          <div key={p.id} className={`flex items-center justify-between rounded-md px-3 py-2 text-sm border ${
+                            atrasado
+                              ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                              : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                          }`}>
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{p.nomeCompleto}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {p.numeroControle && <span className="mr-2">{p.numeroControle}</span>}
+                                {atrasado ? (
+                                  <span className="text-red-600 font-semibold">ATRASADO — {data?.toLocaleDateString("pt-BR")}</span>
+                                ) : (
+                                  <span>{data?.toLocaleDateString("pt-BR")}</span>
+                                )}
+                              </p>
+                            </div>
+                            <span className="font-semibold text-red-600 dark:text-red-400 ml-3 shrink-0">
+                              {formatCurrency(p.valor)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {/* Recebimentos a vencer */}
+                {vencRecebimentos.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <Bell className="h-3.5 w-3.5" /> Recebimentos a Cobrar
+                    </p>
+                    <div className="space-y-2">
+                      {vencRecebimentos.map((r: any) => {
+                        const data = r.dataVencimento ? new Date(r.dataVencimento) : null;
+                        const hoje = new Date(); hoje.setHours(0,0,0,0);
+                        const atrasado = data && data < hoje;
+                        return (
+                          <div key={r.id} className={`flex items-center justify-between rounded-md px-3 py-2 text-sm border ${
+                            atrasado
+                              ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                              : "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800"
+                          }`}>
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{r.nomeRazaoSocial}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {r.numeroControle && <span className="mr-2">{r.numeroControle}</span>}
+                                {atrasado ? (
+                                  <span className="text-red-600 font-semibold">ATRASADO — {data?.toLocaleDateString("pt-BR")}</span>
+                                ) : (
+                                  <span>Vence {data?.toLocaleDateString("pt-BR")}</span>
+                                )}
+                              </p>
+                            </div>
+                            <span className="font-semibold text-purple-600 dark:text-purple-400 ml-3 shrink-0">
+                              {formatCurrency(r.valorTotal)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Gráfico Comparativo Histórico (6 meses) */}
         <Card>
           <CardHeader>
@@ -340,7 +437,10 @@ export default function Home() {
                 <p className="text-muted-foreground text-sm">Carregando...</p>
               ) : (
                 <>
-                  <StatusRow label="Pendente" value={stats?.pagamentos?.totalPendente} color="text-yellow-600" bg="bg-yellow-50 dark:bg-yellow-900/20" />
+                  <StatusRow label="Pendente / Em Processamento" value={(stats?.pagamentos as any)?.totalPendente} color="text-yellow-600" bg="bg-yellow-50 dark:bg-yellow-900/20" />
+                  {(stats?.pagamentos as any)?.totalProcessando > 0 && (
+                    <StatusRow label="↳ Em Processamento" value={(stats?.pagamentos as any)?.totalProcessando} color="text-orange-600" bg="bg-orange-50 dark:bg-orange-900/20" />
+                  )}
                   <StatusRow label="Pago" value={stats?.pagamentos?.totalPago} color="text-green-600" bg="bg-green-50 dark:bg-green-900/20" />
                   <div className="pt-2 border-t">
                     <StatusRow label="Total Geral" value={stats?.pagamentos?.totalGeral} color="text-foreground font-bold" bg="bg-muted" />

@@ -188,3 +188,6 @@
 - [x] Revisar CORS: restringir origens permitidas em produção
 - [x] Adicionar log de tentativas de acesso negado (403/401)
 - [x] Corrigir erro "2 errors" no Dashboard (query histórico mensal)
+
+## Navegação (v20)
+- [x] Adicionar botão Home/Dashboard no cabeçalho do DashboardLayout para retorno intuitivo à página principal

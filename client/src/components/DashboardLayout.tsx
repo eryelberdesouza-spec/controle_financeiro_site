@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2 } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -262,6 +262,7 @@ function DashboardLayoutContent({
       </div>
 
       <SidebarInset>
+        {/* Cabeçalho mobile */}
         {isMobile && (
           <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
@@ -274,6 +275,32 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            {/* Botão Home mobile — só aparece fora do Dashboard */}
+            {location !== "/" && (
+              <button
+                onClick={() => setLocation("/")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                title="Voltar ao Dashboard"
+              >
+                <Home className="h-4 w-4" />
+                <span>Dashboard</span>
+              </button>
+            )}
+          </div>
+        )}
+        {/* Breadcrumb desktop — só aparece fora do Dashboard */}
+        {!isMobile && location !== "/" && (
+          <div className="flex items-center gap-1.5 px-5 pt-4 pb-0 text-sm text-muted-foreground">
+            <button
+              onClick={() => setLocation("/")}
+              className="flex items-center gap-1 hover:text-foreground transition-colors group"
+              title="Voltar ao Dashboard"
+            >
+              <Home className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />
+              <span className="group-hover:text-primary transition-colors">Dashboard</span>
+            </button>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+            <span className="text-foreground font-medium">{activeMenuItem?.label ?? "Página"}</span>
           </div>
         )}
         <main className="flex-1 p-4">{children}</main>

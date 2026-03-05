@@ -142,3 +142,6 @@
 - [x] Corrigir impressão: parcelas não aparecem no PDF (parcelasMap vazio no momento do print)
 - [x] Corrigir erro ao atualizar recebimentos
 - [x] Garantir que descrição e observação apareçam no comprovante impresso
+
+## Correção Data Parcelas (v16)
+- [x] Corrigir erro ao digitar data de recebimento nas parcelas — input retorna valor parcial enquanto usuário digita, causando datas inválidas no banco

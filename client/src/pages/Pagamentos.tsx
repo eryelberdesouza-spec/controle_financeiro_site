@@ -110,6 +110,21 @@ function ParcelasRow({ pagamentoId }: { pagamentoId: number }) {
     observacao: p.observacao ?? "",
   }));
 
+  /**
+   * Valida e extrai YYYY-MM-DD de qualquer formato.
+   * Retorna undefined se a data for inválida, incompleta ou o ano tiver menos de 4 dígitos.
+   */
+  const toValidDateOnly = (val: string | undefined | null): string | undefined => {
+    if (!val) return undefined;
+    const raw = val.length > 10 ? val.substring(0, 10) : val;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return undefined;
+    const year = parseInt(raw.substring(0, 4), 10);
+    if (year < 1900 || year > 2100) return undefined;
+    const d = new Date(raw + "T12:00:00");
+    if (isNaN(d.getTime())) return undefined;
+    return raw;
+  };
+
   const handleChange = (updated: ParcelaLocal[]) => {
     updated.forEach((p, i) => {
       const original = localParcelas[i];
@@ -120,18 +135,26 @@ function ParcelasRow({ pagamentoId }: { pagamentoId: number }) {
         p.dataPagamento !== original.dataPagamento ||
         p.status !== original.status ||
         p.observacao !== original.observacao;
-      if (changed) {
-        updateMutation.mutate({
-          id: p.id,
-          data: {
-            valor: p.valor,
-            dataVencimento: new Date(p.dataVencimento + "T12:00:00"),
-            dataPagamento: p.dataPagamento ? new Date(p.dataPagamento + "T12:00:00") : undefined,
-            status: p.status as any,
-            observacao: p.observacao,
-          },
-        });
-      }
+      if (!changed) return;
+
+      const dateVenc = toValidDateOnly(p.dataVencimento);
+      const datePag = toValidDateOnly(p.dataPagamento);
+
+      // Não envia se a data de vencimento ainda está incompleta
+      if (!dateVenc) return;
+      // Não envia enquanto o usuário está digitando a data de pagamento
+      if (p.dataPagamento && !datePag) return;
+
+      updateMutation.mutate({
+        id: p.id,
+        data: {
+          valor: p.valor,
+          dataVencimento: new Date(dateVenc + "T12:00:00"),
+          dataPagamento: datePag ? new Date(datePag + "T12:00:00") : undefined,
+          status: p.status as any,
+          observacao: p.observacao,
+        },
+      });
     });
   };
 

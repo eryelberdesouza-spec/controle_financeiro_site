@@ -138,13 +138,23 @@ function ParcelasRow({ recebimentoId }: { recebimentoId: number }) {
     observacao: p.observacao ?? "",
   }));
 
-  // Extrai apenas YYYY-MM-DD de qualquer formato de data (ISO, timestamp, etc.)
-  const toDateOnly = (val: string | undefined | null): string | undefined => {
+  /**
+   * Valida e extrai YYYY-MM-DD de qualquer formato.
+   * Retorna undefined se a data for inválida, incompleta ou o ano tiver menos de 4 dígitos.
+   */
+  const toValidDateOnly = (val: string | undefined | null): string | undefined => {
     if (!val) return undefined;
-    // Se já é YYYY-MM-DD puro, retorna direto
-    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
-    // Caso contrário, extrai os primeiros 10 caracteres (YYYY-MM-DD)
-    return val.substring(0, 10);
+    // Extrai apenas a parte de data (primeiros 10 chars)
+    const raw = val.length > 10 ? val.substring(0, 10) : val;
+    // Deve ser exatamente YYYY-MM-DD
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return undefined;
+    // Garante que o ano tem exatamente 4 dígitos e é razoável (>= 1900)
+    const year = parseInt(raw.substring(0, 4), 10);
+    if (year < 1900 || year > 2100) return undefined;
+    // Valida se a data é real (ex: não 2026-02-30)
+    const d = new Date(raw + "T12:00:00");
+    if (isNaN(d.getTime())) return undefined;
+    return raw;
   };
 
   const handleChange = (updated: ParcelaLocal[]) => {
@@ -157,20 +167,27 @@ function ParcelasRow({ recebimentoId }: { recebimentoId: number }) {
         p.dataRecebimento !== original.dataRecebimento ||
         p.status !== original.status ||
         p.observacao !== original.observacao;
-      if (changed) {
-        const dateVenc = toDateOnly(p.dataVencimento);
-        const dateRec = toDateOnly(p.dataRecebimento);
-        updateMutation.mutate({
-          id: p.id,
-          data: {
-            valor: p.valor,
-            dataVencimento: dateVenc ? new Date(dateVenc + "T12:00:00") : new Date(),
-            dataRecebimento: dateRec ? new Date(dateRec + "T12:00:00") : undefined,
-            status: p.status as any,
-            observacao: p.observacao,
-          },
-        });
-      }
+      if (!changed) return;
+
+      const dateVenc = toValidDateOnly(p.dataVencimento);
+      const dateRec = toValidDateOnly(p.dataRecebimento);
+
+      // Não envia se a data de vencimento ainda está incompleta
+      if (!dateVenc) return;
+      // Não envia se o usuário está digitando a data de recebimento (ainda incompleta)
+      // mas só bloqueia se o campo não está vazio (vazio = sem data, é válido)
+      if (p.dataRecebimento && !dateRec) return;
+
+      updateMutation.mutate({
+        id: p.id,
+        data: {
+          valor: p.valor,
+          dataVencimento: new Date(dateVenc + "T12:00:00"),
+          dataRecebimento: dateRec ? new Date(dateRec + "T12:00:00") : undefined,
+          status: p.status as any,
+          observacao: p.observacao,
+        },
+      });
     });
   };
 

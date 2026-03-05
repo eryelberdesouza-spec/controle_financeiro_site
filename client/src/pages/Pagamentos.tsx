@@ -430,6 +430,7 @@ export default function Pagamentos() {
                       </th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Nº Controle</th>
                       <th className="text-left p-3 font-medium text-muted-foreground">Nome</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground hidden xl:table-cell">Cliente</th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Banco</th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Serviço</th>
                       <th className="text-right p-3 font-medium text-muted-foreground">Valor</th>
@@ -457,6 +458,16 @@ export default function Pagamentos() {
                             </div>
                             {p.parcelado && (
                               <span className="text-xs text-muted-foreground">{p.quantidadeParcelas}x parcelas</span>
+                            )}
+                          </td>
+                          <td className="p-3 text-muted-foreground hidden xl:table-cell">
+                            {p.clienteNome ? (
+                              <span className="inline-flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
+                                {p.clienteNome}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/50">—</span>
                             )}
                           </td>
                           <td className="p-3 text-muted-foreground hidden md:table-cell">{p.banco || "-"}</td>
@@ -491,7 +502,7 @@ export default function Pagamentos() {
                         </tr>
                         {expandedId === p.id && (
                           <tr key={`parcelas-${p.id}`} className="bg-muted/20">
-                            <td colSpan={8} className="p-4">
+                            <td colSpan={9} className="p-4">
                               <p className="text-sm font-medium text-muted-foreground mb-3">Parcelas de {p.nomeCompleto}</p>
                               <ParcelasRow pagamentoId={p.id} />
                             </td>

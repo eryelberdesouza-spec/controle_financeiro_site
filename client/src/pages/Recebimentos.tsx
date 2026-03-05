@@ -458,14 +458,15 @@ export default function Recebimentos() {
                         <input type="checkbox" className="rounded" checked={selecionados.size === filtered.length && filtered.length > 0} onChange={toggleTodos} title="Selecionar todos" />
                       </th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Nº Controle</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">Nome / Razão Social</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Contrato</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Tipo</th>
-                      <th className="text-right p-3 font-medium text-muted-foreground">Valor Líquido</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Parcelas</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Vencimento</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                      <th className="text-right p-3 font-medium text-muted-foreground">Ações</th>
+                       <th className="text-left p-3 font-medium text-muted-foreground">Nome / Razão Social</th>
+                       <th className="text-left p-3 font-medium text-muted-foreground hidden xl:table-cell">Cliente</th>
+                       <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Contrato</th>
+                       <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Tipo</th>
+                       <th className="text-right p-3 font-medium text-muted-foreground">Valor Líquido</th>
+                       <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Parcelas</th>
+                       <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Vencimento</th>
+                       <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                       <th className="text-right p-3 font-medium text-muted-foreground">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -487,6 +488,16 @@ export default function Recebimentos() {
                             </div>
                             {r.quantidadeParcelas > 1 && (
                               <span className="text-xs text-muted-foreground">{r.quantidadeParcelas}x parcelas</span>
+                            )}
+                          </td>
+                          <td className="p-3 text-muted-foreground hidden xl:table-cell">
+                            {r.clienteNome ? (
+                              <span className="inline-flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
+                                {r.clienteNome}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/50">—</span>
                             )}
                           </td>
                           <td className="p-3 text-muted-foreground hidden md:table-cell">{r.numeroContrato || "-"}</td>
@@ -532,7 +543,7 @@ export default function Recebimentos() {
                         </tr>
                         {expandedId === r.id && (
                           <tr className="bg-muted/20">
-                            <td colSpan={9} className="p-4">
+                            <td colSpan={10} className="p-4">
                               <p className="text-sm font-medium text-muted-foreground mb-3">Parcelas de {r.nomeRazaoSocial}</p>
                               <ParcelasRow recebimentoId={r.id} />
                             </td>

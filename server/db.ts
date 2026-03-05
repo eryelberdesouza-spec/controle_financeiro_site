@@ -97,7 +97,34 @@ export async function listPagamentos(filters?: { status?: string; centroCusto?: 
   if (filters?.centroCusto) conditions.push(eq(pagamentos.centroCusto, filters.centroCusto));
   if (filters?.dataInicio) conditions.push(gte(pagamentos.dataPagamento, filters.dataInicio));
   if (filters?.dataFim) conditions.push(lte(pagamentos.dataPagamento, filters.dataFim));
-  return db.select().from(pagamentos)
+  return db.select({
+    id: pagamentos.id,
+    numeroControle: pagamentos.numeroControle,
+    nomeCompleto: pagamentos.nomeCompleto,
+    descricao: pagamentos.descricao,
+    valor: pagamentos.valor,
+    valorEquipamento: pagamentos.valorEquipamento,
+    valorServico: pagamentos.valorServico,
+    dataPagamento: pagamentos.dataPagamento,
+    status: pagamentos.status,
+    centroCusto: pagamentos.centroCusto,
+    centroCustoId: pagamentos.centroCustoId,
+    clienteId: pagamentos.clienteId,
+    clienteNome: clientes.nome,
+    tipoServico: pagamentos.tipoServico,
+    banco: pagamentos.banco,
+    cpf: pagamentos.cpf,
+    chavePix: pagamentos.chavePix,
+    tipoPix: pagamentos.tipoPix,
+    autorizadoPor: pagamentos.autorizadoPor,
+    parcelado: pagamentos.parcelado,
+    quantidadeParcelas: pagamentos.quantidadeParcelas,
+    observacao: pagamentos.observacao,
+    createdAt: pagamentos.createdAt,
+    updatedAt: pagamentos.updatedAt,
+  })
+    .from(pagamentos)
+    .leftJoin(clientes, eq(pagamentos.clienteId, clientes.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(pagamentos.dataPagamento));
 }
@@ -147,7 +174,32 @@ export async function listRecebimentos(filters?: { status?: string; tipoRecebime
   if (filters?.tipoRecebimento) conditions.push(eq(recebimentos.tipoRecebimento, filters.tipoRecebimento as any));
   if (filters?.dataInicio) conditions.push(gte(recebimentos.dataVencimento, filters.dataInicio));
   if (filters?.dataFim) conditions.push(lte(recebimentos.dataVencimento, filters.dataFim));
-  return db.select().from(recebimentos)
+  return db.select({
+    id: recebimentos.id,
+    numeroControle: recebimentos.numeroControle,
+    numeroContrato: recebimentos.numeroContrato,
+    nomeRazaoSocial: recebimentos.nomeRazaoSocial,
+    descricao: recebimentos.descricao,
+    valorTotal: recebimentos.valorTotal,
+    valorEquipamento: recebimentos.valorEquipamento,
+    valorServico: recebimentos.valorServico,
+    juros: recebimentos.juros,
+    desconto: recebimentos.desconto,
+    dataVencimento: recebimentos.dataVencimento,
+    dataRecebimento: recebimentos.dataRecebimento,
+    status: recebimentos.status,
+    tipoRecebimento: recebimentos.tipoRecebimento,
+    centroCustoId: recebimentos.centroCustoId,
+    clienteId: recebimentos.clienteId,
+    clienteNome: clientes.nome,
+    quantidadeParcelas: recebimentos.quantidadeParcelas,
+    parcelaAtual: recebimentos.parcelaAtual,
+    observacao: recebimentos.observacao,
+    createdAt: recebimentos.createdAt,
+    updatedAt: recebimentos.updatedAt,
+  })
+    .from(recebimentos)
+    .leftJoin(clientes, eq(recebimentos.clienteId, clientes.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(recebimentos.dataVencimento));
 }

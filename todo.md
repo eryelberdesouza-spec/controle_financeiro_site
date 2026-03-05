@@ -202,3 +202,9 @@
 - [x] Criar procedure tRPC getLancamentosByCliente (pagamentos + recebimentos vinculados)
 - [x] Criar página de extrato por cliente em /extrato-cliente
 - [x] Adicionar "Extrato por Cliente" no menu lateral
+
+## Coluna Cliente nas Listagens (v23)
+- [x] Atualizar query listPagamentos no db.ts para incluir nome do cliente via JOIN
+- [x] Atualizar query listRecebimentos no db.ts para incluir nome do cliente via JOIN
+- [x] Adicionar coluna "Cliente" na tabela de listagem de Pagamentos
+- [x] Adicionar coluna "Cliente" na tabela de listagem de Recebimentos

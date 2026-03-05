@@ -208,3 +208,6 @@
 - [x] Atualizar query listRecebimentos no db.ts para incluir nome do cliente via JOIN
 - [x] Adicionar coluna "Cliente" na tabela de listagem de Pagamentos
 - [x] Adicionar coluna "Cliente" na tabela de listagem de Recebimentos
+
+## Correção Validação E-mail Clientes (v24)
+- [x] Corrigir validação Zod de e-mail no router de clientes para aceitar domínios simples (ex: @icloud, @gmail)

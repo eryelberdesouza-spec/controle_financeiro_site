@@ -25,6 +25,7 @@ import {
   getDashboardStats,
   getConviteByToken,
   getEmpresaConfig,
+  getExtratoCliente,
   getPagamentoById,
   getPagamentosStats,
   getRecebimentoById,
@@ -245,6 +246,9 @@ const clientesRouter = router({
   delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(({ input }) => deleteCliente(input.id)),
+  extrato: staffProcedure
+    .input(z.object({ clienteId: z.number() }))
+    .query(({ input }) => getExtratoCliente(input.clienteId)),
 });
 
 // ─── Centros de Custo ─────────────────────────────────────────────────────────

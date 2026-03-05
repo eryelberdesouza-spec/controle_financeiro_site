@@ -487,3 +487,26 @@ export async function deleteConvite(id: number) {
   if (!db) throw new Error("Database not available");
   return db.delete(convites).where(eq(convites.id, id));
 }
+
+// ─── Extrato por Cliente ───────────────────────────────────────────────────────
+export async function getExtratoCliente(clienteId: number) {
+  const db = await getDb();
+  if (!db) return { cliente: null, pagamentos: [], recebimentos: [] };
+
+  const clienteResult = await db.select().from(clientes).where(eq(clientes.id, clienteId)).limit(1);
+  const cliente = clienteResult[0] ?? null;
+
+  const pags = await db
+    .select()
+    .from(pagamentos)
+    .where(eq(pagamentos.clienteId, clienteId))
+    .orderBy(desc(pagamentos.dataPagamento));
+
+  const rebs = await db
+    .select()
+    .from(recebimentos)
+    .where(eq(recebimentos.clienteId, clienteId))
+    .orderBy(desc(recebimentos.dataVencimento));
+
+  return { cliente, pagamentos: pags, recebimentos: rebs };
+}

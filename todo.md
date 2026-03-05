@@ -194,3 +194,11 @@
 
 ## Correção Navegação (v21)
 - [x] Corrigir botão Home/Dashboard que não está funcionando nas páginas internas
+
+## Busca de Clientes nos Formulários (v22)
+- [x] Criar componente ClienteSearchSelect com busca/autocomplete (digitar nome filtra a lista)
+- [x] Integrar ClienteSearchSelect no formulário de Pagamentos (substituir Select simples)
+- [x] Integrar ClienteSearchSelect no formulário de Recebimentos (substituir Select simples)
+- [x] Criar procedure tRPC getLancamentosByCliente (pagamentos + recebimentos vinculados)
+- [x] Criar página de extrato por cliente em /extrato-cliente
+- [x] Adicionar "Extrato por Cliente" no menu lateral

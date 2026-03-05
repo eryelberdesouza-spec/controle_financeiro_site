@@ -15,6 +15,7 @@ import Usuarios from "./pages/Usuarios";
 import Configuracoes from "./pages/Configuracoes";
 import Clientes from "./pages/Clientes";
 import CentrosCusto from "./pages/CentrosCusto";
+import ExtratoCliente from "./pages/ExtratoCliente";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/relatorios" component={Relatorios} />
       <Route path="/clientes" component={Clientes} />
       <Route path="/centros-custo" component={CentrosCusto} />
+      <Route path="/extrato-cliente" component={ExtratoCliente} />
       <Route path="/usuarios" component={Usuarios} />
       <Route path="/configuracoes" component={Configuracoes} />
       <Route path="/guia" component={Guia} />

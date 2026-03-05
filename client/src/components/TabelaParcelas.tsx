@@ -1,9 +1,9 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CalendarIcon, CheckCircle2, Clock, XCircle, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export type TipoParcela = "pagamento" | "recebimento";
 
@@ -40,13 +40,180 @@ const StatusIcon = ({ status }: { status: string }) => {
   return <Clock className="h-3.5 w-3.5" />;
 };
 
+/**
+ * Valida se uma string é uma data YYYY-MM-DD completa e válida.
+ * Retorna a string se válida, undefined caso contrário.
+ */
+function toValidDateOnly(val: string | undefined | null): string | undefined {
+  if (!val) return undefined;
+  const raw = val.length > 10 ? val.substring(0, 10) : val;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return undefined;
+  const year = parseInt(raw.substring(0, 4), 10);
+  if (year < 1900 || year > 2100) return undefined;
+  const d = new Date(raw + "T12:00:00");
+  if (isNaN(d.getTime())) return undefined;
+  return raw;
+}
+
+/**
+ * Componente de linha individual com estado local para campos de data.
+ * Atualiza visualmente a cada keystroke, mas só propaga via onChange
+ * quando o campo perde o foco (onBlur) e a data estiver completa e válida.
+ */
+function ParcelaRow({
+  parcela,
+  index,
+  total,
+  tipo,
+  statusOptions,
+  dataEfetivadaLabel,
+  dataEfetivadaKey,
+  onUpdate,
+  readOnly,
+}: {
+  parcela: ParcelaLocal;
+  index: number;
+  total: number;
+  tipo: TipoParcela;
+  statusOptions: string[];
+  dataEfetivadaLabel: string;
+  dataEfetivadaKey: "dataPagamento" | "dataRecebimento";
+  onUpdate: (index: number, field: keyof ParcelaLocal, value: string) => void;
+  readOnly: boolean;
+}) {
+  // Estado local para os campos de data — permite digitação livre sem disparar save a cada tecla
+  const [localDataVenc, setLocalDataVenc] = useState(parcela.dataVencimento || "");
+  const [localDataEfetivada, setLocalDataEfetivada] = useState(
+    (parcela[dataEfetivadaKey] as string) || ""
+  );
+
+  // Sincroniza estado local quando as props mudam (ex: após save bem-sucedido)
+  useEffect(() => {
+    setLocalDataVenc(parcela.dataVencimento || "");
+  }, [parcela.dataVencimento]);
+
+  useEffect(() => {
+    setLocalDataEfetivada((parcela[dataEfetivadaKey] as string) || "");
+  }, [parcela[dataEfetivadaKey]]);
+
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  return (
+    <TableRow className={parcela.status === "Atrasado" ? "bg-red-50/50" : ""}>
+      <TableCell className="text-center font-medium text-muted-foreground text-sm">
+        {parcela.numeroParcela}/{total}
+      </TableCell>
+      <TableCell>
+        {readOnly ? (
+          <span className="font-medium">{fmt(parseFloat(parcela.valor || "0"))}</span>
+        ) : (
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={parcela.valor}
+            onChange={(e) => onUpdate(index, "valor", e.target.value)}
+            className="h-8 w-28 text-sm"
+          />
+        )}
+      </TableCell>
+      <TableCell>
+        {readOnly ? (
+          <span className="text-sm">{parcela.dataVencimento}</span>
+        ) : (
+          <Input
+            type="date"
+            value={localDataVenc}
+            onChange={(e) => setLocalDataVenc(e.target.value)}
+            onBlur={() => {
+              const valid = toValidDateOnly(localDataVenc);
+              if (valid) {
+                onUpdate(index, "dataVencimento", valid);
+              } else if (!localDataVenc) {
+                // Campo limpo — propaga vazio
+                onUpdate(index, "dataVencimento", "");
+              }
+              // Se inválido e não vazio, restaura o valor anterior
+              else {
+                setLocalDataVenc(parcela.dataVencimento || "");
+              }
+            }}
+            className="h-8 w-36 text-sm"
+          />
+        )}
+      </TableCell>
+      <TableCell>
+        {readOnly ? (
+          <span className="text-sm text-muted-foreground">
+            {(parcela[dataEfetivadaKey] as string) || "—"}
+          </span>
+        ) : (
+          <Input
+            type="date"
+            value={localDataEfetivada}
+            onChange={(e) => setLocalDataEfetivada(e.target.value)}
+            onBlur={() => {
+              const valid = toValidDateOnly(localDataEfetivada);
+              if (valid) {
+                onUpdate(index, dataEfetivadaKey, valid);
+              } else if (!localDataEfetivada) {
+                // Campo limpo — propaga vazio (remove a data)
+                onUpdate(index, dataEfetivadaKey, "");
+              } else {
+                // Data inválida — restaura o valor anterior
+                setLocalDataEfetivada((parcela[dataEfetivadaKey] as string) || "");
+              }
+            }}
+            className="h-8 w-36 text-sm"
+          />
+        )}
+      </TableCell>
+      <TableCell>
+        {readOnly ? (
+          <Badge className={`${statusColors[parcela.status] || ""} flex items-center gap-1 w-fit text-xs border`} variant="outline">
+            <StatusIcon status={parcela.status} />
+            {parcela.status}
+          </Badge>
+        ) : (
+          <Select
+            value={parcela.status}
+            onValueChange={(v) => onUpdate(index, "status", v)}
+          >
+            <SelectTrigger className="h-8 w-32 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map(s => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </TableCell>
+      <TableCell>
+        {readOnly ? (
+          <span className="text-sm text-muted-foreground">{parcela.observacao || "—"}</span>
+        ) : (
+          <Input
+            value={parcela.observacao || ""}
+            onChange={(e) => onUpdate(index, "observacao", e.target.value)}
+            onBlur={(e) => onUpdate(index, "observacao", e.target.value)}
+            placeholder="Opcional"
+            className="h-8 text-sm"
+          />
+        )}
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export function TabelaParcelas({ tipo, parcelas, onChange, readOnly = false }: Props) {
   const statusOptions = tipo === "pagamento"
     ? ["Pendente", "Pago", "Atrasado", "Cancelado"]
     : ["Pendente", "Recebido", "Atrasado", "Cancelado"];
 
   const dataEfetivadaLabel = tipo === "pagamento" ? "Data Pagamento" : "Data Recebimento";
-  const dataEfetivadaKey = tipo === "pagamento" ? "dataPagamento" : "dataRecebimento";
+  const dataEfetivadaKey: "dataPagamento" | "dataRecebimento" = tipo === "pagamento" ? "dataPagamento" : "dataRecebimento";
 
   const updateParcela = (index: number, field: keyof ParcelaLocal, value: string) => {
     const updated = parcelas.map((p, i) =>
@@ -117,85 +284,18 @@ export function TabelaParcelas({ tipo, parcelas, onChange, readOnly = false }: P
           </TableHeader>
           <TableBody>
             {parcelas.map((parcela, index) => (
-              <TableRow key={index} className={parcela.status === "Atrasado" ? "bg-red-50/50" : ""}>
-                <TableCell className="text-center font-medium text-muted-foreground text-sm">
-                  {parcela.numeroParcela}/{parcelas.length}
-                </TableCell>
-                <TableCell>
-                  {readOnly ? (
-                    <span className="font-medium">{fmt(parseFloat(parcela.valor || "0"))}</span>
-                  ) : (
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={parcela.valor}
-                      onChange={(e) => updateParcela(index, "valor", e.target.value)}
-                      className="h-8 w-28 text-sm"
-                    />
-                  )}
-                </TableCell>
-                <TableCell>
-                  {readOnly ? (
-                    <span className="text-sm">{parcela.dataVencimento}</span>
-                  ) : (
-                    <Input
-                      type="date"
-                      value={parcela.dataVencimento}
-                      onChange={(e) => updateParcela(index, "dataVencimento", e.target.value)}
-                      className="h-8 w-36 text-sm"
-                    />
-                  )}
-                </TableCell>
-                <TableCell>
-                  {readOnly ? (
-                    <span className="text-sm text-muted-foreground">
-                      {parcela[dataEfetivadaKey as keyof ParcelaLocal] || "—"}
-                    </span>
-                  ) : (
-                    <Input
-                      type="date"
-                      value={(parcela[dataEfetivadaKey as keyof ParcelaLocal] as string) || ""}
-                      onChange={(e) => updateParcela(index, dataEfetivadaKey as keyof ParcelaLocal, e.target.value)}
-                      className="h-8 w-36 text-sm"
-                    />
-                  )}
-                </TableCell>
-                <TableCell>
-                  {readOnly ? (
-                    <Badge className={`${statusColors[parcela.status] || ""} flex items-center gap-1 w-fit text-xs border`} variant="outline">
-                      <StatusIcon status={parcela.status} />
-                      {parcela.status}
-                    </Badge>
-                  ) : (
-                    <Select
-                      value={parcela.status}
-                      onValueChange={(v) => updateParcela(index, "status", v)}
-                    >
-                      <SelectTrigger className="h-8 w-32 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map(s => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {readOnly ? (
-                    <span className="text-sm text-muted-foreground">{parcela.observacao || "—"}</span>
-                  ) : (
-                    <Input
-                      value={parcela.observacao || ""}
-                      onChange={(e) => updateParcela(index, "observacao", e.target.value)}
-                      placeholder="Opcional"
-                      className="h-8 text-sm"
-                    />
-                  )}
-                </TableCell>
-              </TableRow>
+              <ParcelaRow
+                key={parcela.id ?? index}
+                parcela={parcela}
+                index={index}
+                total={parcelas.length}
+                tipo={tipo}
+                statusOptions={statusOptions}
+                dataEfetivadaLabel={dataEfetivadaLabel}
+                dataEfetivadaKey={dataEfetivadaKey}
+                onUpdate={updateParcela}
+                readOnly={readOnly}
+              />
             ))}
           </TableBody>
         </Table>
@@ -231,7 +331,7 @@ export function gerarParcelas(
       numeroParcela: i + 1,
       valor,
       dataVencimento: dataStr,
-      status: tipo === "pagamento" ? "Pendente" : "Pendente",
+      status: "Pendente",
       observacao: "",
     };
   });

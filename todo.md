@@ -145,3 +145,6 @@
 
 ## Correção Data Parcelas (v16)
 - [x] Corrigir erro ao digitar data de recebimento nas parcelas — input retorna valor parcial enquanto usuário digita, causando datas inválidas no banco
+
+## Correção Input Data Parcelas (v17)
+- [x] Corrigir input de data nas parcelas: salvar via onBlur (quando campo perde foco) em vez de bloquear durante digitação

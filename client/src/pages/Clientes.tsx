@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Search, Pencil, Trash2, Users, Building2, Wrench, Hotel, Handshake, MoreHorizontal } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
 
 const TIPOS = ["Cliente", "Prestador de Serviço", "Fornecedor", "Hotel", "Parceiro", "Outro"] as const;
 type Tipo = typeof TIPOS[number];
@@ -117,6 +118,7 @@ export default function Clientes() {
   }, {} as Record<Tipo, number>);
 
   return (
+    <DashboardLayout>
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -346,5 +348,6 @@ export default function Clientes() {
         </DialogContent>
       </Dialog>
     </div>
+    </DashboardLayout>
   );
 }

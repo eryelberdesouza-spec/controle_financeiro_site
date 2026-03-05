@@ -191,3 +191,6 @@
 
 ## Navegação (v20)
 - [x] Adicionar botão Home/Dashboard no cabeçalho do DashboardLayout para retorno intuitivo à página principal
+
+## Correção Navegação (v21)
+- [x] Corrigir botão Home/Dashboard que não está funcionando nas páginas internas

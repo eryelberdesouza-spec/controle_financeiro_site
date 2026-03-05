@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Plus, Pencil, Trash2, Layers, Search } from "lucide-react";
 
 type FormData = { nome: string; descricao: string };
@@ -63,6 +64,7 @@ export default function CentrosCusto() {
   );
 
   return (
+    <DashboardLayout>
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -224,5 +226,6 @@ export default function CentrosCusto() {
         </DialogContent>
       </Dialog>
     </div>
+    </DashboardLayout>
   );
 }

@@ -565,6 +565,26 @@ export default function Recebimentos() {
             <DialogTitle>{editId ? "Editar Recebimento" : "Novo Recebimento"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Busca de cliente — preenche Nome automaticamente */}
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1.5">
+              <Label className="text-xs font-semibold text-primary uppercase tracking-wide">Buscar Cliente Cadastrado</Label>
+              <ClienteSelect
+                value={form.clienteId}
+                onChange={(id, cliente) => {
+                  if (id && cliente) {
+                    setForm(f => ({
+                      ...f,
+                      clienteId: id,
+                      nomeRazaoSocial: f.nomeRazaoSocial || cliente.nome,
+                    }));
+                  } else {
+                    setForm(f => ({ ...f, clienteId: null }));
+                  }
+                }}
+                placeholder="Buscar por nome ou CPF/CNPJ..."
+              />
+              <p className="text-xs text-muted-foreground">Selecione um cliente para preencher Nome/Razão Social automaticamente</p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Nº de Controle</Label>
@@ -596,13 +616,7 @@ export default function Recebimentos() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Cliente / Parceiro</Label>
-                <ClienteSelect
-                  value={form.clienteId}
-                  onChange={(id: number | null) => setForm(f => ({ ...f, clienteId: id }))}
-                />
-              </div>
+
               <div>
                 <Label>Centro de Custo</Label>
                 <CentroCustoSelect

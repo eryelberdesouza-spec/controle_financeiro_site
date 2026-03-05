@@ -211,3 +211,9 @@
 
 ## Correção Validação E-mail Clientes (v24)
 - [x] Corrigir validação Zod de e-mail no router de clientes para aceitar domínios simples (ex: @icloud, @gmail)
+
+## Reorganização Busca de Cliente nos Formulários (v25)
+- [x] Mover campo "Cliente / Parceiro" para junto dos campos Nome e CPF em Pagamentos
+- [x] Ao selecionar cliente, preencher automaticamente Nome Completo e CPF em Pagamentos
+- [x] Mover campo "Cliente / Parceiro" para junto dos campos Nome/Razão Social em Recebimentos
+- [x] Ao selecionar cliente, preencher automaticamente Nome/Razão Social em Recebimentos

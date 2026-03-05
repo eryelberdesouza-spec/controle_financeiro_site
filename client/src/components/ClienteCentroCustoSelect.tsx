@@ -24,9 +24,18 @@ const tipoColors: Record<string, string> = {
 };
 
 // ─── ClienteSelect com busca/autocomplete ─────────────────────────────────
+type ClienteItem = {
+  id: number;
+  nome: string;
+  tipo?: string | null;
+  cpfCnpj?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+};
+
 interface ClienteSelectProps {
   value: number | null;
-  onChange: (id: number | null) => void;
+  onChange: (id: number | null, cliente?: ClienteItem | null) => void;
   placeholder?: string;
   className?: string;
 }
@@ -79,14 +88,15 @@ export function ClienteSelect({
   }
 
   function handleSelect(id: number) {
-    onChange(id);
+    const cliente = clientesAtivos.find(c => c.id === id) ?? null;
+    onChange(id, cliente);
     setAberto(false);
     setBusca("");
   }
 
   function handleClear(e: React.MouseEvent) {
     e.stopPropagation();
-    onChange(null);
+    onChange(null, null);
     setAberto(false);
     setBusca("");
   }
@@ -157,7 +167,7 @@ export function ClienteSelect({
         <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg overflow-hidden">
           <button
             type="button"
-            onClick={() => { onChange(null); setAberto(false); setBusca(""); }}
+            onClick={() => { onChange(null, null); setAberto(false); setBusca(""); }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors border-b"
           >
             <X className="h-3.5 w-3.5" />

@@ -524,6 +524,27 @@ export default function Pagamentos() {
             <DialogTitle>{editId ? "Editar Pagamento" : "Novo Pagamento"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Busca de cliente — preenche Nome e CPF automaticamente */}
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1.5">
+              <Label className="text-xs font-semibold text-primary uppercase tracking-wide">Buscar Cliente Cadastrado</Label>
+              <ClienteSelect
+                value={form.clienteId}
+                onChange={(id, cliente) => {
+                  if (id && cliente) {
+                    setForm(f => ({
+                      ...f,
+                      clienteId: id,
+                      nomeCompleto: f.nomeCompleto || cliente.nome,
+                      cpf: f.cpf || (cliente.cpfCnpj ?? ""),
+                    }));
+                  } else {
+                    setForm(f => ({ ...f, clienteId: null }));
+                  }
+                }}
+                placeholder="Buscar por nome ou CPF/CNPJ..."
+              />
+              <p className="text-xs text-muted-foreground">Selecione um cliente para preencher Nome e CPF automaticamente</p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Nº de Controle</Label>
@@ -562,13 +583,6 @@ export default function Pagamentos() {
               <div>
                 <Label>Tipo de Serviço</Label>
                 <Input value={form.tipoServico} onChange={e => setForm(f => ({ ...f, tipoServico: e.target.value }))} placeholder="Ex: Consultoria, Manutenção..." />
-              </div>
-              <div>
-                <Label>Cliente / Parceiro</Label>
-                <ClienteSelect
-                  value={form.clienteId}
-                  onChange={(id) => setForm(f => ({ ...f, clienteId: id }))}
-                />
               </div>
               <div>
                 <Label>Centro de Custo</Label>

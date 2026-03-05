@@ -171,3 +171,20 @@
 - [x] Dashboard: exibir dados do mês corrente por padrão com filtro de mês/ano
 - [x] Dashboard: procedure tRPC com parâmetros dataInicio e dataFim para filtrar por período
 - [x] Dashboard: gráfico de barras comparativo mensal dos últimos 6 meses (histórico)
+
+## Correção Dashboard Histórico (v19)
+- [x] Corrigir query getDashboardHistoricoMensal — coluna dataVencimento falhando no MySQL (nome da coluna no Drizzle vs banco)
+
+## Hardening de Segurança (v19)
+- [x] Instalar e configurar express-rate-limit (rate limit por IP e por usuário)
+- [x] Instalar e configurar helmet (headers HTTP de segurança)
+- [x] Adicionar Content-Security-Policy (CSP) via helmet
+- [x] Garantir que .env nunca é commitado (.gitignore já cobre, verificar)
+- [x] Revisar todas as procedures tRPC: garantir que staffProcedure/protectedProcedure cobre todos os endpoints sensíveis
+- [x] Validar que Drizzle ORM usa queries parametrizadas (proteção SQL Injection)
+- [x] Sanitizar inputs de texto livre (descrição, observação) contra XSS
+- [x] Adicionar validação de tamanho máximo em todos os campos de texto
+- [x] Garantir que tokens JWT têm expiração adequada
+- [x] Revisar CORS: restringir origens permitidas em produção
+- [x] Adicionar log de tentativas de acesso negado (403/401)
+- [x] Corrigir erro "2 errors" no Dashboard (query histórico mensal)

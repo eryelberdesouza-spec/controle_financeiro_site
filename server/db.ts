@@ -261,27 +261,28 @@ export async function getDashboardHistoricoMensal(meses: number = 6) {
   dataInicio.setDate(1);
   dataInicio.setHours(0, 0, 0, 0);
 
+  // Usa sql.raw para evitar problema de geração de SQL com backtick dentro de funções MySQL
   const [pagMensal, recMensal] = await Promise.all([
     db.select({
-      ano: sql<number>`YEAR(${pagamentos.dataPagamento})`,
-      mes: sql<number>`MONTH(${pagamentos.dataPagamento})`,
-      total: sql<number>`SUM(${pagamentos.valor})`,
-      totalPago: sql<number>`SUM(CASE WHEN ${pagamentos.status} = 'Pago' THEN ${pagamentos.valor} ELSE 0 END)`,
+      ano: sql<number>`YEAR(dataPagamento)`,
+      mes: sql<number>`MONTH(dataPagamento)`,
+      total: sql<number>`SUM(valor)`,
+      totalPago: sql<number>`SUM(CASE WHEN status = 'Pago' THEN valor ELSE 0 END)`,
     })
       .from(pagamentos)
       .where(gte(pagamentos.dataPagamento, dataInicio))
-      .groupBy(sql`YEAR(${pagamentos.dataPagamento}), MONTH(${pagamentos.dataPagamento})`)
-      .orderBy(sql`YEAR(${pagamentos.dataPagamento}), MONTH(${pagamentos.dataPagamento})`),
+      .groupBy(sql`YEAR(dataPagamento), MONTH(dataPagamento)`)
+      .orderBy(sql`YEAR(dataPagamento), MONTH(dataPagamento)`),
     db.select({
-      ano: sql<number>`YEAR(${recebimentos.dataVencimento})`,
-      mes: sql<number>`MONTH(${recebimentos.dataVencimento})`,
-      total: sql<number>`SUM(${recebimentos.valorTotal})`,
-      totalRecebido: sql<number>`SUM(CASE WHEN ${recebimentos.status} = 'Recebido' THEN ${recebimentos.valorTotal} ELSE 0 END)`,
+      ano: sql<number>`YEAR(dataVencimento)`,
+      mes: sql<number>`MONTH(dataVencimento)`,
+      total: sql<number>`SUM(valorTotal)`,
+      totalRecebido: sql<number>`SUM(CASE WHEN status = 'Recebido' THEN valorTotal ELSE 0 END)`,
     })
       .from(recebimentos)
       .where(gte(recebimentos.dataVencimento, dataInicio))
-      .groupBy(sql`YEAR(${recebimentos.dataVencimento}), MONTH(${recebimentos.dataVencimento})`)
-      .orderBy(sql`YEAR(${recebimentos.dataVencimento}), MONTH(${recebimentos.dataVencimento})`),
+      .groupBy(sql`YEAR(dataVencimento), MONTH(dataVencimento)`)
+      .orderBy(sql`YEAR(dataVencimento), MONTH(dataVencimento)`),
   ]);
 
   return { pagMensal, recMensal };

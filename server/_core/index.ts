@@ -7,6 +7,11 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import {
+  applySecurityMiddleware,
+  apiRateLimit,
+  authRateLimit,
+} from "./security";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -30,20 +35,43 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
+
+  // 1. Trust proxy: necessário para rate limit funcionar atrás de proxy/load balancer
+  // 'loopback' = confia apenas em proxies locais (127.0.0.1, ::1)
+  app.set("trust proxy", "loopback");
+
+  // 2. Segurança: Helmet + CORS + Rate Limit global
+  applySecurityMiddleware(app);
+
+  // 3. Body parser (limite reduzido para mitigar ataques de payload grande)
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+  // 4. Rate limit específico para autenticação (anti brute-force)
+  app.use("/api/oauth", authRateLimit);
+
+  // 5. Rate limit para API tRPC
+  app.use("/api/trpc", apiRateLimit);
+
+  // 6. OAuth callback
   registerOAuthRoutes(app);
-  // tRPC API
+
+  // 7. tRPC API
   app.use(
     "/api/trpc",
     createExpressMiddleware({
       router: appRouter,
       createContext,
+      onError: ({ error, path }) => {
+        // Log erros internos sem expor detalhes ao cliente
+        if (error.code === "INTERNAL_SERVER_ERROR") {
+          console.error(`[tRPC Error] ${path}:`, error.message);
+        }
+      },
     })
   );
-  // development mode uses Vite, production mode uses static files
+
+  // 8. Frontend
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {

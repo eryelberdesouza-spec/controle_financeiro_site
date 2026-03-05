@@ -148,3 +148,26 @@
 
 ## Correção Input Data Parcelas (v17)
 - [x] Corrigir input de data nas parcelas: salvar via onBlur (quando campo perde foco) em vez de bloquear durante digitação
+
+## Nova Atualização — Clientes, Centros de Custo e Gráficos
+- [x] Criar tabela `clientes` no schema (nome, tipo, CPF/CNPJ, email, telefone, endereço, ativo)
+- [x] Criar tabela `centros_custo` no schema (nome, descricao, ativo)
+- [x] Adicionar campos `clienteId` e `centroCustoId` nas tabelas `pagamentos` e `recebimentos`
+- [x] Rodar migração do banco (pnpm db:push)
+- [x] Criar procedures tRPC para CRUD de Clientes (list, create, update, delete)
+- [x] Criar procedures tRPC para CRUD de Centros de Custo (list, create, update, delete)
+- [x] Criar página de Clientes com tabela, busca, formulário de cadastro e edição
+- [x] Criar página de Centros de Custo com tabela e formulário
+- [x] Atualizar formulário de Pagamentos: Select de Cliente e Centro de Custo
+- [x] Atualizar formulário de Recebimentos: Select de Cliente e Centro de Custo
+- [ ] Atualizar listagem de Pagamentos: mostrar nome do cliente e centro de custo
+- [ ] Atualizar listagem de Recebimentos: mostrar nome do cliente e centro de custo
+- [x] Adicionar gráfico de barras comparativo mensal (Recebimentos vs Pagamentos) no Dashboard
+- [x] Adicionar gráfico de pizza por Centro de Custo no Dashboard
+- [x] Adicionar gráfico de linha de fluxo de caixa acumulado no Dashboard
+- [ ] Adicionar gráfico de barras por tipo de cliente/parceiro no Dashboard
+- [x] Atualizar navegação lateral com links para Clientes e Centros de Custo
+- [ ] Escrever testes para os novos routers
+- [x] Dashboard: exibir dados do mês corrente por padrão com filtro de mês/ano
+- [x] Dashboard: procedure tRPC com parâmetros dataInicio e dataFim para filtrar por período
+- [x] Dashboard: gráfico de barras comparativo mensal dos últimos 6 meses (histórico)

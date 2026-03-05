@@ -13,6 +13,8 @@ import Guia from "./pages/Guia";
 import Faq from "./pages/Faq";
 import Usuarios from "./pages/Usuarios";
 import Configuracoes from "./pages/Configuracoes";
+import Clientes from "./pages/Clientes";
+import CentrosCusto from "./pages/CentrosCusto";
 
 function Router() {
   return (
@@ -21,6 +23,8 @@ function Router() {
       <Route path={"/convite/:token"} component={AceitarConvite} />      <Route path="/pagamentos" component={Pagamentos} />
       <Route path="/recebimentos" component={Recebimentos} />
       <Route path="/relatorios" component={Relatorios} />
+      <Route path="/clientes" component={Clientes} />
+      <Route path="/centros-custo" component={CentrosCusto} />
       <Route path="/usuarios" component={Usuarios} />
       <Route path="/configuracoes" component={Configuracoes} />
       <Route path="/guia" component={Guia} />

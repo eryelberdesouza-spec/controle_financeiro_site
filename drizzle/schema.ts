@@ -16,7 +16,49 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// Tabela de Pagamentos
+// ─── Centros de Custo ────────────────────────────────────────────────────────
+export const centrosCusto = mysqlTable("centros_custo", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 150 }).notNull(),
+  descricao: text("descricao"),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+
+export type CentroCusto = typeof centrosCusto.$inferSelect;
+export type InsertCentroCusto = typeof centrosCusto.$inferInsert;
+
+// ─── Clientes / Parceiros ────────────────────────────────────────────────────
+export const clientes = mysqlTable("clientes", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  tipo: mysqlEnum("tipo", [
+    "Cliente",
+    "Prestador de Serviço",
+    "Fornecedor",
+    "Hotel",
+    "Parceiro",
+    "Outro",
+  ]).default("Cliente").notNull(),
+  cpfCnpj: varchar("cpfCnpj", { length: 20 }),
+  email: varchar("email", { length: 320 }),
+  telefone: varchar("telefone", { length: 30 }),
+  endereco: text("endereco"),
+  cidade: varchar("cidade", { length: 100 }),
+  estado: varchar("estado", { length: 2 }),
+  observacao: text("observacao"),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+
+export type Cliente = typeof clientes.$inferSelect;
+export type InsertCliente = typeof clientes.$inferInsert;
+
+// ─── Pagamentos ──────────────────────────────────────────────────────────────
 export const pagamentos = mysqlTable("pagamentos", {
   id: int("id").autoincrement().primaryKey(),
   numeroControle: varchar("numeroControle", { length: 50 }),
@@ -27,6 +69,9 @@ export const pagamentos = mysqlTable("pagamentos", {
   tipoPix: mysqlEnum("tipoPix", ["CPF", "CNPJ", "Email", "Telefone", "Chave Aleatória"]).default("CPF"),
   tipoServico: varchar("tipoServico", { length: 100 }),
   centroCusto: varchar("centroCusto", { length: 100 }),
+  // Vínculos com novas tabelas (opcionais para manter compatibilidade com registros antigos)
+  clienteId: int("clienteId").references(() => clientes.id),
+  centroCustoId: int("centroCustoId").references(() => centrosCusto.id),
   valor: decimal("valor", { precision: 15, scale: 2 }).notNull(),
   valorEquipamento: decimal("valorEquipamento", { precision: 15, scale: 2 }).default("0"),
   valorServico: decimal("valorServico", { precision: 15, scale: 2 }).default("0"),
@@ -45,7 +90,7 @@ export const pagamentos = mysqlTable("pagamentos", {
 export type Pagamento = typeof pagamentos.$inferSelect;
 export type InsertPagamento = typeof pagamentos.$inferInsert;
 
-// Tabela de Recebimentos
+// ─── Recebimentos ────────────────────────────────────────────────────────────
 export const recebimentos = mysqlTable("recebimentos", {
   id: int("id").autoincrement().primaryKey(),
   numeroControle: varchar("numeroControle", { length: 50 }),
@@ -53,6 +98,9 @@ export const recebimentos = mysqlTable("recebimentos", {
   nomeRazaoSocial: varchar("nomeRazaoSocial", { length: 255 }).notNull(),
   descricao: text("descricao"),
   tipoRecebimento: mysqlEnum("tipoRecebimento", ["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"]).default("Pix").notNull(),
+  // Vínculos com novas tabelas (opcionais para manter compatibilidade com registros antigos)
+  clienteId: int("clienteId").references(() => clientes.id),
+  centroCustoId: int("centroCustoId").references(() => centrosCusto.id),
   valorTotal: decimal("valorTotal", { precision: 15, scale: 2 }).notNull(),
   valorEquipamento: decimal("valorEquipamento", { precision: 15, scale: 2 }).default("0"),
   valorServico: decimal("valorServico", { precision: 15, scale: 2 }).default("0"),
@@ -72,7 +120,7 @@ export const recebimentos = mysqlTable("recebimentos", {
 export type Recebimento = typeof recebimentos.$inferSelect;
 export type InsertRecebimento = typeof recebimentos.$inferInsert;
 
-// Tabela de Configurações da Empresa
+// ─── Configurações da Empresa ────────────────────────────────────────────────
 export const empresaConfig = mysqlTable("empresa_config", {
   id: int("id").autoincrement().primaryKey(),
   nomeEmpresa: varchar("nomeEmpresa", { length: 255 }).notNull().default("Minha Empresa"),
@@ -88,7 +136,7 @@ export const empresaConfig = mysqlTable("empresa_config", {
 export type EmpresaConfig = typeof empresaConfig.$inferSelect;
 export type InsertEmpresaConfig = typeof empresaConfig.$inferInsert;
 
-// Tabela de Parcelas de Pagamentos
+// ─── Parcelas de Pagamentos ──────────────────────────────────────────────────
 export const pagamentoParcelas = mysqlTable("pagamento_parcelas", {
   id: int("id").autoincrement().primaryKey(),
   pagamentoId: int("pagamentoId").notNull().references(() => pagamentos.id),
@@ -105,7 +153,7 @@ export const pagamentoParcelas = mysqlTable("pagamento_parcelas", {
 export type PagamentoParcela = typeof pagamentoParcelas.$inferSelect;
 export type InsertPagamentoParcela = typeof pagamentoParcelas.$inferInsert;
 
-// Tabela de Parcelas de Recebimentos
+// ─── Parcelas de Recebimentos ────────────────────────────────────────────────
 export const recebimentoParcelas = mysqlTable("recebimento_parcelas", {
   id: int("id").autoincrement().primaryKey(),
   recebimentoId: int("recebimentoId").notNull().references(() => recebimentos.id),
@@ -122,7 +170,7 @@ export const recebimentoParcelas = mysqlTable("recebimento_parcelas", {
 export type RecebimentoParcela = typeof recebimentoParcelas.$inferSelect;
 export type InsertRecebimentoParcela = typeof recebimentoParcelas.$inferInsert;
 
-// Tabela de Convites de Usuários
+// ─── Convites de Usuários ────────────────────────────────────────────────────
 export const convites = mysqlTable("convites", {
   id: int("id").autoincrement().primaryKey(),
   email: varchar("email", { length: 320 }).notNull(),

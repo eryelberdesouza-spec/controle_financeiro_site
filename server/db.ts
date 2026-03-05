@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { Convite, convites, EmpresaConfig, empresaConfig, InsertEmpresaConfig, InsertPagamento, InsertRecebimento, InsertUser, pagamentos, recebimentos, users } from "../drizzle/schema";
+import { centrosCusto, clientes, Convite, convites, EmpresaConfig, empresaConfig, InsertCentroCusto, InsertCliente, InsertEmpresaConfig, InsertPagamento, InsertRecebimento, InsertUser, pagamentos, recebimentos, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -214,16 +214,28 @@ export async function upsertEmpresaConfig(data: Partial<InsertEmpresaConfig>) {
 
 // ==================== DASHBOARD ====================
 
-export async function getDashboardStats() {
+/**
+ * Retorna stats do dashboard filtrados por período.
+ * dataInicio e dataFim são opcionais — sem filtro retorna tudo.
+ */
+export async function getDashboardStats(dataInicio?: Date, dataFim?: Date) {
   const db = await getDb();
   if (!db) return null;
+
+  const pagWhere = dataInicio && dataFim
+    ? and(gte(pagamentos.dataPagamento, dataInicio), lte(pagamentos.dataPagamento, dataFim))
+    : undefined;
+  const recWhere = dataInicio && dataFim
+    ? and(gte(recebimentos.dataVencimento, dataInicio), lte(recebimentos.dataVencimento, dataFim))
+    : undefined;
+
   const [pagStats, recStats] = await Promise.all([
     db.select({
       totalPago: sql<number>`SUM(CASE WHEN ${pagamentos.status} = 'Pago' THEN ${pagamentos.valor} ELSE 0 END)`,
       totalPendente: sql<number>`SUM(CASE WHEN ${pagamentos.status} = 'Pendente' THEN ${pagamentos.valor} ELSE 0 END)`,
       totalGeral: sql<number>`SUM(${pagamentos.valor})`,
       count: sql<number>`COUNT(*)`,
-    }).from(pagamentos),
+    }).from(pagamentos).where(pagWhere),
     db.select({
       totalRecebido: sql<number>`SUM(CASE WHEN ${recebimentos.status} = 'Recebido' THEN ${recebimentos.valorTotal} ELSE 0 END)`,
       totalPendente: sql<number>`SUM(CASE WHEN ${recebimentos.status} = 'Pendente' THEN ${recebimentos.valorTotal} ELSE 0 END)`,
@@ -232,9 +244,144 @@ export async function getDashboardStats() {
       totalEquipamento: sql<number>`SUM(${recebimentos.valorEquipamento})`,
       totalServico: sql<number>`SUM(${recebimentos.valorServico})`,
       count: sql<number>`COUNT(*)`,
-    }).from(recebimentos),
+    }).from(recebimentos).where(recWhere),
   ]);
   return { pagamentos: pagStats[0], recebimentos: recStats[0] };
+}
+
+/**
+ * Retorna totais mensais dos últimos N meses para gráficos históricos.
+ */
+export async function getDashboardHistoricoMensal(meses: number = 6) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const dataInicio = new Date();
+  dataInicio.setMonth(dataInicio.getMonth() - (meses - 1));
+  dataInicio.setDate(1);
+  dataInicio.setHours(0, 0, 0, 0);
+
+  const [pagMensal, recMensal] = await Promise.all([
+    db.select({
+      ano: sql<number>`YEAR(${pagamentos.dataPagamento})`,
+      mes: sql<number>`MONTH(${pagamentos.dataPagamento})`,
+      total: sql<number>`SUM(${pagamentos.valor})`,
+      totalPago: sql<number>`SUM(CASE WHEN ${pagamentos.status} = 'Pago' THEN ${pagamentos.valor} ELSE 0 END)`,
+    })
+      .from(pagamentos)
+      .where(gte(pagamentos.dataPagamento, dataInicio))
+      .groupBy(sql`YEAR(${pagamentos.dataPagamento}), MONTH(${pagamentos.dataPagamento})`)
+      .orderBy(sql`YEAR(${pagamentos.dataPagamento}), MONTH(${pagamentos.dataPagamento})`),
+    db.select({
+      ano: sql<number>`YEAR(${recebimentos.dataVencimento})`,
+      mes: sql<number>`MONTH(${recebimentos.dataVencimento})`,
+      total: sql<number>`SUM(${recebimentos.valorTotal})`,
+      totalRecebido: sql<number>`SUM(CASE WHEN ${recebimentos.status} = 'Recebido' THEN ${recebimentos.valorTotal} ELSE 0 END)`,
+    })
+      .from(recebimentos)
+      .where(gte(recebimentos.dataVencimento, dataInicio))
+      .groupBy(sql`YEAR(${recebimentos.dataVencimento}), MONTH(${recebimentos.dataVencimento})`)
+      .orderBy(sql`YEAR(${recebimentos.dataVencimento}), MONTH(${recebimentos.dataVencimento})`),
+  ]);
+
+  return { pagMensal, recMensal };
+}
+
+/**
+ * Retorna totais por centro de custo para gráfico de pizza.
+ */
+export async function getDashboardPorCentroCusto(dataInicio?: Date, dataFim?: Date) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const pagWhere = dataInicio && dataFim
+    ? and(gte(pagamentos.dataPagamento, dataInicio), lte(pagamentos.dataPagamento, dataFim))
+    : undefined;
+  const recWhere = dataInicio && dataFim
+    ? and(gte(recebimentos.dataVencimento, dataInicio), lte(recebimentos.dataVencimento, dataFim))
+    : undefined;
+
+  const [pagCC, recCC] = await Promise.all([
+    db.select({
+      centroCustoId: pagamentos.centroCustoId,
+      nomeCentro: centrosCusto.nome,
+      total: sql<number>`SUM(${pagamentos.valor})`,
+    })
+      .from(pagamentos)
+      .leftJoin(centrosCusto, eq(pagamentos.centroCustoId, centrosCusto.id))
+      .where(pagWhere)
+      .groupBy(pagamentos.centroCustoId, centrosCusto.nome),
+    db.select({
+      centroCustoId: recebimentos.centroCustoId,
+      nomeCentro: centrosCusto.nome,
+      total: sql<number>`SUM(${recebimentos.valorTotal})`,
+    })
+      .from(recebimentos)
+      .leftJoin(centrosCusto, eq(recebimentos.centroCustoId, centrosCusto.id))
+      .where(recWhere)
+      .groupBy(recebimentos.centroCustoId, centrosCusto.nome),
+  ]);
+
+  return { pagamentos: pagCC, recebimentos: recCC };
+}
+
+// ==================== CLIENTES ====================
+
+export async function listClientes() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(clientes).orderBy(clientes.nome);
+}
+
+export async function getClienteById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(clientes).where(eq(clientes.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createCliente(data: InsertCliente) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(clientes).values(data);
+}
+
+export async function updateCliente(id: number, data: Partial<InsertCliente>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(clientes).set(data).where(eq(clientes.id, id));
+}
+
+export async function deleteCliente(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(clientes).where(eq(clientes.id, id));
+}
+
+// ==================== CENTROS DE CUSTO ====================
+
+export async function listCentrosCusto() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(centrosCusto).orderBy(centrosCusto.nome);
+}
+
+export async function createCentroCusto(data: InsertCentroCusto) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(centrosCusto).values(data);
+}
+
+export async function updateCentroCusto(id: number, data: Partial<InsertCentroCusto>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(centrosCusto).set(data).where(eq(centrosCusto.id, id));
+}
+
+export async function deleteCentroCusto(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(centrosCusto).where(eq(centrosCusto.id, id));
 }
 
 

@@ -5,17 +5,23 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
+  createCentroCusto,
+  createCliente,
   createConvite,
   createPagamento,
   createPagamentoParcelas,
   createRecebimento,
   createRecebimentoParcelas,
+  deleteCentroCusto,
+  deleteCliente,
   deletePagamento,
   deletePagamentoParcelas,
   deleteConvite,
   deleteRecebimento,
   deleteRecebimentoParcelas,
   deleteUser,
+  getDashboardHistoricoMensal,
+  getDashboardPorCentroCusto,
   getDashboardStats,
   getConviteByToken,
   getEmpresaConfig,
@@ -23,6 +29,8 @@ import {
   getPagamentosStats,
   getRecebimentoById,
   getRecebimentosStats,
+  listCentrosCusto,
+  listClientes,
   listConvites,
   listPagamentoParcelas,
   listPagamentos,
@@ -31,6 +39,8 @@ import {
   listUsers,
   markConviteAceito,
   toggleUserAtivo,
+  updateCentroCusto,
+  updateCliente,
   updatePagamento,
   updatePagamentoParcela,
   updateRecebimento,
@@ -184,7 +194,79 @@ const recebimentosRouter = router({
 });
 
 const dashboardRouter = router({
-  stats: staffProcedure.query(() => getDashboardStats()),
+  stats: staffProcedure
+    .input(z.object({
+      dataInicio: z.date().optional(),
+      dataFim: z.date().optional(),
+    }).optional())
+    .query(({ input }) => getDashboardStats(input?.dataInicio, input?.dataFim)),
+  historicoMensal: staffProcedure
+    .input(z.object({ meses: z.number().min(1).max(24).default(6) }).optional())
+    .query(({ input }) => getDashboardHistoricoMensal(input?.meses ?? 6)),
+  porCentroCusto: staffProcedure
+    .input(z.object({
+      dataInicio: z.date().optional(),
+      dataFim: z.date().optional(),
+    }).optional())
+    .query(({ input }) => getDashboardPorCentroCusto(input?.dataInicio, input?.dataFim)),
+});
+
+// ─── Clientes ─────────────────────────────────────────────────────────────────
+const clientesRouter = router({
+  list: staffProcedure.query(() => listClientes()),
+  create: staffProcedure
+    .input(z.object({
+      nome: z.string().min(1, "Nome é obrigatório"),
+      tipo: z.enum(["Cliente", "Prestador de Serviço", "Fornecedor", "Hotel", "Parceiro", "Outro"]).default("Cliente"),
+      cpfCnpj: z.string().optional(),
+      email: z.string().email().optional().or(z.literal("")),
+      telefone: z.string().optional(),
+      endereco: z.string().optional(),
+      cidade: z.string().optional(),
+      estado: z.string().max(2).optional(),
+      observacao: z.string().optional(),
+    }))
+    .mutation(({ input, ctx }) => createCliente({ ...input, createdBy: ctx.user.id })),
+  update: staffProcedure
+    .input(z.object({
+      id: z.number(),
+      nome: z.string().min(1).optional(),
+      tipo: z.enum(["Cliente", "Prestador de Serviço", "Fornecedor", "Hotel", "Parceiro", "Outro"]).optional(),
+      cpfCnpj: z.string().optional(),
+      email: z.string().email().optional().or(z.literal("")),
+      telefone: z.string().optional(),
+      endereco: z.string().optional(),
+      cidade: z.string().optional(),
+      estado: z.string().max(2).optional(),
+      observacao: z.string().optional(),
+      ativo: z.boolean().optional(),
+    }))
+    .mutation(({ input }) => { const { id, ...data } = input; return updateCliente(id, data); }),
+  delete: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => deleteCliente(input.id)),
+});
+
+// ─── Centros de Custo ─────────────────────────────────────────────────────────
+const centrosCustoRouter = router({
+  list: staffProcedure.query(() => listCentrosCusto()),
+  create: staffProcedure
+    .input(z.object({
+      nome: z.string().min(1, "Nome é obrigatório"),
+      descricao: z.string().optional(),
+    }))
+    .mutation(({ input, ctx }) => createCentroCusto({ ...input, createdBy: ctx.user.id })),
+  update: staffProcedure
+    .input(z.object({
+      id: z.number(),
+      nome: z.string().min(1).optional(),
+      descricao: z.string().optional(),
+      ativo: z.boolean().optional(),
+    }))
+    .mutation(({ input }) => { const { id, ...data } = input; return updateCentroCusto(id, data); }),
+  delete: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => deleteCentroCusto(input.id)),
 });
 
 const usersRouter = router({
@@ -342,6 +424,8 @@ export const appRouter = router({
   pagamentos: pagamentosRouter,
   recebimentos: recebimentosRouter,
   dashboard: dashboardRouter,
+  clientes: clientesRouter,
+  centrosCusto: centrosCustoRouter,
   usuarios: usersRouter,
   empresa: empresaRouter,
   pagamentoParcelas: pagamentoParcelasRouter,

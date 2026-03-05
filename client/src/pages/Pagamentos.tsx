@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer } from "lucide-react";
 import { ComprovanteViewer, type ComprovantePagamento } from "@/components/ComprovanteViewer";
+import { ClienteSelect, CentroCustoSelect } from "@/components/ClienteCentroCustoSelect";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -51,6 +52,8 @@ type FormData = {
   chavePix: string;
   tipoServico: string;
   centroCusto: string;
+  clienteId: number | null;
+  centroCustoId: number | null;
   valor: string;
   valorEquipamento: string;
   valorServico: string;
@@ -66,7 +69,7 @@ type FormData = {
 
 const defaultForm: FormData = {
   numeroControle: "", nomeCompleto: "", cpf: "", banco: "", tipoPix: "CPF",
-  chavePix: "", tipoServico: "", centroCusto: "", valor: "",
+  chavePix: "", tipoServico: "", centroCusto: "", clienteId: null, centroCustoId: null, valor: "",
   valorEquipamento: "", valorServico: "",
   dataPagamento: "", status: "Pendente", descricao: "", observacao: "", autorizadoPor: "",
   parcelado: false, quantidadeParcelas: 2, dataPrimeiroVencimento: "",
@@ -335,7 +338,7 @@ export default function Pagamentos() {
       numeroControle: p.numeroControle ?? "", nomeCompleto: p.nomeCompleto ?? "",
       cpf: p.cpf ?? "", banco: p.banco ?? "", tipoPix: p.tipoPix ?? "CPF",
       chavePix: p.chavePix ?? "", tipoServico: p.tipoServico ?? "",
-      centroCusto: p.centroCusto ?? "", valor: String(p.valor ?? ""),
+      centroCusto: p.centroCusto ?? "", clienteId: p.clienteId ?? null, centroCustoId: p.centroCustoId ?? null, valor: String(p.valor ?? ""),
       valorEquipamento: String(p.valorEquipamento ?? ""),
       valorServico: String(p.valorServico ?? ""),
       dataPagamento: p.dataPagamento ? new Date(p.dataPagamento).toISOString().split("T")[0] : "",
@@ -550,8 +553,18 @@ export default function Pagamentos() {
                 <Input value={form.tipoServico} onChange={e => setForm(f => ({ ...f, tipoServico: e.target.value }))} placeholder="Ex: Consultoria, Manutenção..." />
               </div>
               <div>
+                <Label>Cliente / Parceiro</Label>
+                <ClienteSelect
+                  value={form.clienteId}
+                  onChange={(id) => setForm(f => ({ ...f, clienteId: id }))}
+                />
+              </div>
+              <div>
                 <Label>Centro de Custo</Label>
-                <Input value={form.centroCusto} onChange={e => setForm(f => ({ ...f, centroCusto: e.target.value }))} placeholder="Ex: TI, RH, Comercial..." />
+                <CentroCustoSelect
+                  value={form.centroCustoId}
+                  onChange={(id) => setForm(f => ({ ...f, centroCustoId: id }))}
+                />
               </div>
               <div className="md:col-span-2">
                 <div className="rounded-lg border bg-muted/20 p-4 space-y-3">

@@ -217,3 +217,7 @@
 - [x] Ao selecionar cliente, preencher automaticamente Nome Completo e CPF em Pagamentos
 - [x] Mover campo "Cliente / Parceiro" para junto dos campos Nome/Razão Social em Recebimentos
 - [x] Ao selecionar cliente, preencher automaticamente Nome/Razão Social em Recebimentos
+
+## Descrição no Comprovante Impresso (v26)
+- [x] Garantir que o campo Descrição aparece no comprovante impresso de Pagamentos
+- [x] Garantir que o campo Descrição aparece no comprovante impresso de Recebimentos

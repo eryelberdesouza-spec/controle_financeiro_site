@@ -199,7 +199,9 @@ export default function Pagamentos() {
       valor: p.valor,
       dataPagamento: p.dataPagamento,
       status: p.status,
+      descricao: p.descricao,
       observacao: p.observacao,
+      autorizadoPor: p.autorizadoPor,
       parcelado: p.parcelado,
       quantidadeParcelas: p.quantidadeParcelas,
     }]);
@@ -222,7 +224,9 @@ export default function Pagamentos() {
         valor: p.valor,
         dataPagamento: p.dataPagamento,
         status: p.status,
+        descricao: p.descricao,
         observacao: p.observacao,
+        autorizadoPor: p.autorizadoPor,
         parcelado: p.parcelado,
         quantidadeParcelas: p.quantidadeParcelas,
       }));

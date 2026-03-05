@@ -26,6 +26,7 @@ export type ComprovantePagamento = {
   valor: any;
   dataPagamento: Date | string;
   status: string;
+  descricao?: string | null;
   observacao?: string | null;
   autorizadoPor?: string | null;
   parcelado?: boolean;
@@ -307,6 +308,12 @@ function buildPagamentoHTML(r: ComprovantePagamento, empresa: any, parcelas: any
           <div class="comp-field-value">${r.parcelaAtual ?? 1} de ${r.quantidadeParcelas}</div>
         </div>
       ` : ""}
+      ${r.descricao ? `
+        <div class="span2">
+          <div class="comp-field-label">Descrição</div>
+          <div class="comp-field-value">${r.descricao.replace(/\n/g, "<br/>")}</div>
+        </div>
+      ` : ""}
       ${r.autorizadoPor ? `
         <div>
           <div class="comp-field-label">Autorizado por</div>
@@ -536,6 +543,7 @@ function PreviewPagamentoCard({
         {(registro.quantidadeParcelas ?? 1) > 1 && (
           <Field label="Parcela" value={`${registro.parcelaAtual ?? 1} de ${registro.quantidadeParcelas}`} />
         )}
+        {registro.descricao && <Field label="Descrição" value={registro.descricao} className="col-span-2" />}
         {registro.autorizadoPor && <Field label="Autorizado por" value={registro.autorizadoPor} />}
         {registro.observacao && <Field label="Observação" value={registro.observacao} className="col-span-2" />}
       </div>

@@ -15,7 +15,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer } from "lucide-react";
 import { ComprovanteViewer, type ComprovantePagamento } from "@/components/ComprovanteViewer";
 import { ClienteSelect, CentroCustoSelect } from "@/components/ClienteCentroCustoSelect";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 const BANCOS = [
@@ -258,8 +258,39 @@ export default function Pagamentos() {
     staleTime: 0, // Sempre busca o mais recente
   });
 
+  // Carrega parcelas existentes ao abrir edição de pagamento parcelado
+  const { data: parcelasExistentes } = trpc.pagamentoParcelas.list.useQuery(
+    { pagamentoId: editId! },
+    { enabled: !!editId && open && form.parcelado }
+  );
+
+  // Popula o estado local de parcelas quando os dados chegam do banco (modo edição)
+  useEffect(() => {
+    if (editId && parcelasExistentes && parcelasExistentes.length > 0 && parcelas.length === 0) {
+      const loaded: ParcelaLocal[] = parcelasExistentes.map(p => ({
+        id: p.id,
+        numeroParcela: p.numeroParcela,
+        valor: String(p.valor),
+        dataVencimento: p.dataVencimento ? new Date(p.dataVencimento).toISOString().split("T")[0] : "",
+        dataPagamento: p.dataPagamento ? new Date(p.dataPagamento).toISOString().split("T")[0] : undefined,
+        status: p.status,
+        observacao: p.observacao ?? "",
+      }));
+      setParcelas(loaded);
+    }
+  }, [parcelasExistentes, editId, open]);
+
   const createParcelasMutation = trpc.pagamentoParcelas.createBulk.useMutation();
   const deleteParcelasMutation = trpc.pagamentoParcelas.deleteBulk.useMutation();
+
+  // Invalida todos os caches relevantes após operações de pagamento
+  const invalidateAll = () => {
+    utils.pagamentos.list.invalidate();
+    utils.dashboard.stats.invalidate();
+    utils.dashboard.vencimentosProximos.invalidate();
+    utils.dashboard.historicoMensal.invalidate();
+    utils.pagamentoParcelas.list.invalidate();
+  };
 
   const createMutation = trpc.pagamentos.create.useMutation({
     onSuccess: async (data: any) => {
@@ -277,8 +308,7 @@ export default function Pagamentos() {
           });
         }
       }
-      utils.pagamentos.list.invalidate();
-      utils.dashboard.stats.invalidate();
+      invalidateAll();
       toast.success("Pagamento cadastrado!");
       setOpen(false);
       setForm(defaultForm);
@@ -289,21 +319,24 @@ export default function Pagamentos() {
 
   const updateMutation = trpc.pagamentos.update.useMutation({
     onSuccess: async () => {
+      // Em edição: se o usuário regenerou as parcelas (parcelas.length > 0 com IDs novos),
+      // apaga as antigas e recria. Se não regenerou, mantém as parcelas existentes intactas.
       if (editId && form.parcelado && parcelas.length > 0) {
-        await deleteParcelasMutation.mutateAsync({ pagamentoId: editId });
-        await createParcelasMutation.mutateAsync({
-          pagamentoId: editId,
-          parcelas: parcelas.map(p => ({
-            ...p,
-            dataVencimento: new Date(p.dataVencimento + "T12:00:00"),
-            dataPagamento: p.dataPagamento ? new Date(p.dataPagamento + "T12:00:00") : undefined,
-            status: p.status as any,
-          })),
-        });
+        const temParcelasNovas = parcelas.some(p => !p.id);
+        if (temParcelasNovas) {
+          await deleteParcelasMutation.mutateAsync({ pagamentoId: editId });
+          await createParcelasMutation.mutateAsync({
+            pagamentoId: editId,
+            parcelas: parcelas.map(p => ({
+              ...p,
+              dataVencimento: new Date(p.dataVencimento + "T12:00:00"),
+              dataPagamento: p.dataPagamento ? new Date(p.dataPagamento + "T12:00:00") : undefined,
+              status: p.status as any,
+            })),
+          });
+        }
       }
-      utils.pagamentos.list.invalidate();
-      utils.dashboard.stats.invalidate();
-      utils.pagamentoParcelas.list.invalidate();
+      invalidateAll();
       toast.success("Pagamento atualizado!");
       setOpen(false);
       setEditId(null);
@@ -342,6 +375,9 @@ export default function Pagamentos() {
   };
 
   const handleEdit = (p: any) => {
+    // Limpa parcelas ANTES de definir o editId para evitar que o useEffect
+    // detecte parcelas antigas do pagamento anterior
+    setParcelas([]);
     setEditId(p.id);
     setForm({
       numeroControle: p.numeroControle ?? "", nomeCompleto: p.nomeCompleto ?? "",
@@ -357,7 +393,6 @@ export default function Pagamentos() {
       quantidadeParcelas: p.quantidadeParcelas ?? 2,
       dataPrimeiroVencimento: "",
     });
-    setParcelas([]);
     setOpen(true);
   };
 
@@ -724,12 +759,19 @@ export default function Pagamentos() {
                     </div>
                   </div>
 
+                  {editId && parcelas.length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">
+                      Carregando parcelas existentes...
+                    </p>
+                  )}
                   {parcelas.length > 0 && (
                     <>
                       <p className="text-xs text-muted-foreground">
-                        {parcelas.length === 1
-                          ? "1 parcela gerada — edite o valor e a data conforme necessário."
-                          : `${parcelas.length} parcelas geradas — edite individualmente o valor, vencimento, data de pagamento e status.`}
+                        {editId
+                          ? `${parcelas.length} parcela(s) — edite individualmente o valor, vencimento, data de pagamento e status. Para regerar as parcelas, clique em "Gerar Parcelas".`
+                          : parcelas.length === 1
+                            ? "1 parcela gerada — edite o valor e a data conforme necessário."
+                            : `${parcelas.length} parcelas geradas — edite individualmente o valor, vencimento, data de pagamento e status.`}
                       </p>
                       <TabelaParcelas
                         tipo="pagamento"

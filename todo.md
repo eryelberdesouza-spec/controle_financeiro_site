@@ -231,3 +231,7 @@
 - [x] Ajuste 3b: Preencher automaticamente o Nº de Controle ao abrir formulário de novo Pagamento (editável)
 - [x] Ajuste 4: Corrigir query de pagamentos pendentes no Dashboard para incluir status "Em Processamento"
 - [x] Ajuste 5: Adicionar seção de alertas de vencimento próximo no Dashboard (Pagamentos e Recebimentos vencendo em até 7 dias)
+
+## Correção Bugs Parcelas Pagamentos (v28)
+- [x] Corrigir: Dashboard não atualiza após salvar pagamento parcelado (invalidar cache tRPC)
+- [x] Corrigir: Parcelas somem ao reabrir pagamento para edição (carregar parcelas existentes do banco)

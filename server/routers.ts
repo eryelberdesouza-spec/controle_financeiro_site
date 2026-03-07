@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { tiposServicoRouter, materiaisRouter, contratosRouter, ordensServicoRouter } from "./routers/engenharia";
+import { tiposServicoRouter, materiaisRouter, contratosRouter, ordensServicoRouter, relatorioContratoRouter } from "./routers/engenharia";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -465,6 +465,7 @@ export const appRouter = router({
   materiais: materiaisRouter,
   contratos: contratosRouter,
   ordensServico: ordensServicoRouter,
+  relatorioContrato: relatorioContratoRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -247,3 +247,14 @@
 
 ## Correção Select.Item Vazio - Engenharia (v30)
 - [x] Corrigir Select.Item com value="" no formulário de Contratos (erro ao abrir modal de novo contrato)
+
+## Relatório por Contrato + Gerar Lançamento (v31)
+- [x] Criar procedure tRPC relatorioContrato.getRelatorio que retorna contrato + OS vinculadas + recebimentos/pagamentos vinculados + totais
+- [x] Modal de relatório por contrato na aba Engenharia (botão BarChart2 em cada contrato)
+- [x] Relatório exibe: cabeçalho do contrato, cards de totais (recebido/pendente/saldo/OS), lista de OS, tabela de recebimentos, tabela de pagamentos
+- [x] Numeração automática de Contratos (CTR-YYYY-NNN) já funcionava via nextNumero procedure
+- [x] Numeração automática de OS (OS-YYYY-NNN) já funcionava via nextNumero procedure
+- [x] Botão "Gerar Lançamento" (ícone DollarSign verde) em cada OS da listagem
+- [x] Modal de geração de lançamento: escolher tipo (Recebimento/Pagamento), valor, data de vencimento, descrição
+- [x] Procedure ordensServico.gerarLancamento cria pagamento ou recebimento vinculado ao cliente e contrato da OS
+- [x] Após criar lançamento, redireciona automaticamente para a página de Pagamentos ou Recebimentos

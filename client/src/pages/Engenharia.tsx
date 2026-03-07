@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Plus, Search, Edit2, Trash2, FileText, Wrench, Package, ClipboardList,
-  ChevronDown, ChevronUp, Eye, Link2
+  ChevronDown, ChevronUp, Eye, Link2, DollarSign, BarChart2
 } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -55,6 +56,11 @@ function ContratosTab() {
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
+  const [relatorioContratoId, setRelatorioContratoId] = useState<number | null>(null);
+  const { data: relatorio, isLoading: relatorioLoading } = trpc.relatorioContrato.getRelatorio.useQuery(
+    { contratoId: relatorioContratoId! },
+    { enabled: relatorioContratoId !== null }
+  );
   const [form, setForm] = useState({
     numero: "", objeto: "", tipo: "prestacao_servico" as const,
     status: "negociacao" as const, clienteId: "" as string | number,
@@ -157,6 +163,9 @@ function ContratosTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      <Button size="icon" variant="ghost" title="Relatório do Contrato" onClick={() => setRelatorioContratoId(c.id)}>
+                        <BarChart2 className="h-4 w-4 text-blue-600" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Edit2 className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir contrato?")) deleteMutation.mutate({ id: c.id }); }}><Trash2 className="h-4 w-4" /></Button>
                     </div>
@@ -167,6 +176,185 @@ function ContratosTab() {
           })}
         </div>
       )}
+
+      {/* Modal Relatório por Contrato */}
+      <Dialog open={relatorioContratoId !== null} onOpenChange={v => { if (!v) setRelatorioContratoId(null); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart2 className="h-5 w-5 text-blue-600" />
+              Relatório do Contrato
+            </DialogTitle>
+          </DialogHeader>
+          {relatorioLoading ? (
+            <div className="py-12 text-center text-muted-foreground">Carregando relatório...</div>
+          ) : relatorio ? (
+            <div className="space-y-6 py-2">
+              {/* Cabeçalho do Contrato */}
+              <div className="p-4 bg-muted/40 rounded-lg border">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-primary text-lg">{relatorio.contrato.numero}</span>
+                      <Badge className={`text-xs ${STATUS_CONTRATO[relatorio.contrato.status ?? "negociacao"]?.color}`}>
+                        {STATUS_CONTRATO[relatorio.contrato.status ?? "negociacao"]?.label}
+                      </Badge>
+                    </div>
+                    <p className="font-semibold text-base mt-1">{relatorio.contrato.objeto}</p>
+                    {relatorio.contrato.clienteNome && (
+                      <p className="text-sm text-muted-foreground">{relatorio.contrato.clienteNome}</p>
+                    )}
+                    <div className="flex gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
+                      {relatorio.contrato.dataInicio && <span>Início: {new Date(relatorio.contrato.dataInicio).toLocaleDateString("pt-BR")}</span>}
+                      {relatorio.contrato.dataFim && <span>Fim: {new Date(relatorio.contrato.dataFim).toLocaleDateString("pt-BR")}</span>}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-muted-foreground">Valor do Contrato</p>
+                    <p className="text-2xl font-bold text-primary">{fmt(relatorio.totais.valorContrato)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cards de Totais */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+                  <p className="text-xs text-green-700 font-medium">Total Recebido</p>
+                  <p className="text-lg font-bold text-green-800">{fmt(relatorio.totais.totalRecebido)}</p>
+                </div>
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                  <p className="text-xs text-yellow-700 font-medium">Pendente</p>
+                  <p className="text-lg font-bold text-yellow-800">{fmt(relatorio.totais.totalPendente)}</p>
+                </div>
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                  <p className="text-xs text-blue-700 font-medium">Saldo Restante</p>
+                  <p className="text-lg font-bold text-blue-800">{fmt(relatorio.totais.saldoRestante)}</p>
+                </div>
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-center">
+                  <p className="text-xs text-purple-700 font-medium">OS ({relatorio.totais.osTotal})</p>
+                  <p className="text-lg font-bold text-purple-800">{relatorio.totais.osConcluida} concluídas</p>
+                </div>
+              </div>
+
+              {/* Ordens de Serviço */}
+              {relatorio.os.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
+                    <ClipboardList className="h-4 w-4" />Ordens de Serviço ({relatorio.os.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {relatorio.os.map(os => {
+                      const st = STATUS_OS[os.status ?? "aberta"];
+                      return (
+                        <div key={os.id} className="flex items-center justify-between p-3 border rounded-lg text-sm">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="font-mono font-semibold text-primary shrink-0">{os.numero}</span>
+                            <Badge className={`text-xs shrink-0 ${st.color}`}>{st.label}</Badge>
+                            <span className="truncate">{os.titulo}</span>
+                          </div>
+                          <div className="flex gap-4 text-muted-foreground shrink-0 ml-2">
+                            {os.valorEstimado && <span>{fmt(os.valorEstimado)}</span>}
+                            {os.dataPrevisao && <span>{new Date(os.dataPrevisao).toLocaleDateString("pt-BR")}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Recebimentos */}
+              {relatorio.recebimentos.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
+                    <DollarSign className="h-4 w-4 text-green-600" />Recebimentos ({relatorio.recebimentos.length})
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b bg-muted/30">
+                          <th className="text-left p-2 font-medium">Nº Controle</th>
+                          <th className="text-left p-2 font-medium">Descrição</th>
+                          <th className="text-right p-2 font-medium">Valor</th>
+                          <th className="text-left p-2 font-medium">Vencimento</th>
+                          <th className="text-left p-2 font-medium">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {relatorio.recebimentos.map(r => (
+                          <tr key={r.id} className="border-b hover:bg-muted/20">
+                            <td className="p-2 font-mono text-xs">{r.numeroControle}</td>
+                            <td className="p-2 text-muted-foreground">{r.descricao || r.nomeRazaoSocial}</td>
+                            <td className="p-2 text-right font-semibold">{fmt(r.valorTotal)}</td>
+                            <td className="p-2">{r.dataVencimento ? new Date(r.dataVencimento).toLocaleDateString("pt-BR") : "—"}</td>
+                            <td className="p-2">
+                              <Badge className={`text-xs ${
+                                r.status === "Recebido" ? "bg-green-100 text-green-800" :
+                                r.status === "Atrasado" ? "bg-red-100 text-red-800" :
+                                "bg-yellow-100 text-yellow-800"
+                              }`}>{r.status}</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Pagamentos */}
+              {relatorio.pagamentos.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
+                    <DollarSign className="h-4 w-4 text-red-500" />Pagamentos ({relatorio.pagamentos.length})
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b bg-muted/30">
+                          <th className="text-left p-2 font-medium">Nº Controle</th>
+                          <th className="text-left p-2 font-medium">Beneficiário</th>
+                          <th className="text-right p-2 font-medium">Valor</th>
+                          <th className="text-left p-2 font-medium">Data</th>
+                          <th className="text-left p-2 font-medium">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {relatorio.pagamentos.map(p => (
+                          <tr key={p.id} className="border-b hover:bg-muted/20">
+                            <td className="p-2 font-mono text-xs">{p.numeroControle}</td>
+                            <td className="p-2 text-muted-foreground">{p.nomeCompleto}</td>
+                            <td className="p-2 text-right font-semibold">{fmt(p.valor)}</td>
+                            <td className="p-2">{p.dataPagamento ? new Date(p.dataPagamento).toLocaleDateString("pt-BR") : "—"}</td>
+                            <td className="p-2">
+                              <Badge className={`text-xs ${
+                                p.status === "Pago" ? "bg-green-100 text-green-800" :
+                                p.status === "Cancelado" ? "bg-red-100 text-red-800" :
+                                "bg-yellow-100 text-yellow-800"
+                              }`}>{p.status}</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {relatorio.recebimentos.length === 0 && relatorio.pagamentos.length === 0 && relatorio.os.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum dado financeiro ou OS vinculado a este contrato ainda.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="py-12 text-center text-muted-foreground">Nenhum dado encontrado.</div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRelatorioContratoId(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showForm} onOpenChange={v => { setShowForm(v); if (!v) setEditId(null); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -248,6 +436,7 @@ function ContratosTab() {
 function OrdensServicoTab() {
   
   const utils = trpc.useUtils();
+  const [, navigate] = useLocation();
   const { data: ordens = [], isLoading } = trpc.ordensServico.list.useQuery();
   const { data: clientes = [] } = trpc.clientes.list.useQuery();
   const { data: contratos = [] } = trpc.contratos.list.useQuery();
@@ -280,6 +469,37 @@ function OrdensServicoTab() {
   const deleteMutation = trpc.ordensServico.delete.useMutation({
     onSuccess: () => { utils.ordensServico.list.invalidate(); toast.success("OS removida."); }
   });
+
+  // Estado do modal de gerar lançamento
+  const [showGerarLancamento, setShowGerarLancamento] = useState(false);
+  const [osParaLancamento, setOsParaLancamento] = useState<typeof ordens[0] | null>(null);
+  const [lancamentoForm, setLancamentoForm] = useState({
+    tipo: "recebimento" as "pagamento" | "recebimento",
+    valor: "",
+    descricao: "",
+    dataVencimento: new Date().toISOString().split("T")[0],
+  });
+
+  const gerarLancamentoMutation = trpc.ordensServico.gerarLancamento.useMutation({
+    onSuccess: (result) => {
+      setShowGerarLancamento(false);
+      toast.success(`${result.tipo === "pagamento" ? "Pagamento" : "Recebimento"} ${result.numeroControle} criado com sucesso!`);
+      if (result.tipo === "pagamento") navigate("/pagamentos");
+      else navigate("/recebimentos");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  function openGerarLancamento(os: typeof ordens[0]) {
+    setOsParaLancamento(os);
+    setLancamentoForm({
+      tipo: "recebimento",
+      valor: os.valorEstimado ?? "",
+      descricao: `OS ${os.numero} — ${os.titulo}`,
+      dataVencimento: new Date().toISOString().split("T")[0],
+    });
+    setShowGerarLancamento(true);
+  }
 
   const filtered = useMemo(() => {
     return ordens.filter(o => {
@@ -397,6 +617,9 @@ function OrdensServicoTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      <Button size="icon" variant="ghost" title="Gerar Lançamento Financeiro" onClick={() => openGerarLancamento(o)}>
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={() => setExpandedId(expanded ? null : o.id)}>
                         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </Button>
@@ -415,6 +638,81 @@ function OrdensServicoTab() {
           })}
         </div>
       )}
+
+      {/* Modal Gerar Lançamento */}
+      <Dialog open={showGerarLancamento} onOpenChange={v => { setShowGerarLancamento(v); if (!v) setOsParaLancamento(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              Gerar Lançamento Financeiro
+            </DialogTitle>
+          </DialogHeader>
+          {osParaLancamento && (
+            <div className="space-y-4 py-2">
+              <div className="p-3 bg-muted rounded-lg text-sm">
+                <p className="font-semibold">{osParaLancamento.numero} — {osParaLancamento.titulo}</p>
+                {osParaLancamento.clienteNome && <p className="text-muted-foreground">{osParaLancamento.clienteNome}</p>}
+                {osParaLancamento.contratoNumero && <p className="text-muted-foreground">Contrato: {osParaLancamento.contratoNumero}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label>Tipo de Lançamento *</Label>
+                <Select value={lancamentoForm.tipo} onValueChange={v => setLancamentoForm(p => ({ ...p, tipo: v as any }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recebimento">Recebimento (a receber do cliente)</SelectItem>
+                    <SelectItem value="pagamento">Pagamento (a pagar ao fornecedor)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Valor (R$) *</Label>
+                <Input
+                  type="number" min="0" step="0.01"
+                  value={lancamentoForm.valor}
+                  onChange={e => setLancamentoForm(p => ({ ...p, valor: e.target.value }))}
+                  placeholder="0,00"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Data de Vencimento *</Label>
+                <Input
+                  type="date"
+                  value={lancamentoForm.dataVencimento}
+                  onChange={e => setLancamentoForm(p => ({ ...p, dataVencimento: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Descrição</Label>
+                <Input
+                  value={lancamentoForm.descricao}
+                  onChange={e => setLancamentoForm(p => ({ ...p, descricao: e.target.value }))}
+                  placeholder="Descrição do lançamento..."
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowGerarLancamento(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (!osParaLancamento || !lancamentoForm.valor) return;
+                gerarLancamentoMutation.mutate({
+                  osId: osParaLancamento.id,
+                  tipo: lancamentoForm.tipo,
+                  valor: parseFloat(lancamentoForm.valor),
+                  descricao: lancamentoForm.descricao || undefined,
+                  dataVencimento: lancamentoForm.dataVencimento || undefined,
+                });
+              }}
+              disabled={gerarLancamentoMutation.isPending || !lancamentoForm.valor}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {gerarLancamentoMutation.isPending ? "Criando..." : "Criar Lançamento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showForm} onOpenChange={v => { setShowForm(v); if (!v) { setEditId(null); setItens([]); } }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">

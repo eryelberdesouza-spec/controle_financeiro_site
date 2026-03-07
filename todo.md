@@ -275,3 +275,10 @@
 - [x] Botão de impressão individual (verde) em cada linha/card de Contratos, OS, Materiais e Tipos de Serviço
 - [x] Modal de pré-visualização antes da impressão com botão "Imprimir / Salvar PDF"
 - [x] CSS de impressão otimizado para A4 com @page size, margens e layout profissional
+
+## Impressão Profissional Completa — OS e Contratos (v33)
+- [ ] Reescrever impressão de OS com TODOS os campos: número, título, status, prioridade, responsável, cliente, contrato, datas, valor estimado, valor final, endereço completo, descrição, observações, itens/materiais, assinatura do cliente e do responsável
+- [ ] Reescrever impressão de Contrato com TODOS os campos: número, tipo, status, cliente, objeto, datas, valores, endereço completo, cláusulas/observações, assinatura do contratante e do contratado
+- [ ] Incluir logo e nome da empresa (Atom Tech) no cabeçalho de todas as impressões de Engenharia
+- [ ] Seguir o mesmo padrão visual do ComprovanteViewer de Pagamentos (profissional, bem estruturado)
+- [ ] Impressão de Materiais e Tipos de Serviço também com cabeçalho da empresa

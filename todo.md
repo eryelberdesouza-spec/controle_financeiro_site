@@ -244,3 +244,6 @@
 - [x] Feature 4a: Revisão geral de UX — melhorar fluidez, intuitividade e objetividade em todas as abas
 - [x] Feature 4b: Seletor de temas de cor (paletas predefinidas, persistência por usuário)
 - [x] Feature 5: Módulo de Engenharia — Contratos, Ordens de Serviço, Tipos de Serviço, Materiais com códigos de controle, vinculação com Pagamentos/Recebimentos
+
+## Correção Select.Item Vazio - Engenharia (v30)
+- [x] Corrigir Select.Item com value="" no formulário de Contratos (erro ao abrir modal de novo contrato)

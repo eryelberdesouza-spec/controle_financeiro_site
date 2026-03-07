@@ -203,10 +203,10 @@ function ContratosTab() {
             </div>
             <div className="space-y-1">
               <Label>Cliente / Parceiro</Label>
-              <Select value={String(form.clienteId)} onValueChange={v => setForm(p => ({ ...p, clienteId: v }))}>
+              <Select value={form.clienteId ? String(form.clienteId) : "none"} onValueChange={v => setForm(p => ({ ...p, clienteId: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">— Nenhum —</SelectItem>
+                  <SelectItem value="none">— Nenhum —</SelectItem>
                   {clientes.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -452,20 +452,20 @@ function OrdensServicoTab() {
             </div>
             <div className="space-y-1">
               <Label>Contrato Vinculado</Label>
-              <Select value={String(form.contratoId)} onValueChange={v => setForm(p => ({ ...p, contratoId: v }))}>
+              <Select value={form.contratoId ? String(form.contratoId) : "none"} onValueChange={v => setForm(p => ({ ...p, contratoId: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">— Nenhum —</SelectItem>
+                  <SelectItem value="none">— Nenhum —</SelectItem>
                   {contratos.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.numero} — {c.objeto}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
               <Label>Cliente</Label>
-              <Select value={String(form.clienteId)} onValueChange={v => setForm(p => ({ ...p, clienteId: v }))}>
+              <Select value={form.clienteId ? String(form.clienteId) : "none"} onValueChange={v => setForm(p => ({ ...p, clienteId: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">— Nenhum —</SelectItem>
+                  <SelectItem value="none">— Nenhum —</SelectItem>
                   {clientes.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>)}
                 </SelectContent>
               </Select>

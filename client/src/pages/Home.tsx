@@ -1,17 +1,51 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   ArrowDownCircle, ArrowUpCircle, TrendingUp, Wallet,
   AlertTriangle, CheckCircle2, Clock, CalendarDays, Bell, BellRing,
+  Settings, X, Eye, EyeOff,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell,
 } from "recharts";
+
+// ─── Temas de cor disponíveis ────────────────────────────────────────────────
+const TEMAS = [
+  { id: "azul",    label: "Azul",    primary: "#2563eb", accent: "#3b82f6" },
+  { id: "verde",   label: "Verde",   primary: "#16a34a", accent: "#22c55e" },
+  { id: "roxo",    label: "Roxo",    primary: "#7c3aed", accent: "#8b5cf6" },
+  { id: "laranja", label: "Laranja", primary: "#ea580c", accent: "#f97316" },
+  { id: "cinza",   label: "Cinza",   primary: "#374151", accent: "#6b7280" },
+  { id: "rosa",    label: "Rosa",    primary: "#be185d", accent: "#ec4899" },
+];
+
+// ─── Widgets disponíveis no dashboard ────────────────────────────────────────
+const WIDGETS_DEFAULT = [
+  { id: "kpis",         label: "Cards KPI (Totais)",              visivel: true },
+  { id: "alertas",      label: "Alertas Rápidos (Status)",        visivel: true },
+  { id: "vencimentos",  label: "Alertas de Vencimento (7 dias)",  visivel: true },
+  { id: "historico",    label: "Gráfico Histórico (6 meses)",     visivel: true },
+  { id: "fluxo",        label: "Evolução do Fluxo Líquido",       visivel: true },
+  { id: "centrocusto",  label: "Por Centro de Custo",             visivel: true },
+  { id: "composicao",   label: "Composição de Faturamento",       visivel: true },
+  { id: "status",       label: "Status Detalhado (Tabelas)",      visivel: true },
+];
+
+function applyTema(temaId: string) {
+  const tema = TEMAS.find(t => t.id === temaId) ?? TEMAS[0];
+  document.documentElement.style.setProperty("--color-primary-custom", tema.primary);
+  // Aplica ao :root via CSS variable para uso em tailwind
+  const root = document.documentElement;
+  // Converte hex para hsl aproximado para compatibilidade com shadcn
+  root.setAttribute("data-tema", temaId);
+}
 
 function formatCurrency(value: number | string | null | undefined) {
   const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
@@ -36,6 +70,54 @@ export default function Home() {
   const [mes, setMes] = useState(now.getMonth() + 1); // 1-12
   const [ano, setAno] = useState(now.getFullYear());
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+
+  // ─── Configuração de widgets e tema ────────────────────────────────────────────────
+  const [showConfig, setShowConfig] = useState(false);
+  const [widgets, setWidgets] = useState(WIDGETS_DEFAULT);
+  const [tema, setTema] = useState("azul");
+  const [configDirty, setConfigDirty] = useState(false);
+
+  // Carrega configuração salva do banco (apenas admin)
+  const { data: savedConfig } = trpc.dashboard.getConfig.useQuery(undefined, { enabled: isAdmin });
+  const saveConfigMutation = trpc.dashboard.saveConfig.useMutation({
+    onSuccess: () => { setConfigDirty(false); setShowConfig(false); },
+  });
+
+  // Aplica configuração salva ao carregar
+  useEffect(() => {
+    if (!savedConfig) return;
+    try {
+      const parsed = JSON.parse(savedConfig.widgets || "[]");
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Mescla com defaults para garantir novos widgets
+        const merged = WIDGETS_DEFAULT.map(w => {
+          const saved = parsed.find((s: any) => s.id === w.id);
+          return saved ? { ...w, visivel: saved.visivel } : w;
+        });
+        setWidgets(merged);
+      }
+    } catch {}
+    if (savedConfig.tema) {
+      setTema(savedConfig.tema);
+      applyTema(savedConfig.tema);
+    }
+  }, [savedConfig]);
+
+  // Aplica tema ao mudar
+  useEffect(() => { applyTema(tema); }, [tema]);
+
+  const isVisible = (id: string) => widgets.find(w => w.id === id)?.visivel ?? true;
+
+  const handleToggleWidget = (id: string) => {
+    setWidgets(prev => prev.map(w => w.id === id ? { ...w, visivel: !w.visivel } : w));
+    setConfigDirty(true);
+  };
+
+  const handleSaveConfig = () => {
+    saveConfigMutation.mutate({ widgets: JSON.stringify(widgets), tema });
+  };
 
   // Converte mes/ano em dataInicio e dataFim para o backend
   const periodoInput = useMemo(() => {
@@ -141,10 +223,102 @@ export default function Home() {
                 ))}
               </SelectContent>
             </Select>
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowConfig(v => !v)}
+                className="gap-1.5"
+                title="Configurar Dashboard"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Configurar</span>
+              </Button>
+            )}
           </div>
         </div>
 
+        {/* Painel de Configuração do Dashboard (admin only) */}
+        {isAdmin && showConfig && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span className="flex items-center gap-2"><Settings className="h-4 w-4" /> Configurar Dashboard</span>
+                <button onClick={() => setShowConfig(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {/* Seletor de tema */}
+              <div>
+                <p className="text-sm font-semibold mb-2">Tema de Cor</p>
+                <div className="flex flex-wrap gap-2">
+                  {TEMAS.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => { setTema(t.id); setConfigDirty(true); }}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition-all ${
+                        tema === t.id
+                          ? "border-foreground bg-foreground text-background font-semibold"
+                          : "border-border hover:border-foreground/50"
+                      }`}
+                    >
+                      <span className="w-3 h-3 rounded-full" style={{ background: t.primary }} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Visibilidade de widgets */}
+              <div>
+                <p className="text-sm font-semibold mb-2">Widgets Visíveis</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {widgets.map(w => (
+                    <button
+                      key={w.id}
+                      onClick={() => handleToggleWidget(w.id)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm border transition-all text-left ${
+                        w.visivel
+                          ? "border-green-300 bg-green-50 dark:bg-green-900/20 text-foreground"
+                          : "border-border bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {w.visivel
+                        ? <Eye className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                        : <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+                      {w.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Botões de ação */}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  onClick={handleSaveConfig}
+                  disabled={!configDirty || saveConfigMutation.isPending}
+                  size="sm"
+                >
+                  {saveConfigMutation.isPending ? "Salvando..." : "Salvar Configuração"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setWidgets(WIDGETS_DEFAULT);
+                    setTema("azul");
+                    setConfigDirty(true);
+                  }}
+                >
+                  Restaurar Padrão
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* KPI Cards */}
+        {isVisible("kpis") && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard
             icon={<ArrowDownCircle className="h-5 w-5 text-green-500" />}
@@ -183,9 +357,10 @@ export default function Home() {
             loading={isLoading}
           />
         </div>
+        )}
 
         {/* Alertas rápidos */}
-        {!isLoading && (
+        {isVisible("alertas") && !isLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <AlertCard
               icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
@@ -209,7 +384,7 @@ export default function Home() {
         )}
 
         {/* Painel de Alertas de Vencimento */}
-        {totalAlertas > 0 && (
+        {isVisible("vencimentos") && totalAlertas > 0 && (
           <Card className="border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-900/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2 text-orange-700 dark:text-orange-400">
@@ -302,7 +477,8 @@ export default function Home() {
         )}
 
         {/* Gráfico Comparativo Histórico (6 meses) */}
-        <Card>
+        {isVisible("historico") && (
+          <Card>
           <CardHeader>
             <CardTitle className="text-base">Comparativo dos Últimos 6 Meses — {ano}</CardTitle>
           </CardHeader>
@@ -323,10 +499,11 @@ export default function Home() {
               </ResponsiveContainer>
             )}
           </CardContent>
-        </Card>
+          </Card>
+        )}
 
         {/* Gráfico Fluxo Líquido */}
-        {historicoData.length > 0 && (
+        {isVisible("fluxo") && historicoData.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Evolução do Fluxo Líquido — {ano}</CardTitle>
@@ -353,6 +530,7 @@ export default function Home() {
         )}
 
         {/* Gráfico por Centro de Custo + Composição */}
+        {(isVisible("centrocusto") || isVisible("composicao")) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -422,8 +600,10 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Status detalhado */}
+        {isVisible("status") && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -485,6 +665,7 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+        )}
       </div>
     </DashboardLayout>
   );

@@ -1,0 +1,1 @@
+ALTER TABLE `dashboard_config` MODIFY COLUMN `widgets` text NOT NULL;

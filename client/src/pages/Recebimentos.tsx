@@ -14,7 +14,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer } from "lucide-react";
 import { ComprovanteViewer, type ComprovanteRecebimento } from "@/components/ComprovanteViewer";
 import { ClienteSelect, CentroCustoSelect } from "@/components/ClienteCentroCustoSelect";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 const TIPOS_RECEBIMENTO = ["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"] as const;
@@ -271,8 +271,39 @@ export default function Recebimentos() {
 
   const { data: recebimentos = [], isLoading } = trpc.recebimentos.list.useQuery();
 
+  // Carrega parcelas existentes ao abrir edição de recebimento parcelado
+  const { data: parcelasExistentes } = trpc.recebimentoParcelas.list.useQuery(
+    { recebimentoId: editId! },
+    { enabled: !!editId && open && form.parcelado }
+  );
+
+  // Popula o estado local de parcelas quando os dados chegam do banco (modo edição)
+  useEffect(() => {
+    if (editId && parcelasExistentes && parcelasExistentes.length > 0 && parcelas.length === 0) {
+      const loaded: ParcelaLocal[] = parcelasExistentes.map(p => ({
+        id: p.id,
+        numeroParcela: p.numeroParcela,
+        valor: String(p.valor),
+        dataVencimento: p.dataVencimento ? new Date(p.dataVencimento).toISOString().split("T")[0] : "",
+        dataRecebimento: p.dataRecebimento ? new Date(p.dataRecebimento).toISOString().split("T")[0] : undefined,
+        status: p.status,
+        observacao: p.observacao ?? "",
+      }));
+      setParcelas(loaded);
+    }
+  }, [parcelasExistentes, editId, open]);
+
   const createParcelasMutation = trpc.recebimentoParcelas.createBulk.useMutation();
   const deleteParcelasMutation = trpc.recebimentoParcelas.deleteBulk.useMutation();
+
+  // Invalida todos os caches relevantes após operações de recebimento
+  const invalidateAll = () => {
+    utils.recebimentos.list.invalidate();
+    utils.dashboard.stats.invalidate();
+    utils.dashboard.vencimentosProximos.invalidate();
+    utils.dashboard.historicoMensal.invalidate();
+    utils.recebimentoParcelas.list.invalidate();
+  };
 
   const createMutation = trpc.recebimentos.create.useMutation({
     onSuccess: async (data: any) => {
@@ -290,8 +321,7 @@ export default function Recebimentos() {
           });
         }
       }
-      utils.recebimentos.list.invalidate();
-      utils.dashboard.stats.invalidate();
+      invalidateAll();
       toast.success("Recebimento cadastrado!");
       setOpen(false);
       setForm(defaultForm);
@@ -302,21 +332,23 @@ export default function Recebimentos() {
 
   const updateMutation = trpc.recebimentos.update.useMutation({
     onSuccess: async () => {
+      // Em edição: só recria parcelas se o usuário gerou novas (sem IDs)
       if (editId && form.parcelado && parcelas.length > 0) {
-        await deleteParcelasMutation.mutateAsync({ recebimentoId: editId });
-        await createParcelasMutation.mutateAsync({
-          recebimentoId: editId,
-          parcelas: parcelas.map(p => ({
-            ...p,
-            dataVencimento: new Date(p.dataVencimento + "T12:00:00"),
-            dataRecebimento: p.dataRecebimento ? new Date(p.dataRecebimento + "T12:00:00") : undefined,
-            status: p.status as any,
-          })),
-        });
+        const temParcelasNovas = parcelas.some(p => !p.id);
+        if (temParcelasNovas) {
+          await deleteParcelasMutation.mutateAsync({ recebimentoId: editId });
+          await createParcelasMutation.mutateAsync({
+            recebimentoId: editId,
+            parcelas: parcelas.map(p => ({
+              ...p,
+              dataVencimento: new Date(p.dataVencimento + "T12:00:00"),
+              dataRecebimento: p.dataRecebimento ? new Date(p.dataRecebimento + "T12:00:00") : undefined,
+              status: p.status as any,
+            })),
+          });
+        }
       }
-      utils.recebimentos.list.invalidate();
-      utils.dashboard.stats.invalidate();
-      utils.recebimentoParcelas.list.invalidate();
+      invalidateAll();
       toast.success("Recebimento atualizado!");
       setOpen(false);
       setEditId(null);
@@ -365,6 +397,9 @@ export default function Recebimentos() {
   };
 
   const handleEdit = (r: any) => {
+    // Limpa parcelas ANTES de definir o editId para evitar que o useEffect
+    // detecte parcelas antigas do recebimento anterior
+    setParcelas([]);
     setEditId(r.id);
     setForm({
       numeroControle: r.numeroControle ?? "", numeroContrato: r.numeroContrato ?? "",
@@ -381,7 +416,6 @@ export default function Recebimentos() {
       parcelado: r.quantidadeParcelas > 1,
       dataPrimeiroVencimento: r.dataVencimento ? new Date(r.dataVencimento).toISOString().split("T")[0] : "",
     });
-    setParcelas([]);
     setOpen(true);
   };
 

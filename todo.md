@@ -235,3 +235,12 @@
 ## Correção Bugs Parcelas Pagamentos (v28)
 - [x] Corrigir: Dashboard não atualiza após salvar pagamento parcelado (invalidar cache tRPC)
 - [x] Corrigir: Parcelas somem ao reabrir pagamento para edição (carregar parcelas existentes do banco)
+
+## Melhorias v29 (6 itens)
+
+- [x] Bug 1: Parcelas somem ao editar Recebimentos (mesmo fix aplicado em Pagamentos)
+- [x] Bug 2: Corrigir cálculo de "Atrasado" no Dashboard — usar data de vencimento das parcelas, não do recebimento pai
+- [x] Feature 3: Dashboard configurável — widgets drag-and-drop, persistência no banco, restrito a admin
+- [x] Feature 4a: Revisão geral de UX — melhorar fluidez, intuitividade e objetividade em todas as abas
+- [x] Feature 4b: Seletor de temas de cor (paletas predefinidas, persistência por usuário)
+- [x] Feature 5: Módulo de Engenharia — Contratos, Ordens de Serviço, Tipos de Serviço, Materiais com códigos de controle, vinculação com Pagamentos/Recebimentos

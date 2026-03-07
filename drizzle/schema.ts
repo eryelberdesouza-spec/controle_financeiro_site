@@ -1,4 +1,4 @@
-import { boolean, decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, date, decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -190,3 +190,118 @@ export const convites = mysqlTable("convites", {
 
 export type Convite = typeof convites.$inferSelect;
 export type InsertConvite = typeof convites.$inferInsert;
+
+// ─── Configurações do Dashboard ────────────────────────────────────────────────
+// Armazena a configuração de widgets do dashboard por usuário (admin)
+export const dashboardConfig = mysqlTable("dashboard_config", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  // JSON com array de widgets: [{id, tipo, visivel, ordem, tamanho}]
+  // TiDB não suporta default em colunas TEXT; o default será tratado no backend
+  widgets: text("widgets").notNull(),
+  // Tema de cor selecionado
+  tema: varchar("tema", { length: 50 }).default("azul"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DashboardConfig = typeof dashboardConfig.$inferSelect;
+export type InsertDashboardConfig = typeof dashboardConfig.$inferInsert;
+
+
+// ─── Módulo de Engenharia ─────────────────────────────────────────────────────
+
+// Tipos de Serviço
+export const tiposServico = mysqlTable("tipos_servico", {
+  id: int("id").autoincrement().primaryKey(),
+  codigo: varchar("codigo", { length: 30 }).notNull().unique(),
+  nome: varchar("nome", { length: 200 }).notNull(),
+  descricao: text("descricao"),
+  unidade: varchar("unidade", { length: 30 }), // ex: hora, m², un
+  valorUnitario: decimal("valorUnitario", { precision: 15, scale: 2 }),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+export type TipoServico = typeof tiposServico.$inferSelect;
+export type InsertTipoServico = typeof tiposServico.$inferInsert;
+
+// Materiais
+export const materiais = mysqlTable("materiais", {
+  id: int("id").autoincrement().primaryKey(),
+  codigo: varchar("codigo", { length: 30 }).notNull().unique(),
+  nome: varchar("nome", { length: 200 }).notNull(),
+  descricao: text("descricao"),
+  unidade: varchar("unidade", { length: 30 }), // ex: kg, m, un, caixa
+  valorUnitario: decimal("valorUnitario", { precision: 15, scale: 2 }),
+  estoque: decimal("estoque", { precision: 15, scale: 3 }).default("0"),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+export type Material = typeof materiais.$inferSelect;
+export type InsertMaterial = typeof materiais.$inferInsert;
+
+// Contratos
+export const contratos = mysqlTable("contratos", {
+  id: int("id").autoincrement().primaryKey(),
+  numero: varchar("numero", { length: 50 }).notNull().unique(),
+  objeto: text("objeto").notNull(),
+  tipo: mysqlEnum("tipo", ["prestacao_servico", "fornecimento", "locacao", "misto"]).default("prestacao_servico").notNull(),
+  status: mysqlEnum("status", ["negociacao", "ativo", "suspenso", "encerrado", "cancelado"]).default("negociacao").notNull(),
+  clienteId: int("clienteId").references(() => clientes.id),
+  valorTotal: decimal("valorTotal", { precision: 15, scale: 2 }).notNull(),
+  dataInicio: date("dataInicio"),
+  dataFim: date("dataFim"),
+  descricao: text("descricao"),
+  observacoes: text("observacoes"),
+  // Vinculação financeira
+  recebimentoId: int("recebimentoId").references(() => recebimentos.id),
+  pagamentoId: int("pagamentoId").references(() => pagamentos.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+export type Contrato = typeof contratos.$inferSelect;
+export type InsertContrato = typeof contratos.$inferInsert;
+
+// Ordens de Serviço
+export const ordensServico = mysqlTable("ordens_servico", {
+  id: int("id").autoincrement().primaryKey(),
+  numero: varchar("numero", { length: 50 }).notNull().unique(),
+  contratoId: int("contratoId").references(() => contratos.id),
+  clienteId: int("clienteId").references(() => clientes.id),
+  titulo: varchar("titulo", { length: 200 }).notNull(),
+  descricao: text("descricao"),
+  status: mysqlEnum("status", ["aberta", "em_execucao", "concluida", "cancelada", "pausada"]).default("aberta").notNull(),
+  prioridade: mysqlEnum("prioridade", ["baixa", "media", "alta", "urgente"]).default("media").notNull(),
+  responsavel: varchar("responsavel", { length: 150 }),
+  dataAbertura: date("dataAbertura"),
+  dataPrevisao: date("dataPrevisao"),
+  dataConclusao: date("dataConclusao"),
+  valorEstimado: decimal("valorEstimado", { precision: 15, scale: 2 }),
+  valorRealizado: decimal("valorRealizado", { precision: 15, scale: 2 }),
+  observacoes: text("observacoes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+export type OrdemServico = typeof ordensServico.$inferSelect;
+export type InsertOrdemServico = typeof ordensServico.$inferInsert;
+
+// Itens da Ordem de Serviço (serviços e materiais)
+export const osItens = mysqlTable("os_itens", {
+  id: int("id").autoincrement().primaryKey(),
+  osId: int("osId").notNull().references(() => ordensServico.id, { onDelete: "cascade" }),
+  tipo: mysqlEnum("tipo", ["servico", "material"]).notNull(),
+  tipoServicoId: int("tipoServicoId").references(() => tiposServico.id),
+  materialId: int("materialId").references(() => materiais.id),
+  descricao: varchar("descricao", { length: 300 }),
+  quantidade: decimal("quantidade", { precision: 15, scale: 3 }).notNull(),
+  valorUnitario: decimal("valorUnitario", { precision: 15, scale: 2 }).notNull(),
+  valorTotal: decimal("valorTotal", { precision: 15, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type OsItem = typeof osItens.$inferSelect;
+export type InsertOsItem = typeof osItens.$inferInsert;

@@ -71,6 +71,27 @@
       "when": 1772748428615,
       "tag": "0009_even_gambit",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1772884986799,
+      "tag": "0010_shallow_patriot",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1772885004675,
+      "tag": "0011_smooth_frank_castle",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1772885656042,
+      "tag": "0012_lush_mariko_yashida",
+      "breakpoints": true
     }
   ]
 }

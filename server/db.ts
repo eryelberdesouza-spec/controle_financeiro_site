@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { centrosCusto, clientes, Convite, convites, EmpresaConfig, empresaConfig, InsertCentroCusto, InsertCliente, InsertEmpresaConfig, InsertPagamento, InsertRecebimento, InsertUser, pagamentos, recebimentos, users } from "../drizzle/schema";
+import { centrosCusto, clientes, Convite, convites, dashboardConfig, EmpresaConfig, empresaConfig, InsertCentroCusto, InsertCliente, InsertEmpresaConfig, InsertPagamento, InsertPagamentoParcela, InsertRecebimento, InsertRecebimentoParcela, InsertUser, pagamentoParcelas, pagamentos, recebimentoParcelas, recebimentos, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -342,8 +342,8 @@ export async function getVencimentosProximos(diasAntecedencia: number = 7) {
   limite.setDate(limite.getDate() + diasAntecedencia);
   limite.setHours(23, 59, 59, 999);
 
-  const [pagVenc, recVenc] = await Promise.all([
-    // Pagamentos pendentes ou em processamento com vencimento até o limite
+  const [pagVenc, pagParcelasVenc, recVenc, recParcelasVenc] = await Promise.all([
+    // Pagamentos NÃO parcelados: pendentes/processando com vencimento até o limite
     db.select({
       id: pagamentos.id,
       numeroControle: pagamentos.numeroControle,
@@ -351,17 +351,39 @@ export async function getVencimentosProximos(diasAntecedencia: number = 7) {
       valor: pagamentos.valor,
       dataPagamento: pagamentos.dataPagamento,
       status: pagamentos.status,
+      tipo: sql<string>`'pagamento'`,
     })
       .from(pagamentos)
       .where(
         and(
           sql`${pagamentos.status} IN ('Pendente', 'Processando')`,
+          eq(pagamentos.parcelado, false),
           lte(pagamentos.dataPagamento, limite)
         )
       )
       .orderBy(pagamentos.dataPagamento)
       .limit(10),
-    // Recebimentos pendentes com vencimento até o limite
+    // Parcelas de pagamentos: pendentes/atrasadas com vencimento até o limite
+    db.select({
+      id: pagamentoParcelas.id,
+      numeroControle: pagamentos.numeroControle,
+      nomeCompleto: pagamentos.nomeCompleto,
+      valor: pagamentoParcelas.valor,
+      dataPagamento: pagamentoParcelas.dataVencimento,
+      status: pagamentoParcelas.status,
+      tipo: sql<string>`'parcela_pagamento'`,
+    })
+      .from(pagamentoParcelas)
+      .innerJoin(pagamentos, eq(pagamentoParcelas.pagamentoId, pagamentos.id))
+      .where(
+        and(
+          sql`${pagamentoParcelas.status} IN ('Pendente', 'Atrasado')`,
+          lte(pagamentoParcelas.dataVencimento, limite)
+        )
+      )
+      .orderBy(pagamentoParcelas.dataVencimento)
+      .limit(10),
+    // Recebimentos NÃO parcelados (quantidadeParcelas = 1): pendentes/atrasados com vencimento até o limite
     db.select({
       id: recebimentos.id,
       numeroControle: recebimentos.numeroControle,
@@ -369,19 +391,82 @@ export async function getVencimentosProximos(diasAntecedencia: number = 7) {
       valorTotal: recebimentos.valorTotal,
       dataVencimento: recebimentos.dataVencimento,
       status: recebimentos.status,
+      tipo: sql<string>`'recebimento'`,
     })
       .from(recebimentos)
       .where(
         and(
           sql`${recebimentos.status} IN ('Pendente', 'Atrasado')`,
+          eq(recebimentos.quantidadeParcelas, 1),
           lte(recebimentos.dataVencimento, limite)
         )
       )
       .orderBy(recebimentos.dataVencimento)
       .limit(10),
+    // Parcelas de recebimentos: pendentes/atrasadas com vencimento até o limite
+    db.select({
+      id: recebimentoParcelas.id,
+      numeroControle: recebimentos.numeroControle,
+      nomeRazaoSocial: recebimentos.nomeRazaoSocial,
+      valorTotal: recebimentoParcelas.valor,
+      dataVencimento: recebimentoParcelas.dataVencimento,
+      status: recebimentoParcelas.status,
+      tipo: sql<string>`'parcela_recebimento'`,
+    })
+      .from(recebimentoParcelas)
+      .innerJoin(recebimentos, eq(recebimentoParcelas.recebimentoId, recebimentos.id))
+      .where(
+        and(
+          sql`${recebimentoParcelas.status} IN ('Pendente', 'Atrasado')`,
+          lte(recebimentoParcelas.dataVencimento, limite)
+        )
+      )
+      .orderBy(recebimentoParcelas.dataVencimento)
+      .limit(10),
   ]);
 
-  return { pagamentos: pagVenc, recebimentos: recVenc };
+  // Combina e normaliza os resultados
+  const pagamentosVenc = [
+    ...pagVenc.map(p => ({ id: p.id, numeroControle: p.numeroControle, nomeCompleto: p.nomeCompleto, valor: p.valor, dataPagamento: p.dataPagamento, status: p.status })),
+    ...pagParcelasVenc.map(p => ({ id: p.id, numeroControle: p.numeroControle, nomeCompleto: p.nomeCompleto, valor: p.valor, dataPagamento: p.dataPagamento, status: p.status })),
+  ].sort((a, b) => new Date(a.dataPagamento!).getTime() - new Date(b.dataPagamento!).getTime()).slice(0, 10);
+
+  const recebimentosVenc = [
+    ...recVenc.map(r => ({ id: r.id, numeroControle: r.numeroControle, nomeRazaoSocial: r.nomeRazaoSocial, valorTotal: r.valorTotal, dataVencimento: r.dataVencimento, status: r.status })),
+    ...recParcelasVenc.map(r => ({ id: r.id, numeroControle: r.numeroControle, nomeRazaoSocial: r.nomeRazaoSocial, valorTotal: r.valorTotal, dataVencimento: r.dataVencimento, status: r.status })),
+  ].sort((a, b) => new Date(a.dataVencimento!).getTime() - new Date(b.dataVencimento!).getTime()).slice(0, 10);
+
+  return { pagamentos: pagamentosVenc, recebimentos: recebimentosVenc };
+}
+
+// ==================== DASHBOARD CONFIG ====================
+
+/**
+ * Retorna a configuração do dashboard para um usuário.
+ * Se não existir, retorna a configuração padrão.
+ */
+export async function getDashboardConfig(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(dashboardConfig).where(eq(dashboardConfig.userId, userId)).limit(1);
+  if (result.length === 0) return null;
+  return result[0];
+}
+
+/**
+ * Salva (upsert) a configuração do dashboard para um usuário.
+ */
+export async function saveDashboardConfig(userId: number, widgets: string, tema: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getDashboardConfig(userId);
+  if (existing) {
+    await db.update(dashboardConfig)
+      .set({ widgets, tema })
+      .where(eq(dashboardConfig.userId, userId));
+  } else {
+    await db.insert(dashboardConfig).values({ userId, widgets, tema });
+  }
 }
 
 /**
@@ -524,7 +609,6 @@ export async function deleteCentroCusto(id: number) {
 
 // ==================== PARCELAS DE PAGAMENTOS ====================
 
-import { InsertPagamentoParcela, InsertRecebimentoParcela, pagamentoParcelas, recebimentoParcelas } from "../drizzle/schema";
 
 export async function listPagamentoParcelas(pagamentoId: number) {
   const db = await getDb();

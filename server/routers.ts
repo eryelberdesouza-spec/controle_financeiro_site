@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { tiposServicoRouter, materiaisRouter, contratosRouter, ordensServicoRouter } from "./routers/engenharia";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -50,6 +51,8 @@ import {
   upsertEmpresaConfig,
   getNextNumeroControlePagamento,
   getVencimentosProximos,
+  getDashboardConfig,
+  saveDashboardConfig,
 } from "./db";
 
 // Procedure que exige role admin
@@ -218,6 +221,15 @@ const dashboardRouter = router({
   vencimentosProximos: staffProcedure
     .input(z.object({ dias: z.number().min(1).max(30).default(7) }).optional())
     .query(({ input }) => getVencimentosProximos(input?.dias ?? 7)),
+  // Configuração de widgets do dashboard (restrito a admin)
+  getConfig: adminProcedure
+    .query(({ ctx }) => getDashboardConfig(ctx.user.id)),
+  saveConfig: adminProcedure
+    .input(z.object({
+      widgets: z.string(), // JSON string com array de widgets
+      tema: z.string().default("azul"),
+    }))
+    .mutation(({ input, ctx }) => saveDashboardConfig(ctx.user.id, input.widgets, input.tema)),
 });
 
 // ─── Clientes ─────────────────────────────────────────────────────────────────
@@ -449,6 +461,10 @@ export const appRouter = router({
   pagamentoParcelas: pagamentoParcelasRouter,
   recebimentoParcelas: recebimentoParcelasRouter,
   convites: convitesRouter,
+  tiposServico: tiposServicoRouter,
+  materiais: materiaisRouter,
+  contratos: contratosRouter,
+  ordensServico: ordensServicoRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -158,6 +158,13 @@ export const contratosRouter = router({
           pagamentoId: contratos.pagamentoId,
           createdAt: contratos.createdAt,
           clienteNome: clientes.nome,
+          enderecoLogradouro: contratos.enderecoLogradouro,
+          enderecoNumero: contratos.enderecoNumero,
+          enderecoComplemento: contratos.enderecoComplemento,
+          enderecoBairro: contratos.enderecoBairro,
+          enderecoCidade: contratos.enderecoCidade,
+          enderecoEstado: contratos.enderecoEstado,
+          enderecoCep: contratos.enderecoCep,
         })
         .from(contratos)
         .leftJoin(clientes, eq(contratos.clienteId, clientes.id))
@@ -208,6 +215,13 @@ export const contratosRouter = router({
       observacoes: z.string().optional(),
       recebimentoId: z.number().optional(),
       pagamentoId: z.number().optional(),
+      enderecoLogradouro: z.string().max(255).optional(),
+      enderecoNumero: z.string().max(20).optional(),
+      enderecoComplemento: z.string().max(100).optional(),
+      enderecoBairro: z.string().max(100).optional(),
+      enderecoCidade: z.string().max(100).optional(),
+      enderecoEstado: z.string().max(2).optional(),
+      enderecoCep: z.string().max(10).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const d = await getDb();
@@ -237,6 +251,13 @@ export const contratosRouter = router({
       observacoes: z.string().optional(),
       recebimentoId: z.number().optional(),
       pagamentoId: z.number().optional(),
+      enderecoLogradouro: z.string().max(255).optional(),
+      enderecoNumero: z.string().max(20).optional(),
+      enderecoComplemento: z.string().max(100).optional(),
+      enderecoBairro: z.string().max(100).optional(),
+      enderecoCidade: z.string().max(100).optional(),
+      enderecoEstado: z.string().max(2).optional(),
+      enderecoCep: z.string().max(10).optional(),
     }))
     .mutation(async ({ input }) => {
       const d = await getDb();
@@ -302,6 +323,13 @@ export const ordensServicoRouter = router({
           createdAt: ordensServico.createdAt,
           clienteNome: clientes.nome,
           contratoNumero: contratos.numero,
+          enderecoLogradouro: ordensServico.enderecoLogradouro,
+          enderecoNumero: ordensServico.enderecoNumero,
+          enderecoComplemento: ordensServico.enderecoComplemento,
+          enderecoBairro: ordensServico.enderecoBairro,
+          enderecoCidade: ordensServico.enderecoCidade,
+          enderecoEstado: ordensServico.enderecoEstado,
+          enderecoCep: ordensServico.enderecoCep,
         })
         .from(ordensServico)
         .leftJoin(clientes, eq(ordensServico.clienteId, clientes.id))
@@ -351,6 +379,13 @@ export const ordensServicoRouter = router({
       dataPrevisao: z.string().optional(),
       valorEstimado: z.number().optional(),
       observacoes: z.string().optional(),
+      enderecoLogradouro: z.string().max(255).optional(),
+      enderecoNumero: z.string().max(20).optional(),
+      enderecoComplemento: z.string().max(100).optional(),
+      enderecoBairro: z.string().max(100).optional(),
+      enderecoCidade: z.string().max(100).optional(),
+      enderecoEstado: z.string().max(2).optional(),
+      enderecoCep: z.string().max(10).optional(),
       itens: z.array(z.object({
         tipo: z.enum(["servico", "material"]),
         tipoServicoId: z.number().optional(),
@@ -403,6 +438,13 @@ export const ordensServicoRouter = router({
       observacoes: z.string().optional(),
       contratoId: z.number().optional(),
       clienteId: z.number().optional(),
+      enderecoLogradouro: z.string().max(255).optional(),
+      enderecoNumero: z.string().max(20).optional(),
+      enderecoComplemento: z.string().max(100).optional(),
+      enderecoBairro: z.string().max(100).optional(),
+      enderecoCidade: z.string().max(100).optional(),
+      enderecoEstado: z.string().max(2).optional(),
+      enderecoCep: z.string().max(10).optional(),
     }))
     .mutation(async ({ input }) => {
       const d = await getDb();

@@ -12,9 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { EngenhariaImpressao, type ContratoParaImpressao, type OSParaImpressao, type MaterialParaImpressao, type TipoServicoParaImpressao } from "@/components/EngenhariaImpressao";
 import {
   Plus, Search, Edit2, Trash2, FileText, Wrench, Package, ClipboardList,
-  ChevronDown, ChevronUp, Eye, Link2, DollarSign, BarChart2
+  ChevronDown, ChevronUp, Eye, Link2, DollarSign, BarChart2, MapPin, Printer
 } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -57,6 +58,7 @@ function ContratosTab() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [relatorioContratoId, setRelatorioContratoId] = useState<number | null>(null);
+  const [impressaoContratos, setImpressaoContratos] = useState<ContratoParaImpressao[] | null>(null);
   const { data: relatorio, isLoading: relatorioLoading } = trpc.relatorioContrato.getRelatorio.useQuery(
     { contratoId: relatorioContratoId! },
     { enabled: relatorioContratoId !== null }
@@ -65,6 +67,8 @@ function ContratosTab() {
     numero: "", objeto: "", tipo: "prestacao_servico" as const,
     status: "negociacao" as const, clienteId: "" as string | number,
     valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "",
+    enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "",
+    enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "",
   });
 
   const createMutation = trpc.contratos.create.useMutation({
@@ -89,7 +93,7 @@ function ContratosTab() {
 
   function openNew() {
     setEditId(null);
-    setForm({ numero: nextNumero ?? "", objeto: "", tipo: "prestacao_servico", status: "negociacao", clienteId: "", valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "" });
+    setForm({ numero: nextNumero ?? "", objeto: "", tipo: "prestacao_servico", status: "negociacao", clienteId: "", valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
     setShowForm(true);
   }
 
@@ -101,6 +105,9 @@ function ContratosTab() {
       valorTotal: c.valorTotal ?? "", dataInicio: c.dataInicio ? new Date(c.dataInicio).toISOString().split("T")[0] : "",
       dataFim: c.dataFim ? new Date(c.dataFim).toISOString().split("T")[0] : "",
       descricao: c.descricao ?? "", observacoes: c.observacoes ?? "",
+      enderecoLogradouro: c.enderecoLogradouro ?? "", enderecoNumero: c.enderecoNumero ?? "",
+      enderecoComplemento: c.enderecoComplemento ?? "", enderecoBairro: c.enderecoBairro ?? "",
+      enderecoCidade: c.enderecoCidade ?? "", enderecoEstado: c.enderecoEstado ?? "", enderecoCep: c.enderecoCep ?? "",
     });
     setShowForm(true);
   }
@@ -112,6 +119,13 @@ function ContratosTab() {
       valorTotal: parseFloat(form.valorTotal.replace(",", ".")) || 0,
       dataInicio: form.dataInicio || undefined, dataFim: form.dataFim || undefined,
       descricao: form.descricao || undefined, observacoes: form.observacoes || undefined,
+      enderecoLogradouro: form.enderecoLogradouro || undefined,
+      enderecoNumero: form.enderecoNumero || undefined,
+      enderecoComplemento: form.enderecoComplemento || undefined,
+      enderecoBairro: form.enderecoBairro || undefined,
+      enderecoCidade: form.enderecoCidade || undefined,
+      enderecoEstado: form.enderecoEstado || undefined,
+      enderecoCep: form.enderecoCep || undefined,
     };
     if (editId) updateMutation.mutate({ id: editId, ...payload });
     else createMutation.mutate(payload);
@@ -133,7 +147,12 @@ function ContratosTab() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Contrato</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImpressaoContratos(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
+            <Printer className="h-4 w-4" /> Imprimir Lista ({filtered.length})
+          </Button>
+          <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Contrato</Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -163,6 +182,9 @@ function ContratosTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      <Button size="icon" variant="ghost" title="Imprimir Contrato" onClick={() => setImpressaoContratos([c])}>
+                        <Printer className="h-4 w-4 text-green-600" />
+                      </Button>
                       <Button size="icon" variant="ghost" title="Relatório do Contrato" onClick={() => setRelatorioContratoId(c.id)}>
                         <BarChart2 className="h-4 w-4 text-blue-600" />
                       </Button>
@@ -419,6 +441,40 @@ function ContratosTab() {
               <Label>Observações</Label>
               <Textarea rows={2} value={form.observacoes} onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))} />
             </div>
+            {/* Endereço do Local de Execução */}
+            <div className="col-span-2">
+              <p className="text-sm font-semibold text-muted-foreground mb-2 mt-1 border-t pt-3 flex items-center gap-1.5">
+                <MapPin className="h-4 w-4" />Endereço do Local de Execução
+              </p>
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label>Logradouro (Rua / Av.)</Label>
+              <Input placeholder="Ex: Rua das Flores" value={form.enderecoLogradouro} onChange={e => setForm(p => ({ ...p, enderecoLogradouro: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Número</Label>
+              <Input placeholder="123" value={form.enderecoNumero} onChange={e => setForm(p => ({ ...p, enderecoNumero: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Complemento</Label>
+              <Input placeholder="Apto, Sala, Bloco..." value={form.enderecoComplemento} onChange={e => setForm(p => ({ ...p, enderecoComplemento: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Bairro</Label>
+              <Input value={form.enderecoBairro} onChange={e => setForm(p => ({ ...p, enderecoBairro: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>CEP</Label>
+              <Input placeholder="00000-000" value={form.enderecoCep} onChange={e => setForm(p => ({ ...p, enderecoCep: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Cidade</Label>
+              <Input value={form.enderecoCidade} onChange={e => setForm(p => ({ ...p, enderecoCidade: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Estado (UF)</Label>
+              <Input maxLength={2} placeholder="SP" value={form.enderecoEstado} onChange={e => setForm(p => ({ ...p, enderecoEstado: e.target.value.toUpperCase() }))} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
@@ -428,6 +484,15 @@ function ContratosTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Modal de Impressão de Contratos */}
+      {impressaoContratos && (
+        <EngenhariaImpressao
+          open={impressaoContratos !== null}
+          onClose={() => setImpressaoContratos(null)}
+          tipo="contrato"
+          dados={impressaoContratos}
+        />
+      )}
     </div>
   );
 }
@@ -454,6 +519,8 @@ function OrdensServicoTab() {
     prioridade: "media" as const, responsavel: "", dataAbertura: "",
     dataPrevisao: "", valorEstimado: "", observacoes: "",
     contratoId: "" as string | number, clienteId: "" as string | number,
+    enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "",
+    enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "",
   });
   const [itens, setItens] = useState<Array<{
     tipo: "servico" | "material"; tipoServicoId?: number; materialId?: number;
@@ -469,6 +536,8 @@ function OrdensServicoTab() {
   const deleteMutation = trpc.ordensServico.delete.useMutation({
     onSuccess: () => { utils.ordensServico.list.invalidate(); toast.success("OS removida."); }
   });
+
+  const [impressaoOS, setImpressaoOS] = useState<OSParaImpressao[] | null>(null);
 
   // Estado do modal de gerar lançamento
   const [showGerarLancamento, setShowGerarLancamento] = useState(false);
@@ -514,7 +583,7 @@ function OrdensServicoTab() {
   function openNew() {
     setEditId(null);
     setItens([]);
-    setForm({ numero: nextNumero ?? "", titulo: "", descricao: "", status: "aberta", prioridade: "media", responsavel: "", dataAbertura: new Date().toISOString().split("T")[0], dataPrevisao: "", valorEstimado: "", observacoes: "", contratoId: "", clienteId: "" });
+    setForm({ numero: nextNumero ?? "", titulo: "", descricao: "", status: "aberta", prioridade: "media", responsavel: "", dataAbertura: new Date().toISOString().split("T")[0], dataPrevisao: "", valorEstimado: "", observacoes: "", contratoId: "", clienteId: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
     setShowForm(true);
   }
 
@@ -529,6 +598,9 @@ function OrdensServicoTab() {
       dataPrevisao: o.dataPrevisao ? new Date(o.dataPrevisao).toISOString().split("T")[0] : "",
       valorEstimado: o.valorEstimado ?? "",
       contratoId: o.contratoId ?? "", clienteId: o.clienteId ?? "",
+      enderecoLogradouro: o.enderecoLogradouro ?? "", enderecoNumero: o.enderecoNumero ?? "",
+      enderecoComplemento: o.enderecoComplemento ?? "", enderecoBairro: o.enderecoBairro ?? "",
+      enderecoCidade: o.enderecoCidade ?? "", enderecoEstado: o.enderecoEstado ?? "", enderecoCep: o.enderecoCep ?? "",
     });
     setShowForm(true);
   }
@@ -559,6 +631,13 @@ function OrdensServicoTab() {
       observacoes: form.observacoes || undefined,
       contratoId: form.contratoId ? Number(form.contratoId) : undefined,
       clienteId: form.clienteId ? Number(form.clienteId) : undefined,
+      enderecoLogradouro: form.enderecoLogradouro || undefined,
+      enderecoNumero: form.enderecoNumero || undefined,
+      enderecoComplemento: form.enderecoComplemento || undefined,
+      enderecoBairro: form.enderecoBairro || undefined,
+      enderecoCidade: form.enderecoCidade || undefined,
+      enderecoEstado: form.enderecoEstado || undefined,
+      enderecoCep: form.enderecoCep || undefined,
     };
     if (editId) updateMutation.mutate({ id: editId, ...payload });
     else createMutation.mutate({ ...payload, itens: itens.length > 0 ? itens : undefined });
@@ -580,7 +659,12 @@ function OrdensServicoTab() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Nova OS</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImpressaoOS(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
+            <Printer className="h-4 w-4" /> Imprimir Lista ({filtered.length})
+          </Button>
+          <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Nova OS</Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -617,8 +701,11 @@ function OrdensServicoTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      <Button size="icon" variant="ghost" title="Imprimir OS" onClick={() => setImpressaoOS([o])}>
+                        <Printer className="h-4 w-4 text-green-600" />
+                      </Button>
                       <Button size="icon" variant="ghost" title="Gerar Lançamento Financeiro" onClick={() => openGerarLancamento(o)}>
-                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <DollarSign className="h-4 w-4 text-blue-600" />
                       </Button>
                       <Button size="icon" variant="ghost" onClick={() => setExpandedId(expanded ? null : o.id)}>
                         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -789,6 +876,41 @@ function OrdensServicoTab() {
               <Textarea rows={2} value={form.observacoes} onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))} />
             </div>
 
+            {/* Endereço do Local de Execução */}
+            <div className="col-span-2">
+              <p className="text-sm font-semibold text-muted-foreground mb-2 mt-1 border-t pt-3 flex items-center gap-1.5">
+                <MapPin className="h-4 w-4" />Endereço do Local de Execução
+              </p>
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label>Logradouro (Rua / Av.)</Label>
+              <Input placeholder="Ex: Rua das Flores" value={form.enderecoLogradouro} onChange={e => setForm(p => ({ ...p, enderecoLogradouro: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Número</Label>
+              <Input placeholder="123" value={form.enderecoNumero} onChange={e => setForm(p => ({ ...p, enderecoNumero: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Complemento</Label>
+              <Input placeholder="Apto, Sala, Bloco..." value={form.enderecoComplemento} onChange={e => setForm(p => ({ ...p, enderecoComplemento: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Bairro</Label>
+              <Input value={form.enderecoBairro} onChange={e => setForm(p => ({ ...p, enderecoBairro: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>CEP</Label>
+              <Input placeholder="00000-000" value={form.enderecoCep} onChange={e => setForm(p => ({ ...p, enderecoCep: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Cidade</Label>
+              <Input value={form.enderecoCidade} onChange={e => setForm(p => ({ ...p, enderecoCidade: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Estado (UF)</Label>
+              <Input maxLength={2} placeholder="SP" value={form.enderecoEstado} onChange={e => setForm(p => ({ ...p, enderecoEstado: e.target.value.toUpperCase() }))} />
+            </div>
+
             {!editId && (
               <div className="col-span-2 space-y-3">
                 <div className="flex items-center justify-between">
@@ -866,6 +988,16 @@ function OrdensServicoTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Impressão de OS */}
+      {impressaoOS && (
+        <EngenhariaImpressao
+          open={impressaoOS !== null}
+          onClose={() => setImpressaoOS(null)}
+          tipo="os"
+          dados={impressaoOS}
+        />
+      )}
     </div>
   );
 }
@@ -879,6 +1011,7 @@ function TiposServicoTab() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ codigo: "", nome: "", descricao: "", unidade: "", valorUnitario: "" });
+  const [impressaoTipos, setImpressaoTipos] = useState<TipoServicoParaImpressao[] | null>(null);
 
   const createMutation = trpc.tiposServico.create.useMutation({
     onSuccess: () => { utils.tiposServico.list.invalidate(); setShowForm(false); toast.success("Tipo de serviço criado!"); }
@@ -913,7 +1046,12 @@ function TiposServicoTab() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar tipo de serviço..." className="pl-9" value={busca} onChange={e => setBusca(e.target.value)} />
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Tipo</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImpressaoTipos(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
+            <Printer className="h-4 w-4" /> Imprimir Catálogo ({filtered.length})
+          </Button>
+          <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Tipo</Button>
+        </div>
       </div>
       {isLoading ? <div className="text-center py-8 text-muted-foreground">Carregando...</div> : (
         <div className="border rounded-lg overflow-hidden">
@@ -938,6 +1076,7 @@ function TiposServicoTab() {
                   <td className="px-4 py-3 text-right">{t.valorUnitario ? fmt(t.valorUnitario) : "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 justify-end">
+                      <Button size="icon" variant="ghost" title="Imprimir" onClick={() => setImpressaoTipos([t])}><Printer className="h-3.5 w-3.5 text-green-600" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Edit2 className="h-3.5 w-3.5" /></Button>
                       <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir?")) deleteMutation.mutate({ id: t.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
@@ -964,6 +1103,15 @@ function TiposServicoTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Modal de Impressão de Tipos de Serviço */}
+      {impressaoTipos && (
+        <EngenhariaImpressao
+          open={impressaoTipos !== null}
+          onClose={() => setImpressaoTipos(null)}
+          tipo="tiposServico"
+          dados={impressaoTipos}
+        />
+      )}
     </div>
   );
 }
@@ -977,6 +1125,7 @@ function MateriaisTab() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ codigo: "", nome: "", descricao: "", unidade: "", valorUnitario: "", estoque: "" });
+  const [impressaoMateriais, setImpressaoMateriais] = useState<MaterialParaImpressao[] | null>(null);
 
   const createMutation = trpc.materiais.create.useMutation({
     onSuccess: () => { utils.materiais.list.invalidate(); setShowForm(false); toast.success("Material criado!"); }
@@ -1011,7 +1160,12 @@ function MateriaisTab() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar material..." className="pl-9" value={busca} onChange={e => setBusca(e.target.value)} />
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Material</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImpressaoMateriais(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
+            <Printer className="h-4 w-4" /> Imprimir Catálogo ({filtered.length})
+          </Button>
+          <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Material</Button>
+        </div>
       </div>
       {isLoading ? <div className="text-center py-8 text-muted-foreground">Carregando...</div> : (
         <div className="border rounded-lg overflow-hidden">
@@ -1038,6 +1192,7 @@ function MateriaisTab() {
                   <td className="px-4 py-3 text-right">{m.valorUnitario ? fmt(m.valorUnitario) : "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 justify-end">
+                      <Button size="icon" variant="ghost" title="Imprimir" onClick={() => setImpressaoMateriais([m])}><Printer className="h-3.5 w-3.5 text-green-600" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => openEdit(m)}><Edit2 className="h-3.5 w-3.5" /></Button>
                       <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir?")) deleteMutation.mutate({ id: m.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
@@ -1065,6 +1220,15 @@ function MateriaisTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Modal de Impressão de Materiais */}
+      {impressaoMateriais && (
+        <EngenhariaImpressao
+          open={impressaoMateriais !== null}
+          onClose={() => setImpressaoMateriais(null)}
+          tipo="materiais"
+          dados={impressaoMateriais}
+        />
+      )}
     </div>
   );
 }

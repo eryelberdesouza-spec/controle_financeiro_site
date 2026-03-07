@@ -258,3 +258,20 @@
 - [x] Modal de geração de lançamento: escolher tipo (Recebimento/Pagamento), valor, data de vencimento, descrição
 - [x] Procedure ordensServico.gerarLancamento cria pagamento ou recebimento vinculado ao cliente e contrato da OS
 - [x] Após criar lançamento, redireciona automaticamente para a página de Pagamentos ou Recebimentos
+
+## Impressão Engenharia + Endereço (v32)
+- [x] Campos de endereço estruturado (logradouro, número, complemento, bairro, CEP, cidade, estado) na tabela contratos
+- [x] Campos de endereço estruturado na tabela ordensServico
+- [x] Migração do banco de dados aplicada com pnpm db:push
+- [x] Router engenharia.ts atualizado com campos de endereço no create/update de Contratos e OS
+- [x] Formulário de Contrato atualizado com seção de endereço (7 campos)
+- [x] Formulário de OS atualizado com seção "Endereço do Local de Execução" (7 campos)
+- [x] Componente EngenhariaImpressao.tsx criado com suporte a Contratos, OS, Materiais e Tipos de Serviço
+- [x] Impressão de Contrato: cabeçalho empresa, número em destaque, status, tipo, dados completos, endereço, assinaturas
+- [x] Impressão de OS: cabeçalho empresa, número em destaque, status, prioridade, dados completos, endereço, tabela de itens, assinaturas
+- [x] Impressão de Materiais: tabela completa com código, nome, unidade, estoque, valor unitário, status
+- [x] Impressão de Tipos de Serviço: tabela completa com código, nome, unidade, valor unitário, status
+- [x] Botão "Imprimir Lista" (em lote) na barra de ações de Contratos, OS, Materiais e Tipos de Serviço
+- [x] Botão de impressão individual (verde) em cada linha/card de Contratos, OS, Materiais e Tipos de Serviço
+- [x] Modal de pré-visualização antes da impressão com botão "Imprimir / Salvar PDF"
+- [x] CSS de impressão otimizado para A4 com @page size, margens e layout profissional

@@ -109,6 +109,7 @@ export async function listPagamentos(filters?: { status?: string; centroCusto?: 
     status: pagamentos.status,
     centroCusto: pagamentos.centroCusto,
     centroCustoId: pagamentos.centroCustoId,
+    centroCustoNome: centrosCusto.nome,
     clienteId: pagamentos.clienteId,
     clienteNome: clientes.nome,
     tipoServico: pagamentos.tipoServico,
@@ -125,6 +126,7 @@ export async function listPagamentos(filters?: { status?: string; centroCusto?: 
   })
     .from(pagamentos)
     .leftJoin(clientes, eq(pagamentos.clienteId, clientes.id))
+    .leftJoin(centrosCusto, eq(pagamentos.centroCustoId, centrosCusto.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(pagamentos.dataPagamento));
 }
@@ -214,6 +216,7 @@ export async function listRecebimentos(filters?: { status?: string; tipoRecebime
     status: recebimentos.status,
     tipoRecebimento: recebimentos.tipoRecebimento,
     centroCustoId: recebimentos.centroCustoId,
+    centroCustoNome: centrosCusto.nome,
     clienteId: recebimentos.clienteId,
     clienteNome: clientes.nome,
     quantidadeParcelas: recebimentos.quantidadeParcelas,
@@ -224,6 +227,7 @@ export async function listRecebimentos(filters?: { status?: string; tipoRecebime
   })
     .from(recebimentos)
     .leftJoin(clientes, eq(recebimentos.clienteId, clientes.id))
+    .leftJoin(centrosCusto, eq(recebimentos.centroCustoId, centrosCusto.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(recebimentos.dataVencimento));
 }

@@ -38,7 +38,6 @@ const menuItems = [
   { icon: Building2, label: "Centros de Custo", path: "/centros-custo", modulo: "centros_custo" as const },
   { icon: HardHat, label: "Engenharia", path: "/engenharia", modulo: "engenharia_os" as const },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios", modulo: "relatorios" as const },
-  { icon: BarChart3, label: "Relatório por CC", path: "/relatorio-centro-custo", modulo: "relatorios" as const },
   { icon: Users, label: "Usuários", path: "/usuarios", adminOnly: true },
   { icon: Settings, label: "Configurações", path: "/configuracoes", adminOnly: true },
   { icon: BookOpen, label: "Guia de Uso", path: "/guia" },

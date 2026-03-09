@@ -316,3 +316,14 @@
 - [x] Engenharia.tsx: botões Novo/Editar/Excluir em todas as abas (Contratos, OS, Materiais, Tipos) condicionais por permissão
 - [x] Operacional NÃO pode excluir sem autorização do admin (guard no backend + botão oculto no frontend)
 - [x] Testes atualizados: 26 testes passando
+
+## Integração Relatório por Centro de Custo (v36)
+- [x] Mover Relatório por CC para dentro da página Relatórios como nova aba "Por Centro de Custo"
+- [x] Remover item "Relatório por CC" do menu lateral (DashboardLayout)
+- [x] Corrigir queries listPagamentos e listRecebimentos para JOIN com tabela centros_custo (retorna nome real do CC)
+- [x] Garantir que pagamentos vinculados a um CC apareçam no relatório daquele CC (filtro por centroCustoId)
+- [x] Garantir que recebimentos vinculados a um CC apareçam no relatório daquele CC (filtro por centroCustoId)
+- [x] Seletor de CC no relatório lista apenas os CCs cadastrados no banco (trpc.centrosCusto.list)
+- [x] Aba Geral: filtro de CC usa seletor com os CCs cadastrados no banco
+- [x] Aba Por Centro de Custo: cards de totais, gráfico de evolução mensal, pizza por tipo, tabelas detalhadas, impressão A4
+- [x] TypeScript limpo (0 erros) · 26 testes passando

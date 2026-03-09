@@ -277,8 +277,21 @@
 - [x] CSS de impressão otimizado para A4 com @page size, margens e layout profissional
 
 ## Impressão Profissional Completa — OS e Contratos (v33)
-- [ ] Reescrever impressão de OS com TODOS os campos: número, título, status, prioridade, responsável, cliente, contrato, datas, valor estimado, valor final, endereço completo, descrição, observações, itens/materiais, assinatura do cliente e do responsável
-- [ ] Reescrever impressão de Contrato com TODOS os campos: número, tipo, status, cliente, objeto, datas, valores, endereço completo, cláusulas/observações, assinatura do contratante e do contratado
-- [ ] Incluir logo e nome da empresa (Atom Tech) no cabeçalho de todas as impressões de Engenharia
-- [ ] Seguir o mesmo padrão visual do ComprovanteViewer de Pagamentos (profissional, bem estruturado)
-- [ ] Impressão de Materiais e Tipos de Serviço também com cabeçalho da empresa
+- [x] Reescrever impressão de OS com TODOS os campos: número, título, status, prioridade, responsável, cliente, contrato, datas, valor estimado, valor final, endereço completo, descrição, observações, itens/materiais, assinatura do cliente e do responsável
+- [x] Reescrever impressão de Contrato com TODOS os campos: número, tipo, status, cliente, objeto, datas, valores, endereço completo, cláusulas/observações, assinatura do contratante e do contratado
+- [x] Incluir logo e nome da empresa (Atom Tech) no cabeçalho de todas as impressões de Engenharia
+- [x] Seguir o mesmo padrão visual do ComprovanteViewer de Pagamentos (profissional, bem estruturado)
+- [x] Impressão de Materiais e Tipos de Serviço também com cabeçalho da empresa
+
+## Relatório Detalhado por Centro de Custo (v34)
+- [x] Corrigir bug de criação de recebimentos: adicionar clienteId e centroCustoId no schema Zod do router create/update
+- [x] Procedure relatorioCentroCusto.getRelatorio: retorna dados por CC com filtros de período, mês e ano
+- [x] Procedure retorna: totais de pagamentos e recebimentos por CC, lista de transações, evolução mensal
+- [x] Página RelatorioCentroCusto.tsx com: seletor de CC, filtro de período (mês/ano ou intervalo), cards de totais
+- [x] Gráfico de barras comparativo (pagamentos x recebimentos por CC no período)
+- [x] Gráfico de pizza de distribuição de gastos por tipo de serviço dentro do CC
+- [x] Tabela detalhada de pagamentos vinculados ao CC selecionado no período
+- [x] Tabela detalhada de recebimentos vinculados ao CC selecionado no período
+- [x] Evolução mensal do CC selecionado (gráfico de linha ou barras empilhadas)
+- [x] Botão de impressão do relatório por CC com logo da empresa
+- [x] Link no menu lateral em Relatórios para acessar o relatório por CC

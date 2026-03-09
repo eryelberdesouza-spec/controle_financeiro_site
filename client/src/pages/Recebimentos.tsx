@@ -386,8 +386,12 @@ export default function Recebimentos() {
       ? (form.dataPrimeiroVencimento ? new Date(form.dataPrimeiroVencimento + "T12:00:00") : new Date())
       : (form.dataVencimento ? new Date(form.dataVencimento + "T12:00:00") : new Date());
 
+    // Extrair apenas os campos que o backend aceita.
+    // Os campos 'parcelado' e 'dataPrimeiroVencimento' são de controle do formulário
+    // e NÃO existem no schema do banco — enviá-los causaria corrupção dos parâmetros do INSERT.
+    const { parcelado: _parcelado, dataPrimeiroVencimento: _dataPrimeiroVencimento, ...formFields } = form;
     const payload = {
-      ...form,
+      ...formFields,
       dataVencimento: dataVencimentoFinal,
       dataRecebimento: form.dataRecebimento ? new Date(form.dataRecebimento + "T12:00:00") : undefined,
       quantidadeParcelas: form.parcelado ? form.quantidadeParcelas : 1,

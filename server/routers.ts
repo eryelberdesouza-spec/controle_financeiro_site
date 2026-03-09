@@ -53,6 +53,7 @@ import {
   getVencimentosProximos,
   getDashboardConfig,
   saveDashboardConfig,
+  getRelatorioCentroCusto,
 } from "./db";
 
 // Procedure que exige role admin
@@ -155,9 +156,11 @@ const recebimentosRouter = router({
     .input(z.object({
       numeroControle: z.string().optional(),
       numeroContrato: z.string().optional(),
-      nomeRazaoSocial: z.string().min(1),
+      nomeRazaoSocial: z.string().min(1).max(255),
       descricao: z.string().optional(),
       tipoRecebimento: z.enum(TIPOS_RECEBIMENTO).default("Pix"),
+      clienteId: z.number().nullable().optional(),
+      centroCustoId: z.number().nullable().optional(),
       valorTotal: z.string().min(1),
       valorEquipamento: z.string().optional().default("0"),
       valorServico: z.string().optional().default("0"),
@@ -177,9 +180,11 @@ const recebimentosRouter = router({
       id: z.number(),
       numeroControle: z.string().optional(),
       numeroContrato: z.string().optional(),
-      nomeRazaoSocial: z.string().min(1).optional(),
+      nomeRazaoSocial: z.string().min(1).max(255).optional(),
       descricao: z.string().optional(),
       tipoRecebimento: z.enum(TIPOS_RECEBIMENTO).optional(),
+      clienteId: z.number().nullable().optional(),
+      centroCustoId: z.number().nullable().optional(),
       valorTotal: z.string().optional(),
       valorEquipamento: z.string().optional(),
       valorServico: z.string().optional(),
@@ -200,6 +205,20 @@ const recebimentosRouter = router({
     .mutation(({ input }) => deleteRecebimento(input.id)),
 
   stats: staffProcedure.query(() => getRecebimentosStats()),
+});
+
+const relatorioCCRouter = router({
+  getRelatorio: staffProcedure
+    .input(z.object({
+      centroCustoId: z.number().nullable().optional(),
+      dataInicio: z.date().optional(),
+      dataFim: z.date().optional(),
+    }).optional())
+    .query(({ input }) => getRelatorioCentroCusto({
+      centroCustoId: input?.centroCustoId,
+      dataInicio: input?.dataInicio,
+      dataFim: input?.dataFim,
+    })),
 });
 
 const dashboardRouter = router({
@@ -466,6 +485,7 @@ export const appRouter = router({
   contratos: contratosRouter,
   ordensServico: ordensServicoRouter,
   relatorioContrato: relatorioContratoRouter,
+  relatorioCentroCusto: relatorioCCRouter,
 });
 
 export type AppRouter = typeof appRouter;

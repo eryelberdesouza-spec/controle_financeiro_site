@@ -37,6 +37,7 @@ const menuItems = [
   { icon: Building2, label: "Centros de Custo", path: "/centros-custo" },
   { icon: HardHat, label: "Engenharia", path: "/engenharia" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
+  { icon: BarChart3, label: "Relatório por CC", path: "/relatorio-centro-custo" },
   { icon: Users, label: "Usuários", path: "/usuarios", adminOnly: true },
   { icon: Settings, label: "Configurações", path: "/configuracoes", adminOnly: true },
   { icon: BookOpen, label: "Guia de Uso", path: "/guia" },

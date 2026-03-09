@@ -729,3 +729,192 @@ export async function getExtratoCliente(clienteId: number) {
 
   return { cliente, pagamentos: pags, recebimentos: rebs };
 }
+
+// ─── Relatório por Centro de Custo ────────────────────────────────────────────
+export async function getRelatorioCentroCusto(params: {
+  centroCustoId?: number | null;
+  dataInicio?: Date;
+  dataFim?: Date;
+}) {
+  const db = await getDb();
+  if (!db) return {
+    centroCusto: null,
+    todosCentros: [],
+    totais: { totalPagamentos: 0, totalRecebimentos: 0, saldo: 0, qtdPagamentos: 0, qtdRecebimentos: 0 },
+    pagamentosList: [],
+    recebimentosList: [],
+    evolucaoMensal: [],
+    porTipoServico: [],
+    porTipoRecebimento: [],
+  };
+
+  const { centroCustoId, dataInicio, dataFim } = params;
+
+  // Buscar todos os centros de custo para o seletor
+  const todosCentros = await db.select().from(centrosCusto).orderBy(centrosCusto.nome);
+
+  // Buscar dados do CC selecionado
+  let ccInfo = null;
+  if (centroCustoId) {
+    const ccResult = await db.select().from(centrosCusto).where(eq(centrosCusto.id, centroCustoId)).limit(1);
+    ccInfo = ccResult[0] ?? null;
+  }
+
+  // Montar filtros para pagamentos
+  const pagConditions = [];
+  if (centroCustoId) pagConditions.push(eq(pagamentos.centroCustoId, centroCustoId));
+  if (dataInicio) pagConditions.push(gte(pagamentos.dataPagamento, dataInicio));
+  if (dataFim) pagConditions.push(lte(pagamentos.dataPagamento, dataFim));
+  const pagWhere = pagConditions.length > 0 ? and(...pagConditions) : undefined;
+
+  // Montar filtros para recebimentos
+  const recConditions = [];
+  if (centroCustoId) recConditions.push(eq(recebimentos.centroCustoId, centroCustoId));
+  if (dataInicio) recConditions.push(gte(recebimentos.dataVencimento, dataInicio));
+  if (dataFim) recConditions.push(lte(recebimentos.dataVencimento, dataFim));
+  const recWhere = recConditions.length > 0 ? and(...recConditions) : undefined;
+
+  // Buscar pagamentos detalhados com join de cliente
+  const pagamentosList = await db
+    .select({
+      id: pagamentos.id,
+      numeroControle: pagamentos.numeroControle,
+      nomeCompleto: pagamentos.nomeCompleto,
+      tipoServico: pagamentos.tipoServico,
+      valor: pagamentos.valor,
+      dataPagamento: pagamentos.dataPagamento,
+      status: pagamentos.status,
+      descricao: pagamentos.descricao,
+      observacao: pagamentos.observacao,
+      clienteNome: clientes.nome,
+    })
+    .from(pagamentos)
+    .leftJoin(clientes, eq(pagamentos.clienteId, clientes.id))
+    .where(pagWhere)
+    .orderBy(desc(pagamentos.dataPagamento));
+
+  // Buscar recebimentos detalhados com join de cliente
+  const recebimentosList = await db
+    .select({
+      id: recebimentos.id,
+      numeroControle: recebimentos.numeroControle,
+      numeroContrato: recebimentos.numeroContrato,
+      nomeRazaoSocial: recebimentos.nomeRazaoSocial,
+      tipoRecebimento: recebimentos.tipoRecebimento,
+      valorTotal: recebimentos.valorTotal,
+      dataVencimento: recebimentos.dataVencimento,
+      dataRecebimento: recebimentos.dataRecebimento,
+      status: recebimentos.status,
+      descricao: recebimentos.descricao,
+      observacao: recebimentos.observacao,
+      clienteNome: clientes.nome,
+    })
+    .from(recebimentos)
+    .leftJoin(clientes, eq(recebimentos.clienteId, clientes.id))
+    .where(recWhere)
+    .orderBy(desc(recebimentos.dataVencimento));
+
+  // Calcular totais
+  const [pagTotais] = await db
+    .select({
+      total: sql<number>`COALESCE(SUM(${pagamentos.valor}), 0)`,
+      qtd: sql<number>`COUNT(*)`,
+    })
+    .from(pagamentos)
+    .where(pagWhere);
+
+  const [recTotais] = await db
+    .select({
+      total: sql<number>`COALESCE(SUM(${recebimentos.valorTotal}), 0)`,
+      qtd: sql<number>`COUNT(*)`,
+    })
+    .from(recebimentos)
+    .where(recWhere);
+
+  const totalPagamentos = Number(pagTotais?.total ?? 0);
+  const totalRecebimentos = Number(recTotais?.total ?? 0);
+
+  // Evolução mensal
+  const evolucaoPag = await db
+    .select({
+      ano: sql<number>`YEAR(${pagamentos.dataPagamento})`,
+      mes: sql<number>`MONTH(${pagamentos.dataPagamento})`,
+      total: sql<number>`COALESCE(SUM(${pagamentos.valor}), 0)`,
+    })
+    .from(pagamentos)
+    .where(pagWhere)
+    .groupBy(sql`YEAR(${pagamentos.dataPagamento})`, sql`MONTH(${pagamentos.dataPagamento})`)
+    .orderBy(sql`YEAR(${pagamentos.dataPagamento})`, sql`MONTH(${pagamentos.dataPagamento})`);
+
+  const evolucaoRec = await db
+    .select({
+      ano: sql<number>`YEAR(${recebimentos.dataVencimento})`,
+      mes: sql<number>`MONTH(${recebimentos.dataVencimento})`,
+      total: sql<number>`COALESCE(SUM(${recebimentos.valorTotal}), 0)`,
+    })
+    .from(recebimentos)
+    .where(recWhere)
+    .groupBy(sql`YEAR(${recebimentos.dataVencimento})`, sql`MONTH(${recebimentos.dataVencimento})`)
+    .orderBy(sql`YEAR(${recebimentos.dataVencimento})`, sql`MONTH(${recebimentos.dataVencimento})`);
+
+  const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  const mesesMap = new Map<string, { label: string; pagamentos: number; recebimentos: number }>();
+  for (const p of evolucaoPag) {
+    const key = `${p.ano}-${String(p.mes).padStart(2, "0")}`;
+    const label = `${MESES[p.mes - 1]}/${String(p.ano).slice(2)}`;
+    const entry = mesesMap.get(key) ?? { label, pagamentos: 0, recebimentos: 0 };
+    entry.pagamentos = Number(p.total);
+    mesesMap.set(key, entry);
+  }
+  for (const r of evolucaoRec) {
+    const key = `${r.ano}-${String(r.mes).padStart(2, "0")}`;
+    const label = `${MESES[r.mes - 1]}/${String(r.ano).slice(2)}`;
+    const entry = mesesMap.get(key) ?? { label, pagamentos: 0, recebimentos: 0 };
+    entry.recebimentos = Number(r.total);
+    mesesMap.set(key, entry);
+  }
+  const evolucaoMensal = Array.from(mesesMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, v]) => v);
+
+  // Distribuição por tipo de serviço (pagamentos)
+  const porTipoServico = await db
+    .select({
+      tipo: pagamentos.tipoServico,
+      total: sql<number>`COALESCE(SUM(${pagamentos.valor}), 0)`,
+      qtd: sql<number>`COUNT(*)`,
+    })
+    .from(pagamentos)
+    .where(pagWhere)
+    .groupBy(pagamentos.tipoServico)
+    .orderBy(sql`SUM(${pagamentos.valor}) DESC`);
+
+  // Distribuição por tipo de recebimento
+  const porTipoRecebimento = await db
+    .select({
+      tipo: recebimentos.tipoRecebimento,
+      total: sql<number>`COALESCE(SUM(${recebimentos.valorTotal}), 0)`,
+      qtd: sql<number>`COUNT(*)`,
+    })
+    .from(recebimentos)
+    .where(recWhere)
+    .groupBy(recebimentos.tipoRecebimento)
+    .orderBy(sql`SUM(${recebimentos.valorTotal}) DESC`);
+
+  return {
+    centroCusto: ccInfo,
+    todosCentros,
+    totais: {
+      totalPagamentos,
+      totalRecebimentos,
+      saldo: totalRecebimentos - totalPagamentos,
+      qtdPagamentos: Number(pagTotais?.qtd ?? 0),
+      qtdRecebimentos: Number(recTotais?.qtd ?? 0),
+    },
+    pagamentosList,
+    recebimentosList,
+    evolucaoMensal,
+    porTipoServico: porTipoServico.map(p => ({ tipo: p.tipo ?? "Sem tipo", total: Number(p.total), qtd: Number(p.qtd) })),
+    porTipoRecebimento: porTipoRecebimento.map(r => ({ tipo: r.tipo ?? "Sem tipo", total: Number(r.total), qtd: Number(r.qtd) })),
+  };
+}

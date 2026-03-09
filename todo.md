@@ -295,3 +295,24 @@
 - [x] Evolução mensal do CC selecionado (gráfico de linha ou barras empilhadas)
 - [x] Botão de impressão do relatório por CC com logo da empresa
 - [x] Link no menu lateral em Relatórios para acessar o relatório por CC
+
+## Sistema de Permissões Granulares — Papel Operacional (v35)
+- [x] Criar tabela user_permissions no schema (userId, modulo, pode_ver, pode_criar, pode_editar, pode_excluir)
+- [x] Migrar banco com pnpm db:push
+- [x] Adicionar enum 'operacional' ao campo role da tabela users
+- [x] Criar helpers de DB: getUserPermissions, setAllUserPermissions, getModulos, DEFAULT_PERMISSIONS
+- [x] Criar procedure tRPC: permissoes.minhasPermissoes (retorna permissões do usuário logado)
+- [x] Criar procedure tRPC: permissoes.getPermissoes (admin: ver permissões de qualquer usuário)
+- [x] Criar procedure tRPC: permissoes.setPermissoes (admin: definir permissões por módulo)
+- [x] Definir DEFAULT_PERMISSIONS por role: admin (tudo), operacional (ver/criar/editar OS+Clientes; sem excluir), operador (ver pagamentos/recebimentos)
+- [x] Aplicar guard de permissão nas procedures de exclusão (delete) em pagamentos, recebimentos, clientes, CC, contratos, OS, materiais, tipos de serviço
+- [x] Criar hook usePermissions.ts no frontend com can.ver/criar/editar/excluir por módulo
+- [x] Página Usuarios.tsx reescrita com seletor de role (admin/operador/operacional/user) e modal de permissões granulares
+- [x] Modal de permissões: checkboxes por módulo para Ver/Criar/Editar/Excluir, botão "Aplicar Padrão Operacional"
+- [x] DashboardLayout: filtra itens de menu baseado nas permissões (podeVer)
+- [x] Pagamentos.tsx: botões Novo/Editar/Excluir condicionais por permissão
+- [x] Recebimentos.tsx: botões Novo/Editar/Excluir condicionais por permissão
+- [x] Clientes.tsx: botões Novo/Editar/Excluir condicionais por permissão
+- [x] Engenharia.tsx: botões Novo/Editar/Excluir em todas as abas (Contratos, OS, Materiais, Tipos) condicionais por permissão
+- [x] Operacional NÃO pode excluir sem autorização do admin (guard no backend + botão oculto no frontend)
+- [x] Testes atualizados: 26 testes passando

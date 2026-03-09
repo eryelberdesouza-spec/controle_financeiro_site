@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,6 +59,10 @@ const emptyForm: FormData = {
 };
 
 export default function Clientes() {
+  const { can } = usePermissions();
+  const podeCriar = can.criar("clientes");
+  const podeEditar = can.editar("clientes");
+  const podeExcluir = can.excluir("clientes");
   const [busca, setBusca] = useState("");
   const [dialogAberto, setDialogAberto] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
@@ -144,10 +149,12 @@ export default function Clientes() {
             Gerencie clientes, fornecedores, prestadores de serviço e outros parceiros
           </p>
         </div>
-        <Button onClick={abrirNovo} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Novo Cadastro
-        </Button>
+        {podeCriar && (
+          <Button onClick={abrirNovo} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Novo Cadastro
+          </Button>
+        )}
       </div>
 
       {/* Cards de resumo por tipo */}
@@ -214,16 +221,20 @@ export default function Clientes() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => abrirEditar(c)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost" size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setConfirmDeleteId(c.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {podeEditar && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => abrirEditar(c)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {podeExcluir && (
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => setConfirmDeleteId(c.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

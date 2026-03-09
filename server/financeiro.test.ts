@@ -45,7 +45,7 @@ describe("pagamentos - controle de acesso", () => {
 
   it("operador NÃO pode deletar pagamento", async () => {
     const caller = appRouter.createCaller(createCtx("operador"));
-    await expect(caller.pagamentos.delete({ id: 1 })).rejects.toThrow("Acesso restrito");
+    await expect(caller.pagamentos.delete({ id: 1 })).rejects.toThrow("permissão");
   });
 
   it("user sem permissão NÃO pode listar pagamentos", async () => {
@@ -68,7 +68,7 @@ describe("recebimentos - controle de acesso", () => {
 
   it("operador NÃO pode deletar recebimento", async () => {
     const caller = appRouter.createCaller(createCtx("operador"));
-    await expect(caller.recebimentos.delete({ id: 1 })).rejects.toThrow("Acesso restrito");
+    await expect(caller.recebimentos.delete({ id: 1 })).rejects.toThrow("permissão");
   });
 
   it("user NÃO pode listar recebimentos", async () => {

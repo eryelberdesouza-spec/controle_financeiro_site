@@ -54,6 +54,10 @@ import {
   getDashboardConfig,
   saveDashboardConfig,
   getRelatorioCentroCusto,
+  getUserPermissions,
+  setAllUserPermissions,
+  resetUserPermissions,
+  getModulos,
 } from "./db";
 
 // Procedure que exige role admin
@@ -64,12 +68,77 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
-// Procedure que exige admin ou operador (bloqueia role "user" simples)
+// Procedure que exige admin, operador ou operacional (bloqueia role "user" simples)
 const staffProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "admin" && ctx.user.role !== "operador") {
+  if (ctx.user.role !== "admin" && ctx.user.role !== "operador" && ctx.user.role !== "operacional") {
     throw new TRPCError({ code: "FORBIDDEN", message: "Acesso não autorizado." });
   }
   return next({ ctx });
+});
+
+// Helper para verificar permissão granular em uma procedure
+async function requirePermission(
+  userId: number,
+  userRole: string,
+  modulo: string,
+  acao: "podeVer" | "podeCriar" | "podeEditar" | "podeExcluir"
+) {
+  if (userRole === "admin") return; // admin sempre passa
+  const perms = await getUserPermissions(userId, userRole);
+  if (!perms[modulo]?.[acao]) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `Você não tem permissão para ${acao === "podeVer" ? "visualizar" : acao === "podeCriar" ? "criar" : acao === "podeEditar" ? "editar" : "excluir"} registros em ${modulo}.`,
+    });
+  }
+}
+
+// Router de permissões granulares
+const permissoesRouter = router({
+  // Retorna as permissões do usuário logado
+  minhasPermissoes: protectedProcedure.query(async ({ ctx }) => {
+    const user = ctx.user as any;
+    return getUserPermissions(user.id, user.role);
+  }),
+  // Retorna os módulos disponíveis
+  modulos: protectedProcedure.query(() => getModulos()),
+  // Admin: ver permissões de qualquer usuário
+  getByUser: adminProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await import("./db");
+      const userResult = await db.listUsers();
+      const user = userResult.find(u => u.id === input.userId);
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Usuário não encontrado." });
+      return getUserPermissions(input.userId, user.role);
+    }),
+  // Admin: definir permissões de um usuário
+  setPermissions: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      permissions: z.array(z.object({
+        modulo: z.string(),
+        podeVer: z.boolean(),
+        podeCriar: z.boolean(),
+        podeEditar: z.boolean(),
+        podeExcluir: z.boolean(),
+      })),
+    }))
+    .mutation(({ input }) => setAllUserPermissions(input.userId, input.permissions)),
+  // Admin: resetar permissões para o padrão do role
+  resetPermissions: adminProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(({ input }) => resetUserPermissions(input.userId)),
+  // Admin: alterar role do usuário
+  setRole: adminProcedure
+    .input(z.object({ userId: z.number(), role: z.enum(["admin", "operador", "operacional", "user"]) }))
+    .mutation(async ({ input }) => {
+      const db = await import("./db");
+      await db.updateUserRole(input.userId, input.role as any);
+      // Resetar permissões customizadas ao mudar de role
+      await resetUserPermissions(input.userId);
+      return { success: true };
+    }),
 });
 
 const TIPOS_RECEBIMENTO = ["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"] as const;
@@ -128,9 +197,13 @@ const pagamentosRouter = router({
     .mutation(({ input }) => { const { id, ...data } = input; return updatePagamento(id, data); }),
 
   // Somente admin pode excluir pagamentos
-  delete: adminProcedure
+  delete: staffProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(({ input }) => deletePagamento(input.id)),
+    .mutation(async ({ ctx, input }) => {
+      const user = ctx.user as any;
+      await requirePermission(user.id, user.role, "pagamentos", "podeExcluir");
+      return deletePagamento(input.id);
+    }),
 
   stats: staffProcedure.query(() => getPagamentosStats()),
 
@@ -200,9 +273,13 @@ const recebimentosRouter = router({
     .mutation(({ input }) => { const { id, ...data } = input; return updateRecebimento(id, data); }),
 
   // Somente admin pode excluir recebimentos
-  delete: adminProcedure
+  delete: staffProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(({ input }) => deleteRecebimento(input.id)),
+    .mutation(async ({ ctx, input }) => {
+      const user = ctx.user as any;
+      await requirePermission(user.id, user.role, "recebimentos", "podeExcluir");
+      return deleteRecebimento(input.id);
+    }),
 
   stats: staffProcedure.query(() => getRecebimentosStats()),
 });
@@ -288,9 +365,13 @@ const clientesRouter = router({
       banco: z.string().optional(),
     }))
     .mutation(({ input }) => { const { id, ...data } = input; return updateCliente(id, data); }),
-  delete: adminProcedure
+  delete: staffProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(({ input }) => deleteCliente(input.id)),
+    .mutation(async ({ ctx, input }) => {
+      const user = ctx.user as any;
+      await requirePermission(user.id, user.role, "clientes", "podeExcluir");
+      return deleteCliente(input.id);
+    }),
   extrato: staffProcedure
     .input(z.object({ clienteId: z.number() }))
     .query(({ input }) => getExtratoCliente(input.clienteId)),
@@ -313,9 +394,13 @@ const centrosCustoRouter = router({
       ativo: z.boolean().optional(),
     }))
     .mutation(({ input }) => { const { id, ...data } = input; return updateCentroCusto(id, data); }),
-  delete: adminProcedure
+  delete: staffProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(({ input }) => deleteCentroCusto(input.id)),
+    .mutation(async ({ ctx, input }) => {
+      const user = ctx.user as any;
+      await requirePermission(user.id, user.role, "centros_custo", "podeExcluir");
+      return deleteCentroCusto(input.id);
+    }),
 });
 
 const usersRouter = router({
@@ -486,6 +571,7 @@ export const appRouter = router({
   ordensServico: ordensServicoRouter,
   relatorioContrato: relatorioContratoRouter,
   relatorioCentroCusto: relatorioCCRouter,
+  permissoes: permissoesRouter,
 });
 
 export type AppRouter = typeof appRouter;

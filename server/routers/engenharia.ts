@@ -1,6 +1,16 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, getUserPermissions } from "../db";
+import { TRPCError } from "@trpc/server";
+
+// Helper local para verificar permissão granular
+async function requirePerm(userId: number, userRole: string, modulo: string, acao: "podeVer" | "podeCriar" | "podeEditar" | "podeExcluir") {
+  if (userRole === "admin") return;
+  const perms = await getUserPermissions(userId, userRole);
+  if (!perms[modulo]?.[acao]) {
+    throw new TRPCError({ code: "FORBIDDEN", message: `Você não tem permissão para excluir registros neste módulo.` });
+  }
+}
 import {
   tiposServico, materiais, contratos, ordensServico, osItens, clientes,
   pagamentos, recebimentos, pagamentoParcelas, recebimentoParcelas
@@ -59,7 +69,8 @@ export const tiposServicoRouter = router({
 
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await requirePerm(ctx.user.id, ctx.user.role, "engenharia_materiais", "podeExcluir");
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
       await d.delete(tiposServico).where(eq(tiposServico.id, input.id));
@@ -122,7 +133,8 @@ export const materiaisRouter = router({
 
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await requirePerm(ctx.user.id, ctx.user.role, "engenharia_materiais", "podeExcluir");
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
       await d.delete(materiais).where(eq(materiais.id, input.id));
@@ -273,7 +285,8 @@ export const contratosRouter = router({
 
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await requirePerm(ctx.user.id, ctx.user.role, "engenharia_contratos", "podeExcluir");
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
       await d.delete(contratos).where(eq(contratos.id, input.id));
@@ -462,7 +475,8 @@ export const ordensServicoRouter = router({
 
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await requirePerm(ctx.user.id, ctx.user.role, "engenharia_os", "podeExcluir");
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
       await d.delete(ordensServico).where(eq(ordensServico.id, input.id));

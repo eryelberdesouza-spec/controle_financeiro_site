@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer } from "lucide-react";
 import { ComprovanteViewer, type ComprovantePagamento } from "@/components/ComprovanteViewer";
 import { ClienteSelect, CentroCustoSelect } from "@/components/ClienteCentroCustoSelect";
@@ -173,6 +174,10 @@ function ParcelasRow({ pagamentoId }: { pagamentoId: number }) {
 export default function Pagamentos() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const { can } = usePermissions();
+  const podeCriar = can.criar("pagamentos");
+  const podeEditar = can.editar("pagamentos");
+  const podeExcluir = can.excluir("pagamentos");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<FormData>(defaultForm);
@@ -424,9 +429,11 @@ export default function Pagamentos() {
             <Button variant="outline" onClick={() => exportToCSV(filtered)} className="gap-2">
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
-            <Button onClick={() => { setEditId(null); setForm({ ...defaultForm, numeroControle: nextNumeroControle ?? "" }); setParcelas([]); setOpen(true); }} className="gap-2">
-              <Plus className="h-4 w-4" /> Novo Pagamento
-            </Button>
+            {podeCriar && (
+              <Button onClick={() => { setEditId(null); setForm({ ...defaultForm, numeroControle: nextNumeroControle ?? "" }); setParcelas([]); setOpen(true); }} className="gap-2">
+                <Plus className="h-4 w-4" /> Novo Pagamento
+              </Button>
+            )}
           </div>
         </div>
 
@@ -532,10 +539,12 @@ export default function Pagamentos() {
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" title="Imprimir comprovante" onClick={() => handleImprimirUnico(p)}>
                                 <Printer className="h-3.5 w-3.5" />
                               </Button>
+                              {podeEditar && (
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(p)}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
-                              {isAdmin && (
+                              )}
+                              {podeExcluir && (
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
                                   onClick={() => { if (confirm("Remover este pagamento?")) deleteMutation.mutate({ id: p.id }); }}>
                                   <Trash2 className="h-3.5 w-3.5" />

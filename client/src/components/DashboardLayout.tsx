@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import { usePermissions } from "@/hooks/usePermissions";
 import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -29,15 +30,15 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: ArrowUpCircle, label: "Pagamentos", path: "/pagamentos" },
-  { icon: ArrowDownCircle, label: "Recebimentos", path: "/recebimentos" },
-  { icon: UserCircle2, label: "Clientes", path: "/clientes" },
-  { icon: FileSearch, label: "Extrato por Cliente", path: "/extrato-cliente" },
-  { icon: Building2, label: "Centros de Custo", path: "/centros-custo" },
-  { icon: HardHat, label: "Engenharia", path: "/engenharia" },
-  { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
-  { icon: BarChart3, label: "Relatório por CC", path: "/relatorio-centro-custo" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/", modulo: "dashboard" as const },
+  { icon: ArrowUpCircle, label: "Pagamentos", path: "/pagamentos", modulo: "pagamentos" as const },
+  { icon: ArrowDownCircle, label: "Recebimentos", path: "/recebimentos", modulo: "recebimentos" as const },
+  { icon: UserCircle2, label: "Clientes", path: "/clientes", modulo: "clientes" as const },
+  { icon: FileSearch, label: "Extrato por Cliente", path: "/extrato-cliente", modulo: "clientes" as const },
+  { icon: Building2, label: "Centros de Custo", path: "/centros-custo", modulo: "centros_custo" as const },
+  { icon: HardHat, label: "Engenharia", path: "/engenharia", modulo: "engenharia_os" as const },
+  { icon: BarChart3, label: "Relatórios", path: "/relatorios", modulo: "relatorios" as const },
+  { icon: BarChart3, label: "Relatório por CC", path: "/relatorio-centro-custo", modulo: "relatorios" as const },
   { icon: Users, label: "Usuários", path: "/usuarios", adminOnly: true },
   { icon: Settings, label: "Configurações", path: "/configuracoes", adminOnly: true },
   { icon: BookOpen, label: "Guia de Uso", path: "/guia" },
@@ -119,6 +120,7 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
+  const { can, isAdmin } = usePermissions();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -202,7 +204,16 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.filter(item => !('adminOnly' in item && item.adminOnly) || user?.role === 'admin').map(item => {
+              {menuItems.filter(item => {
+                // Itens somente admin
+                if ('adminOnly' in item && item.adminOnly) return user?.role === 'admin';
+                // Admin tem acesso a tudo
+                if (isAdmin) return true;
+                // Itens sem módulo associado (Guia, FAQ) sempre visíveis
+                if (!('modulo' in item) || !item.modulo) return true;
+                // Verificar permissão de visualização do módulo
+                return can.ver(item.modulo);
+              }).map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>

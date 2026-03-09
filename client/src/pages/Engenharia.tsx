@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +48,10 @@ const PRIORIDADE: Record<string, { label: string; color: string }> = {
 
 // ─── Contratos ────────────────────────────────────────────────────────────────
 function ContratosTab() {
-  
+  const { can } = usePermissions();
+  const podeCriar = can.criar("engenharia_contratos");
+  const podeEditar = can.editar("engenharia_contratos");
+  const podeExcluir = can.excluir("engenharia_contratos");
   const utils = trpc.useUtils();
   const { data: contratos = [], isLoading } = trpc.contratos.list.useQuery();
   const { data: clientes = [] } = trpc.clientes.list.useQuery();
@@ -151,7 +155,7 @@ function ContratosTab() {
           <Button variant="outline" onClick={() => setImpressaoContratos(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
             <Printer className="h-4 w-4" /> Imprimir Lista ({filtered.length})
           </Button>
-          <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Contrato</Button>
+          {podeCriar && <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Contrato</Button>}
         </div>
       </div>
 
@@ -188,8 +192,8 @@ function ContratosTab() {
                       <Button size="icon" variant="ghost" title="Relatório do Contrato" onClick={() => setRelatorioContratoId(c.id)}>
                         <BarChart2 className="h-4 w-4 text-blue-600" />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Edit2 className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir contrato?")) deleteMutation.mutate({ id: c.id }); }}><Trash2 className="h-4 w-4" /></Button>
+                      {podeEditar && <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Edit2 className="h-4 w-4" /></Button>}
+                      {podeExcluir && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir contrato?")) deleteMutation.mutate({ id: c.id }); }}><Trash2 className="h-4 w-4" /></Button>}
                     </div>
                   </div>
                 </CardContent>
@@ -499,7 +503,10 @@ function ContratosTab() {
 
 // ─── Ordens de Serviço ────────────────────────────────────────────────────────
 function OrdensServicoTab() {
-  
+  const { can } = usePermissions();
+  const podeCriar = can.criar("engenharia_os");
+  const podeEditar = can.editar("engenharia_os");
+  const podeExcluir = can.excluir("engenharia_os");
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
   const { data: ordens = [], isLoading } = trpc.ordensServico.list.useQuery();
@@ -663,7 +670,7 @@ function OrdensServicoTab() {
           <Button variant="outline" onClick={() => setImpressaoOS(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
             <Printer className="h-4 w-4" /> Imprimir Lista ({filtered.length})
           </Button>
-          <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Nova OS</Button>
+          {podeCriar && <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Nova OS</Button>}
         </div>
       </div>
 
@@ -710,8 +717,8 @@ function OrdensServicoTab() {
                       <Button size="icon" variant="ghost" onClick={() => setExpandedId(expanded ? null : o.id)}>
                         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(o)}><Edit2 className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir OS?")) deleteMutation.mutate({ id: o.id }); }}><Trash2 className="h-4 w-4" /></Button>
+                      {podeEditar && <Button size="icon" variant="ghost" onClick={() => openEdit(o)}><Edit2 className="h-4 w-4" /></Button>}
+                      {podeExcluir && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir OS?")) deleteMutation.mutate({ id: o.id }); }}><Trash2 className="h-4 w-4" /></Button>}
                     </div>
                   </div>
                   {expanded && o.descricao && (
@@ -1004,7 +1011,10 @@ function OrdensServicoTab() {
 
 // ─── Tipos de Serviço ─────────────────────────────────────────────────────────
 function TiposServicoTab() {
-  
+  const { can } = usePermissions();
+  const podeCriar = can.criar("engenharia_materiais");
+  const podeEditar = can.editar("engenharia_materiais");
+  const podeExcluir = can.excluir("engenharia_materiais");
   const utils = trpc.useUtils();
   const { data: tipos = [], isLoading } = trpc.tiposServico.list.useQuery();
   const [busca, setBusca] = useState("");
@@ -1050,7 +1060,7 @@ function TiposServicoTab() {
           <Button variant="outline" onClick={() => setImpressaoTipos(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
             <Printer className="h-4 w-4" /> Imprimir Catálogo ({filtered.length})
           </Button>
-          <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Tipo</Button>
+          {podeCriar && <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Tipo</Button>}
         </div>
       </div>
       {isLoading ? <div className="text-center py-8 text-muted-foreground">Carregando...</div> : (
@@ -1077,8 +1087,8 @@ function TiposServicoTab() {
                   <td className="px-4 py-3">
                     <div className="flex gap-1 justify-end">
                       <Button size="icon" variant="ghost" title="Imprimir" onClick={() => setImpressaoTipos([t])}><Printer className="h-3.5 w-3.5 text-green-600" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir?")) deleteMutation.mutate({ id: t.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      {podeEditar && <Button size="icon" variant="ghost" onClick={() => openEdit(t)}><Edit2 className="h-3.5 w-3.5" /></Button>}
+                      {podeExcluir && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir?")) deleteMutation.mutate({ id: t.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>}
                     </div>
                   </td>
                 </tr>
@@ -1118,7 +1128,10 @@ function TiposServicoTab() {
 
 // ─── Materiais ────────────────────────────────────────────────────────────────
 function MateriaisTab() {
-  
+  const { can } = usePermissions();
+  const podeCriar = can.criar("engenharia_materiais");
+  const podeEditar = can.editar("engenharia_materiais");
+  const podeExcluir = can.excluir("engenharia_materiais");
   const utils = trpc.useUtils();
   const { data: lista = [], isLoading } = trpc.materiais.list.useQuery();
   const [busca, setBusca] = useState("");
@@ -1164,7 +1177,7 @@ function MateriaisTab() {
           <Button variant="outline" onClick={() => setImpressaoMateriais(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
             <Printer className="h-4 w-4" /> Imprimir Catálogo ({filtered.length})
           </Button>
-          <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Material</Button>
+          {podeCriar && <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Material</Button>}
         </div>
       </div>
       {isLoading ? <div className="text-center py-8 text-muted-foreground">Carregando...</div> : (
@@ -1193,8 +1206,8 @@ function MateriaisTab() {
                   <td className="px-4 py-3">
                     <div className="flex gap-1 justify-end">
                       <Button size="icon" variant="ghost" title="Imprimir" onClick={() => setImpressaoMateriais([m])}><Printer className="h-3.5 w-3.5 text-green-600" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(m)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir?")) deleteMutation.mutate({ id: m.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      {podeEditar && <Button size="icon" variant="ghost" onClick={() => openEdit(m)}><Edit2 className="h-3.5 w-3.5" /></Button>}
+                      {podeExcluir && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir?")) deleteMutation.mutate({ id: m.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>}
                     </div>
                   </td>
                 </tr>

@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { centrosCusto, clientes, Convite, convites, dashboardConfig, EmpresaConfig, empresaConfig, InsertCentroCusto, InsertCliente, InsertEmpresaConfig, InsertPagamento, InsertPagamentoParcela, InsertRecebimento, InsertRecebimentoParcela, InsertUser, pagamentoParcelas, pagamentos, recebimentoParcelas, recebimentos, users } from "../drizzle/schema";
+import { centrosCusto, clientes, Convite, convites, dashboardConfig, DEFAULT_PERMISSIONS, EmpresaConfig, empresaConfig, InsertCentroCusto, InsertCliente, InsertEmpresaConfig, InsertPagamento, InsertPagamentoParcela, InsertRecebimento, InsertRecebimentoParcela, InsertUser, MODULOS, pagamentoParcelas, pagamentos, recebimentoParcelas, recebimentos, userPermissions, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -917,4 +917,106 @@ export async function getRelatorioCentroCusto(params: {
     porTipoServico: porTipoServico.map(p => ({ tipo: p.tipo ?? "Sem tipo", total: Number(p.total), qtd: Number(p.qtd) })),
     porTipoRecebimento: porTipoRecebimento.map(r => ({ tipo: r.tipo ?? "Sem tipo", total: Number(r.total), qtd: Number(r.qtd) })),
   };
+}
+
+// ==================== PERMISSÕES GRANULARES ====================
+
+/**
+ * Retorna as permissões de um usuário por módulo.
+ * Se não houver permissões customizadas, retorna as permissões padrão do role.
+ */
+export async function getUserPermissions(userId: number, userRole: string): Promise<Record<string, { podeVer: boolean; podeCriar: boolean; podeEditar: boolean; podeExcluir: boolean }>> {
+  const db = await getDb();
+  // Admin sempre tem tudo — não consulta banco
+  if (userRole === "admin") return DEFAULT_PERMISSIONS.admin;
+  const defaults = DEFAULT_PERMISSIONS[userRole] ?? DEFAULT_PERMISSIONS.user;
+  if (!db) return defaults;
+  // Buscar permissões customizadas do usuário
+  const rows = await db.select().from(userPermissions).where(eq(userPermissions.userId, userId));
+  if (rows.length === 0) return defaults;
+  // Mesclar: customizadas sobrescrevem as padrão
+  const result = { ...defaults };
+  for (const row of rows) {
+    result[row.modulo] = {
+      podeVer: row.podeVer,
+      podeCriar: row.podeCriar,
+      podeEditar: row.podeEditar,
+      podeExcluir: row.podeExcluir,
+    };
+  }
+  return result;
+}
+
+/**
+ * Define (upsert) as permissões de um usuário para um módulo específico.
+ */
+export async function upsertUserPermission(userId: number, modulo: string, perms: { podeVer: boolean; podeCriar: boolean; podeEditar: boolean; podeExcluir: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Verificar se já existe
+  const existing = await db.select({ id: userPermissions.id }).from(userPermissions)
+    .where(and(eq(userPermissions.userId, userId), eq(userPermissions.modulo, modulo)))
+    .limit(1);
+  if (existing.length > 0) {
+    return db.update(userPermissions).set(perms).where(
+      and(eq(userPermissions.userId, userId), eq(userPermissions.modulo, modulo))
+    );
+  } else {
+    return db.insert(userPermissions).values({ userId, modulo, ...perms });
+  }
+}
+
+/**
+ * Define todas as permissões de um usuário de uma vez (array de módulos).
+ */
+export async function setAllUserPermissions(userId: number, permissions: Array<{ modulo: string; podeVer: boolean; podeCriar: boolean; podeEditar: boolean; podeExcluir: boolean }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  for (const perm of permissions) {
+    await upsertUserPermission(userId, perm.modulo, {
+      podeVer: perm.podeVer,
+      podeCriar: perm.podeCriar,
+      podeEditar: perm.podeEditar,
+      podeExcluir: perm.podeExcluir,
+    });
+  }
+}
+
+/**
+ * Reseta as permissões customizadas de um usuário (remove todas, voltando ao padrão do role).
+ */
+export async function resetUserPermissions(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(userPermissions).where(eq(userPermissions.userId, userId));
+}
+
+/**
+ * Retorna a lista de módulos disponíveis com suas labels.
+ */
+export function getModulos() {
+  return MODULOS;
+}
+
+/**
+ * Verifica se um usuário tem permissão para uma ação em um módulo.
+ * Admin sempre tem permissão.
+ */
+export async function checkPermission(userId: number, userRole: string, modulo: string, acao: "podeVer" | "podeCriar" | "podeEditar" | "podeExcluir"): Promise<boolean> {
+  if (userRole === "admin") return true;
+  const perms = await getUserPermissions(userId, userRole);
+  return perms[modulo]?.[acao] ?? false;
+}
+
+/**
+ * Retorna as permissões de um usuário incluindo dados do usuário.
+ */
+export async function getUserWithPermissions(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (userResult.length === 0) return null;
+  const user = userResult[0];
+  const permissions = await getUserPermissions(userId, user.role);
+  return { user, permissions };
 }

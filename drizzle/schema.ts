@@ -6,7 +6,7 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin", "operador"]).default("operador").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "operador", "operacional"]).default("operador").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -321,3 +321,53 @@ export const osItens = mysqlTable("os_itens", {
 });
 export type OsItem = typeof osItens.$inferSelect;
 export type InsertOsItem = typeof osItens.$inferInsert;
+
+// ─── Permissões Granulares por Usuário ─────────────────────────────────────────
+// Cada linha representa as permissões de um usuário em um módulo específico.
+// Módulos: pagamentos, recebimentos, clientes, centros_custo, engenharia_os,
+//           engenharia_contratos, engenharia_materiais, relatorios, dashboard
+export const userPermissions = mysqlTable("user_permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  modulo: varchar("modulo", { length: 60 }).notNull(),
+  podeVer: boolean("podeVer").default(false).notNull(),
+  podeCriar: boolean("podeCriar").default(false).notNull(),
+  podeEditar: boolean("podeEditar").default(false).notNull(),
+  podeExcluir: boolean("podeExcluir").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type UserPermission = typeof userPermissions.$inferSelect;
+export type InsertUserPermission = typeof userPermissions.$inferInsert;
+
+// Módulos disponíveis no sistema
+export const MODULOS = [
+  { id: "pagamentos", label: "Pagamentos" },
+  { id: "recebimentos", label: "Recebimentos" },
+  { id: "clientes", label: "Clientes / Fornecedores" },
+  { id: "centros_custo", label: "Centros de Custo" },
+  { id: "engenharia_os", label: "Engenharia — Ordens de Serviço" },
+  { id: "engenharia_contratos", label: "Engenharia — Contratos" },
+  { id: "engenharia_materiais", label: "Engenharia — Materiais e Tipos de Serviço" },
+  { id: "relatorios", label: "Relatórios" },
+  { id: "dashboard", label: "Dashboard" },
+] as const;
+export type ModuloId = typeof MODULOS[number]["id"];
+
+// Permissões padrão por role
+export const DEFAULT_PERMISSIONS: Record<string, Record<string, { podeVer: boolean; podeCriar: boolean; podeEditar: boolean; podeExcluir: boolean }>> = {
+  admin: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: true }])),
+  operador: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false }])),
+  operacional: {
+    pagamentos: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+    recebimentos: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+    clientes: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+    centros_custo: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+    engenharia_os: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+    engenharia_contratos: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+    engenharia_materiais: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+    relatorios: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+    dashboard: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+  },
+  user: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false }])),
+};

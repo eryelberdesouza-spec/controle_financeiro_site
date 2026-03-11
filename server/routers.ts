@@ -5,6 +5,9 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { getDb } from "./db";
+import { eq } from "drizzle-orm";
+import { recebimentoParcelas, recebimentos } from "../drizzle/schema";
 import {
   createCentroCusto,
   createCliente,
@@ -557,7 +560,28 @@ const recebimentoParcelasRouter = router({
       id: z.number(),
       data: parcelaRecebimentoSchema.partial(),
     }))
-    .mutation(({ input }) => updateRecebimentoParcela(input.id, input.data)),
+    .mutation(async ({ input }) => {
+      await updateRecebimentoParcela(input.id, input.data);
+      // Após atualizar a parcela, sincronizar o status do recebimento pai
+      const db = await getDb();
+      if (!db) return;
+      // Buscar a parcela para obter o recebimentoId
+      const [parcela] = await db.select({ recebimentoId: recebimentoParcelas.recebimentoId })
+        .from(recebimentoParcelas)
+        .where(eq(recebimentoParcelas.id, input.id));
+      if (!parcela) return;
+      // Buscar todas as parcelas do recebimento
+      const todasParcelas = await db.select({ status: recebimentoParcelas.status })
+        .from(recebimentoParcelas)
+        .where(eq(recebimentoParcelas.recebimentoId, parcela.recebimentoId));
+      // Determinar o novo status do recebimento pai
+      const todasRecebidas = todasParcelas.every(p => p.status === "Recebido");
+      const algumAtrasado = todasParcelas.some(p => p.status === "Atrasado");
+      const novoStatus = todasRecebidas ? "Recebido" : algumAtrasado ? "Atrasado" : "Pendente";
+      await db.update(recebimentos)
+        .set({ status: novoStatus as any })
+        .where(eq(recebimentos.id, parcela.recebimentoId));
+    }),
   deleteBulk: staffProcedure
     .input(z.object({ recebimentoId: z.number() }))
     .mutation(({ input }) => deleteRecebimentoParcelas(input.recebimentoId)),

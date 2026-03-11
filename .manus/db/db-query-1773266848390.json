@@ -1,0 +1,14 @@
+{
+  "query": "SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'status' AND TABLE_SCHEMA = DATABASE();",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ordens_servico' AND COLUMN_NAME = 'status' AND TABLE_SCHEMA = DATABASE();",
+  "rows": [
+    {
+      "COLUMN_NAME": "status",
+      "COLUMN_TYPE": "enum('planejada','autorizada','em_execucao','concluida','cancelada','pausada')"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tCOLUMN_TYPE\nstatus\tenum('planejada','autorizada','em_execucao','concluida','cancelada','pausada')\n",
+  "stderr": "",
+  "execution_time_ms": 348
+}

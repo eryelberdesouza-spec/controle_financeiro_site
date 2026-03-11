@@ -485,31 +485,39 @@ export async function getDashboardHistoricoMensal(meses: number = 6) {
   dataInicio.setDate(1);
   dataInicio.setHours(0, 0, 0, 0);
 
-  // Usa sql.raw para evitar problema de geração de SQL com backtick dentro de funções MySQL
+  // Usa DATE_FORMAT para compatibilidade com TiDB (YEAR/MONTH não funciona no GROUP BY do TiDB)
   const [pagMensal, recMensal] = await Promise.all([
     db.select({
-      ano: sql<number>`YEAR(dataPagamento)`,
-      mes: sql<number>`MONTH(dataPagamento)`,
+      anoMes: sql<string>`DATE_FORMAT(dataPagamento, '%Y-%m')`,
       total: sql<number>`SUM(valor)`,
       totalPago: sql<number>`SUM(CASE WHEN status = 'Pago' THEN valor ELSE 0 END)`,
     })
       .from(pagamentos)
       .where(gte(pagamentos.dataPagamento, dataInicio))
-      .groupBy(sql`YEAR(dataPagamento), MONTH(dataPagamento)`)
-      .orderBy(sql`YEAR(dataPagamento), MONTH(dataPagamento)`),
+      .groupBy(sql`DATE_FORMAT(dataPagamento, '%Y-%m')`)
+      .orderBy(sql`DATE_FORMAT(dataPagamento, '%Y-%m')`),
     db.select({
-      ano: sql<number>`YEAR(dataVencimento)`,
-      mes: sql<number>`MONTH(dataVencimento)`,
+      anoMes: sql<string>`DATE_FORMAT(dataVencimento, '%Y-%m')`,
       total: sql<number>`SUM(valorTotal)`,
       totalRecebido: sql<number>`SUM(CASE WHEN status = 'Recebido' THEN valorTotal ELSE 0 END)`,
     })
       .from(recebimentos)
       .where(gte(recebimentos.dataVencimento, dataInicio))
-      .groupBy(sql`YEAR(dataVencimento), MONTH(dataVencimento)`)
-      .orderBy(sql`YEAR(dataVencimento), MONTH(dataVencimento)`),
+      .groupBy(sql`DATE_FORMAT(dataVencimento, '%Y-%m')`)
+      .orderBy(sql`DATE_FORMAT(dataVencimento, '%Y-%m')`),
   ]);
 
-  return { pagMensal, recMensal };
+  // Converte anoMes ('YYYY-MM') para campos ano/mes para compatibilidade com o frontend
+  const pagMensalNorm = pagMensal.map(p => {
+    const [anoStr, mesStr] = (p.anoMes ?? "").split("-");
+    return { ano: parseInt(anoStr ?? "0"), mes: parseInt(mesStr ?? "1"), total: p.total, totalPago: p.totalPago };
+  });
+  const recMensalNorm = recMensal.map(r => {
+    const [anoStr, mesStr] = (r.anoMes ?? "").split("-");
+    return { ano: parseInt(anoStr ?? "0"), mes: parseInt(mesStr ?? "1"), total: r.total, totalRecebido: r.totalRecebido };
+  });
+
+  return { pagMensal: pagMensalNorm, recMensal: recMensalNorm };
 }
 
 /**
@@ -838,41 +846,44 @@ export async function getRelatorioCentroCusto(params: {
   const totalPagamentos = Number(pagTotais?.total ?? 0);
   const totalRecebimentos = Number(recTotais?.total ?? 0);
 
-  // Evolução mensal
+  // Evolução mensal — usa DATE_FORMAT para compatibilidade com TiDB
   const evolucaoPag = await db
     .select({
-      ano: sql<number>`YEAR(${pagamentos.dataPagamento})`,
-      mes: sql<number>`MONTH(${pagamentos.dataPagamento})`,
+      anoMes: sql<string>`DATE_FORMAT(${pagamentos.dataPagamento}, '%Y-%m')`,
       total: sql<number>`COALESCE(SUM(${pagamentos.valor}), 0)`,
     })
     .from(pagamentos)
     .where(pagWhere)
-    .groupBy(sql`YEAR(${pagamentos.dataPagamento})`, sql`MONTH(${pagamentos.dataPagamento})`)
-    .orderBy(sql`YEAR(${pagamentos.dataPagamento})`, sql`MONTH(${pagamentos.dataPagamento})`);
+    .groupBy(sql`DATE_FORMAT(${pagamentos.dataPagamento}, '%Y-%m')`)
+    .orderBy(sql`DATE_FORMAT(${pagamentos.dataPagamento}, '%Y-%m')`);
 
   const evolucaoRec = await db
     .select({
-      ano: sql<number>`YEAR(${recebimentos.dataVencimento})`,
-      mes: sql<number>`MONTH(${recebimentos.dataVencimento})`,
+      anoMes: sql<string>`DATE_FORMAT(${recebimentos.dataVencimento}, '%Y-%m')`,
       total: sql<number>`COALESCE(SUM(${recebimentos.valorTotal}), 0)`,
     })
     .from(recebimentos)
     .where(recWhere)
-    .groupBy(sql`YEAR(${recebimentos.dataVencimento})`, sql`MONTH(${recebimentos.dataVencimento})`)
-    .orderBy(sql`YEAR(${recebimentos.dataVencimento})`, sql`MONTH(${recebimentos.dataVencimento})`);
+    .groupBy(sql`DATE_FORMAT(${recebimentos.dataVencimento}, '%Y-%m')`)
+    .orderBy(sql`DATE_FORMAT(${recebimentos.dataVencimento}, '%Y-%m')`);
 
   const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
   const mesesMap = new Map<string, { label: string; pagamentos: number; recebimentos: number }>();
+  // anoMes é no formato 'YYYY-MM'
   for (const p of evolucaoPag) {
-    const key = `${p.ano}-${String(p.mes).padStart(2, "0")}`;
-    const label = `${MESES[p.mes - 1]}/${String(p.ano).slice(2)}`;
+    const key = p.anoMes ?? "";
+    const [anoStr, mesStr] = key.split("-");
+    const mesIdx = parseInt(mesStr ?? "1") - 1;
+    const label = `${MESES[mesIdx] ?? mesStr}/${(anoStr ?? "").slice(2)}`;
     const entry = mesesMap.get(key) ?? { label, pagamentos: 0, recebimentos: 0 };
     entry.pagamentos = Number(p.total);
     mesesMap.set(key, entry);
   }
   for (const r of evolucaoRec) {
-    const key = `${r.ano}-${String(r.mes).padStart(2, "0")}`;
-    const label = `${MESES[r.mes - 1]}/${String(r.ano).slice(2)}`;
+    const key = r.anoMes ?? "";
+    const [anoStr, mesStr] = key.split("-");
+    const mesIdx = parseInt(mesStr ?? "1") - 1;
+    const label = `${MESES[mesIdx] ?? mesStr}/${(anoStr ?? "").slice(2)}`;
     const entry = mesesMap.get(key) ?? { label, pagamentos: 0, recebimentos: 0 };
     entry.recebimentos = Number(r.total);
     mesesMap.set(key, entry);

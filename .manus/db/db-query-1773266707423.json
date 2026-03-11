@@ -1,0 +1,88 @@
+{
+  "query": "SELECT id, nome, tipo, ativo FROM centros_custo ORDER BY nome;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute SELECT id, nome, tipo, ativo FROM centros_custo ORDER BY nome;",
+  "rows": [
+    {
+      "id": "30001",
+      "nome": "ABASTECIMENTOS",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "7",
+      "nome": "COMERCIAL (MÃO DE OBRA)",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "6",
+      "nome": "CREA E CFT",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "30003",
+      "nome": "CUSTOS FIXOS (ALUGUÉIS, ENERGIA, CONDOMÍNIO)",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "2",
+      "nome": "DESPESAS ESCRITÓRIO",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "30005",
+      "nome": "ESTAÇÃO DE RECARGA - RODÃO AUTO CENTER",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "8",
+      "nome": "MARKETING E DIVULGAÇÃO",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "3",
+      "nome": "MATERIAL PARA OBRAS",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "4",
+      "nome": "MÃO DE OBRA",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "5",
+      "nome": "SOFTWARE E APLICATIVOS",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "30002",
+      "nome": "TARIFAS BANCARIAS",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "1",
+      "nome": "TOP-UP",
+      "tipo": "operacional",
+      "ativo": "1"
+    },
+    {
+      "id": "30004",
+      "nome": "UFV PAINS/MG",
+      "tipo": "operacional",
+      "ativo": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\ttipo\tativo\n30001\tABASTECIMENTOS\toperacional\t1\n7\tCOMERCIAL (MÃO DE OBRA)\toperacional\t1\n6\tCREA E CFT\toperacional\t1\n30003\tCUSTOS FIXOS (ALUGUÉIS, ENERGIA, CONDOMÍNIO)\toperacional\t1\n2\tDESPESAS ESCRITÓRIO\toperacional\t1\n30005\tESTAÇÃO DE RECARGA - RODÃO AUTO CENTER\toperacional\t1\n8\tMARKETING E DIVULGAÇÃO\toperacional\t1\n3\tMATERIAL PARA OBRAS\toperacional\t1\n4\tMÃO DE OBRA\toperacional\t1\n5\tSOFTWARE E APLICATIVOS\toperacional\t1\n30002\tTARIFAS BANCARIAS\toperacional\t1\n1\tTOP-UP\toperacional\t1\n30004\tUFV PAINS/MG\toperacional\t1\n",
+  "stderr": "",
+  "execution_time_ms": 357
+}

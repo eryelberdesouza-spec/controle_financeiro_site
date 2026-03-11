@@ -14,7 +14,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer } from "lucide-react";
 import { ComprovanteViewer, type ComprovanteRecebimento } from "@/components/ComprovanteViewer";
-import { ClienteSelect, CentroCustoSelect } from "@/components/ClienteCentroCustoSelect";
+import { ClienteSelect, CentroCustoSelect, ContratoSelect } from "@/components/ClienteCentroCustoSelect";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -277,14 +277,17 @@ export default function Recebimentos() {
   const { data: recebimentos = [], isLoading } = trpc.recebimentos.list.useQuery();
 
   // Carrega parcelas existentes ao abrir edição de recebimento parcelado
+  // Habilitado sempre que editId existe e o modal está aberto (independente de parcelado)
   const { data: parcelasExistentes } = trpc.recebimentoParcelas.list.useQuery(
     { recebimentoId: editId! },
-    { enabled: !!editId && open && form.parcelado }
+    { enabled: !!editId && open }
   );
 
   // Popula o estado local de parcelas quando os dados chegam do banco (modo edição)
+  // Usa editId como dependência principal — quando muda, recarrega as parcelas do novo registro
   useEffect(() => {
-    if (editId && parcelasExistentes && parcelasExistentes.length > 0 && parcelas.length === 0) {
+    if (!editId || !open) return;
+    if (parcelasExistentes && parcelasExistentes.length > 0) {
       const loaded: ParcelaLocal[] = parcelasExistentes.map(p => ({
         id: p.id,
         numeroParcela: p.numeroParcela,
@@ -296,7 +299,8 @@ export default function Recebimentos() {
       }));
       setParcelas(loaded);
     }
-  }, [parcelasExistentes, editId, open]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, parcelasExistentes]);
 
   const createParcelasMutation = trpc.recebimentoParcelas.createBulk.useMutation();
   const deleteParcelasMutation = trpc.recebimentoParcelas.deleteBulk.useMutation();
@@ -406,10 +410,10 @@ export default function Recebimentos() {
   };
 
   const handleEdit = (r: any) => {
-    // Limpa parcelas ANTES de definir o editId para evitar que o useEffect
-    // detecte parcelas antigas do recebimento anterior
+    // Limpa parcelas e define o novo editId simultaneamente
+    // O useEffect irá recarregar as parcelas do novo registro
     setParcelas([]);
-    setEditId(r.id);
+    setEditId(r.id); // O useEffect depende de editId e recarregará as parcelas
     setForm({
       numeroControle: r.numeroControle ?? "", numeroContrato: r.numeroContrato ?? "",
       nomeRazaoSocial: r.nomeRazaoSocial ?? "", descricao: r.descricao ?? "",
@@ -422,7 +426,8 @@ export default function Recebimentos() {
       dataVencimento: r.dataVencimento ? new Date(r.dataVencimento).toISOString().split("T")[0] : "",
       dataRecebimento: r.dataRecebimento ? new Date(r.dataRecebimento).toISOString().split("T")[0] : "",
       status: r.status ?? "Pendente", observacao: r.observacao ?? "",
-      parcelado: r.quantidadeParcelas > 1,
+      // Se tem mais de 1 parcela, é parcelado; se tem 1 parcela, verifica se há parcela no banco
+      parcelado: r.quantidadeParcelas >= 1, // Sempre mostra a seção de parcelas ao editar
       dataPrimeiroVencimento: r.dataVencimento ? new Date(r.dataVencimento).toISOString().split("T")[0] : "",
     });
     setOpen(true);
@@ -649,8 +654,18 @@ export default function Recebimentos() {
                 <Input value={form.numeroControle} onChange={e => setForm(f => ({ ...f, numeroControle: e.target.value }))} placeholder="Ex: REC-2024-001" />
               </div>
               <div>
-                <Label>Nº do Contrato</Label>
-                <Input value={form.numeroContrato} onChange={e => setForm(f => ({ ...f, numeroContrato: e.target.value }))} placeholder="Ex: CT-2024-001" />
+                <Label>Contrato Vinculado</Label>
+                <ContratoSelect
+                  value={form.numeroContrato}
+                  onChange={(numero: string, centroCustoId?: number | null) => {
+                    setForm(f => ({
+                      ...f,
+                      numeroContrato: numero,
+                      // Preenche CC automaticamente se o contrato tiver CC
+                      centroCustoId: centroCustoId ?? f.centroCustoId,
+                    }));
+                  }}
+                />
               </div>
               <div className="md:col-span-2">
                 <Label>Nome / Razão Social *</Label>

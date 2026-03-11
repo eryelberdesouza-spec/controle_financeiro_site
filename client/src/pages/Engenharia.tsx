@@ -994,11 +994,19 @@ function OrdensServicoTab() {
             </div>
             <div className="space-y-1">
               <Label>Contrato Vinculado</Label>
-              <Select value={form.contratoId ? String(form.contratoId) : "none"} onValueChange={v => setForm(p => ({ ...p, contratoId: v === "none" ? "" : v }))}>
+              <Select value={form.contratoId ? String(form.contratoId) : "none"} onValueChange={v => {
+                const contratoSelecionado = contratos.find(c => String(c.id) === v);
+                setForm(p => ({
+                  ...p,
+                  contratoId: v === "none" ? "" : v,
+                  // Herda cliente do contrato automaticamente
+                  clienteId: contratoSelecionado?.clienteId ? String(contratoSelecionado.clienteId) : p.clienteId,
+                }));
+              }}>
                 <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">— Nenhum —</SelectItem>
-                  {contratos.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.numero} — {c.objeto}</SelectItem>)}
+                  {contratos.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.numero} — {c.objeto?.substring(0, 50)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

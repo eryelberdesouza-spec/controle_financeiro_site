@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE contratos MODIFY COLUMN status ENUM('proposta','em_negociacao','ativo','suspenso','encerrado') NOT NULL DEFAULT 'proposta';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute \nALTER TABLE contratos MODIFY COLUMN status ENUM('proposta','em_negociacao','ativo','suspenso','encerrado') NOT NULL DEFAULT 'proposta';\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 619
+}

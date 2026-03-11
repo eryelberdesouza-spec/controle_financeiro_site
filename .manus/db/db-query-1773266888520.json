@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE ordens_servico MODIFY COLUMN status ENUM('planejada','autorizada','em_execucao','concluida','cancelada') NOT NULL DEFAULT 'planejada';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute ALTER TABLE ordens_servico MODIFY COLUMN status ENUM('planejada','autorizada','em_execucao','concluida','cancelada') NOT NULL DEFAULT 'planejada';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 590
+}

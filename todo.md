@@ -343,3 +343,29 @@
 - [x] Implementar aba "DRE do Contrato" no modal de relatório (tabela com receitas, custos, margem bruta)
 - [x] Atualizar formulário de clientes com todos os novos campos avançados
 - [x] Atualizar testes: 34 testes passando
+
+## Correções e Reestruturação ERP v3 (script completo)
+- [ ] BUG CRÍTICO: Edição de recebimentos zera parcelas — carregar parcelas existentes ao abrir edição
+- [ ] BUG CRÍTICO: Registro de recebimento em parcela única não atualiza status/dashboard
+- [ ] BUG: Alterações não sendo salvas corretamente
+- [ ] Corrigir botão "Ativar Contrato" — verificar se procedure ativarContrato está registrada no router
+- [ ] Corrigir DRE do Contrato — aba não aparece no modal de relatório
+- [ ] Corrigir criação automática de Centro de Custo ao ativar contrato
+- [ ] Corrigir Relatório de Contratos — não deixa selecionar / não mostra dados
+- [ ] Vincular recebimentos ao contrato via centroCustoId do contrato
+- [ ] Vincular pagamentos ao contrato via centroCustoId do contrato
+- [ ] Atualizar registros existentes de OS e Contratos com novos status
+- [ ] Dashboard por contrato: receita prevista x realizada, custos, margem, OS em andamento
+- [ ] Integração total: pagamento realizado → atualiza CC e DRE do contrato automaticamente
+
+## Correções Críticas v2 (script Eryelber)
+- [x] Corrigir bug de parcelas zeradas ao editar recebimento (useEffect com editId como trigger)
+- [x] Corrigir bug de parcela única não atualiza status do recebimento pai após registro
+- [x] Corrigir relatório de CC: queries YEAR/MONTH incompatíveis com TiDB (substituir por DATE_FORMAT)
+- [x] Corrigir dashboard: queries históricas mensais com YEAR/MONTH (substituir por DATE_FORMAT)
+- [x] Adicionar ContratoSelect no formulário de recebimentos (preenche CC automaticamente)
+- [x] Herdar cliente do contrato ao criar OS
+- [x] Garantir que centroCustoId, valorPrevisto e margemPrevista são retornados na listagem de contratos
+- [x] Automação de ativação de contratos: botão Ativar cria CC automaticamente
+- [x] DRE por contrato: aba DRE no modal de relatório de contrato
+- [x] Campos avançados de clientes: tipoPessoa, segmento, inscrições, celular, contato, endereço, dados bancários

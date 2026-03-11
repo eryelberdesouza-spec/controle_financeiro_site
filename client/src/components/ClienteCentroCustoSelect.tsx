@@ -252,3 +252,174 @@ export function CentroCustoSelect({ value, onChange, placeholder = "Selecionar c
     </Select>
   );
 }
+
+// ─── ContratoSelect — busca e vincula contrato ao recebimento ─────────────
+interface ContratoSelectProps {
+  value: string; // numero do contrato
+  onChange: (numero: string, centroCustoId?: number | null) => void;
+  placeholder?: string;
+}
+
+export function ContratoSelect({ value, onChange, placeholder = "Buscar contrato..." }: ContratoSelectProps) {
+  const [aberto, setAberto] = useState(false);
+  const [busca, setBusca] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const { data: contratos = [] } = trpc.contratos.list.useQuery(undefined, { staleTime: 30_000 });
+
+  const contratosFiltrados = contratos.filter(c => {
+    if (!busca.trim()) return true;
+    const t = busca.toLowerCase();
+    return (
+      c.numero.toLowerCase().includes(t) ||
+      c.objeto.toLowerCase().includes(t) ||
+      (c.clienteNome ?? "").toLowerCase().includes(t)
+    );
+  });
+
+  const contratoSelecionado = value ? contratos.find(c => c.numero === value) : null;
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setAberto(false);
+        setBusca("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  function handleOpen() {
+    setAberto(true);
+    setBusca("");
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }
+
+  function handleSelect(c: typeof contratos[0]) {
+    onChange(c.numero, c.centroCustoId ?? null);
+    setAberto(false);
+    setBusca("");
+  }
+
+  function handleClear(e: React.MouseEvent) {
+    e.stopPropagation();
+    onChange("", null);
+    setAberto(false);
+    setBusca("");
+  }
+
+  const statusColors: Record<string, string> = {
+    proposta: "bg-gray-100 text-gray-700",
+    em_negociacao: "bg-yellow-100 text-yellow-700",
+    ativo: "bg-green-100 text-green-700",
+    suspenso: "bg-orange-100 text-orange-700",
+    encerrado: "bg-red-100 text-red-700",
+  };
+
+  return (
+    <div ref={containerRef} className={cn("relative")}>
+      {!aberto ? (
+        <button
+          type="button"
+          onClick={handleOpen}
+          className={cn(
+            "w-full flex items-center justify-between gap-2 px-3 py-2 h-9 rounded-md border text-sm text-left transition-colors",
+            "border-input bg-background hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
+            contratoSelecionado ? "text-foreground" : "text-muted-foreground"
+          )}
+        >
+          <span className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+            {contratoSelecionado ? (
+              <>
+                <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-xs shrink-0", statusColors[contratoSelecionado.status ?? "proposta"])}>
+                  {contratoSelecionado.status}
+                </span>
+                <span className="truncate font-medium font-mono">{contratoSelecionado.numero}</span>
+                <span className="truncate text-muted-foreground text-xs">{contratoSelecionado.objeto?.substring(0, 40)}</span>
+              </>
+            ) : (
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <Search className="h-3.5 w-3.5 shrink-0" />
+                {placeholder}
+              </span>
+            )}
+          </span>
+          <span className="flex items-center gap-1 shrink-0">
+            {contratoSelecionado && (
+              <span role="button" onClick={handleClear} className="p-0.5 rounded hover:bg-destructive/10 hover:text-destructive transition-colors">
+                <X className="h-3.5 w-3.5" />
+              </span>
+            )}
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </span>
+        </button>
+      ) : (
+        <div className="flex items-center gap-1.5 px-3 py-2 h-9 rounded-md border border-ring ring-2 ring-ring ring-offset-1 bg-background">
+          <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder={placeholder}
+            className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+          />
+          {busca && (
+            <button type="button" onClick={() => setBusca("")} className="shrink-0">
+              <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {aberto && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg overflow-hidden">
+          <button
+            type="button"
+            onClick={() => { onChange("", null); setAberto(false); setBusca(""); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors border-b"
+          >
+            <X className="h-3.5 w-3.5" />
+            Nenhum (sem vínculo)
+          </button>
+          <div className="max-h-60 overflow-y-auto">
+            {contratosFiltrados.length === 0 ? (
+              <div className="px-3 py-4 text-sm text-center text-muted-foreground">
+                {busca ? `Nenhum resultado para "${busca}"` : "Nenhum contrato cadastrado"}
+              </div>
+            ) : (
+              contratosFiltrados.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => handleSelect(c)}
+                  className={cn(
+                    "w-full flex items-start gap-2.5 px-3 py-2.5 text-sm text-left hover:bg-accent transition-colors",
+                    value === c.numero && "bg-accent"
+                  )}
+                >
+                  <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-xs shrink-0 mt-0.5", statusColors[c.status ?? "proposta"])}>
+                    {c.status}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="font-mono font-semibold text-primary block">{c.numero}</span>
+                    <span className="text-xs text-muted-foreground truncate block">{c.objeto?.substring(0, 60)}</span>
+                    {c.clienteNome && <span className="text-xs text-muted-foreground">{c.clienteNome}</span>}
+                  </span>
+                  {value === c.numero && <span className="text-xs text-primary font-medium shrink-0">✓</span>}
+                </button>
+              ))
+            )}
+          </div>
+          {contratosFiltrados.length > 0 && (
+            <div className="px-3 py-1.5 text-xs text-muted-foreground border-t bg-muted/30">
+              {contratosFiltrados.length} {contratosFiltrados.length === 1 ? "contrato" : "contratos"}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

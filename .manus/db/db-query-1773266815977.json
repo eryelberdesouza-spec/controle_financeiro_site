@@ -1,0 +1,126 @@
+{
+  "query": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'contratos' AND TABLE_SCHEMA = DATABASE() ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'contratos' AND TABLE_SCHEMA = DATABASE() ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "numero",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "objeto",
+      "DATA_TYPE": "text"
+    },
+    {
+      "COLUMN_NAME": "tipo",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "status",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "clienteId",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "valorTotal",
+      "DATA_TYPE": "decimal"
+    },
+    {
+      "COLUMN_NAME": "dataInicio",
+      "DATA_TYPE": "date"
+    },
+    {
+      "COLUMN_NAME": "dataFim",
+      "DATA_TYPE": "date"
+    },
+    {
+      "COLUMN_NAME": "descricao",
+      "DATA_TYPE": "text"
+    },
+    {
+      "COLUMN_NAME": "observacoes",
+      "DATA_TYPE": "text"
+    },
+    {
+      "COLUMN_NAME": "recebimentoId",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "pagamentoId",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "createdBy",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "enderecoLogradouro",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "enderecoNumero",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "enderecoComplemento",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "enderecoBairro",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "enderecoCidade",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "enderecoEstado",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "enderecoCep",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "valor_previsto",
+      "DATA_TYPE": "decimal"
+    },
+    {
+      "COLUMN_NAME": "margem_prevista",
+      "DATA_TYPE": "decimal"
+    },
+    {
+      "COLUMN_NAME": "centro_custo_id",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "valorPrevisto",
+      "DATA_TYPE": "decimal"
+    },
+    {
+      "COLUMN_NAME": "margemPrevista",
+      "DATA_TYPE": "decimal"
+    },
+    {
+      "COLUMN_NAME": "centroCustoId",
+      "DATA_TYPE": "int"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tDATA_TYPE\nid\tint\nnumero\tvarchar\nobjeto\ttext\ntipo\tenum\nstatus\tenum\nclienteId\tint\nvalorTotal\tdecimal\ndataInicio\tdate\ndataFim\tdate\ndescricao\ttext\nobservacoes\ttext\nrecebimentoId\tint\npagamentoId\tint\ncreatedAt\ttimestamp\nupdatedAt\ttimestamp\ncreatedBy\tint\nenderecoLogradouro\tvarchar\nenderecoNumero\tvarchar\nenderecoComplemento\tvarchar\nenderecoBairro\tvarchar\nenderecoCidade\tvarchar\nenderecoEstado\tvarchar\nenderecoCep\tvarchar\nvalor_previsto\tdecimal\nmargem_prevista\tdecimal\ncentro_custo_id\tint\nvalorPrevisto\tdecimal\nmargemPrevista\tdecimal\ncentroCustoId\tint\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}

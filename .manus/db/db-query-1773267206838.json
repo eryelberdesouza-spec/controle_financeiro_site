@@ -1,0 +1,34 @@
+{
+  "query": "SELECT id, name, email, role FROM users LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute SELECT id, name, email, role FROM users LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "ERYELBER CORREIA DE SOUZA",
+      "email": "eryelberdesouza@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "90001",
+      "name": "Eryelber Souza",
+      "email": "eryelbersouza@gmail.com",
+      "role": "operador"
+    },
+    {
+      "id": "540023",
+      "name": "PAULO HENRIQUE RAMOS",
+      "email": "paulohenriquerms@gmail.com",
+      "role": "operador"
+    },
+    {
+      "id": "600073",
+      "name": "higor.93bsb",
+      "email": "higor.93bsb@gmail.com",
+      "role": "operador"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\n1\tERYELBER CORREIA DE SOUZA\teryelberdesouza@gmail.com\tadmin\n90001\tEryelber Souza\teryelbersouza@gmail.com\toperador\n540023\tPAULO HENRIQUE RAMOS\tpaulohenriquerms@gmail.com\toperador\n600073\thigor.93bsb\thigor.93bsb@gmail.com\toperador\n",
+  "stderr": "",
+  "execution_time_ms": 365
+}

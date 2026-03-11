@@ -24,19 +24,19 @@ const fmt = (v: string | number | null | undefined) =>
   v == null ? "—" : Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const STATUS_CONTRATO: Record<string, { label: string; color: string }> = {
-  negociacao: { label: "Negociação", color: "bg-yellow-100 text-yellow-800" },
+  proposta: { label: "Proposta", color: "bg-purple-100 text-purple-800" },
+  em_negociacao: { label: "Em Negociação", color: "bg-yellow-100 text-yellow-800" },
   ativo: { label: "Ativo", color: "bg-green-100 text-green-800" },
   suspenso: { label: "Suspenso", color: "bg-orange-100 text-orange-800" },
   encerrado: { label: "Encerrado", color: "bg-gray-100 text-gray-700" },
-  cancelado: { label: "Cancelado", color: "bg-red-100 text-red-800" },
 };
 
 const STATUS_OS: Record<string, { label: string; color: string }> = {
-  aberta: { label: "Aberta", color: "bg-blue-100 text-blue-800" },
+  planejada: { label: "Planejada", color: "bg-blue-100 text-blue-800" },
+  autorizada: { label: "Autorizada", color: "bg-purple-100 text-purple-800" },
   em_execucao: { label: "Em Execução", color: "bg-yellow-100 text-yellow-800" },
   concluida: { label: "Concluída", color: "bg-green-100 text-green-800" },
   cancelada: { label: "Cancelada", color: "bg-red-100 text-red-800" },
-  pausada: { label: "Pausada", color: "bg-gray-100 text-gray-700" },
 };
 
 const PRIORIDADE: Record<string, { label: string; color: string }> = {
@@ -62,14 +62,19 @@ function ContratosTab() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [relatorioContratoId, setRelatorioContratoId] = useState<number | null>(null);
+  const [relatorioAba, setRelatorioAba] = useState<"resumo" | "dre">("resumo");
   const [impressaoContratos, setImpressaoContratos] = useState<ContratoParaImpressao[] | null>(null);
   const { data: relatorio, isLoading: relatorioLoading } = trpc.relatorioContrato.getRelatorio.useQuery(
     { contratoId: relatorioContratoId! },
     { enabled: relatorioContratoId !== null }
   );
+  const { data: dreData, isLoading: dreLoading } = trpc.relatorioContrato.getDRE.useQuery(
+    { contratoId: relatorioContratoId! },
+    { enabled: relatorioContratoId !== null && relatorioAba === "dre" }
+  );
   const [form, setForm] = useState({
     numero: "", objeto: "", tipo: "prestacao_servico" as const,
-    status: "negociacao" as const, clienteId: "" as string | number,
+    status: "proposta" as const, clienteId: "" as string | number,
     valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "",
     enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "",
     enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "",
@@ -84,6 +89,14 @@ function ContratosTab() {
   const deleteMutation = trpc.contratos.delete.useMutation({
     onSuccess: () => { utils.contratos.list.invalidate(); toast.success("Contrato removido."); }
   });
+  const ativarMutation = trpc.relatorioContrato.ativarContrato.useMutation({
+    onSuccess: (data) => {
+      utils.contratos.list.invalidate();
+      utils.centrosCusto?.list?.invalidate?.();
+      toast.success("Contrato ativado! Centro de Custo vinculado automaticamente.");
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   const filtered = useMemo(() => {
     return contratos.filter(c => {
@@ -97,7 +110,7 @@ function ContratosTab() {
 
   function openNew() {
     setEditId(null);
-    setForm({ numero: nextNumero ?? "", objeto: "", tipo: "prestacao_servico", status: "negociacao", clienteId: "", valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
+    setForm({ numero: nextNumero ?? "", objeto: "", tipo: "prestacao_servico", status: "proposta", clienteId: "", valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
     setShowForm(true);
   }
 
@@ -166,7 +179,7 @@ function ContratosTab() {
       ) : (
         <div className="space-y-3">
           {filtered.map(c => {
-            const st = STATUS_CONTRATO[c.status ?? "negociacao"];
+            const st = STATUS_CONTRATO[c.status ?? "proposta"] ?? STATUS_CONTRATO.proposta;
             return (
               <Card key={c.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
@@ -186,6 +199,11 @@ function ContratosTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      {podeEditar && c.status !== "ativo" && c.status !== "encerrado" && (
+                        <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50 h-8 px-2 text-xs" title="Ativar Contrato" onClick={() => { if (confirm(`Ativar contrato ${c.numero}? Um Centro de Custo será criado automaticamente.`)) ativarMutation.mutate({ id: c.id }); }} disabled={ativarMutation.isPending}>
+                          Ativar
+                        </Button>
+                      )}
                       <Button size="icon" variant="ghost" title="Imprimir Contrato" onClick={() => setImpressaoContratos([c])}>
                         <Printer className="h-4 w-4 text-green-600" />
                       </Button>
@@ -204,7 +222,7 @@ function ContratosTab() {
       )}
 
       {/* Modal Relatório por Contrato */}
-      <Dialog open={relatorioContratoId !== null} onOpenChange={v => { if (!v) setRelatorioContratoId(null); }}>
+      <Dialog open={relatorioContratoId !== null} onOpenChange={v => { if (!v) { setRelatorioContratoId(null); setRelatorioAba("resumo"); } }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -212,7 +230,130 @@ function ContratosTab() {
               Relatório do Contrato
             </DialogTitle>
           </DialogHeader>
-          {relatorioLoading ? (
+          {/* Abas Resumo / DRE */}
+          <div className="flex gap-1 border-b mb-2">
+            <button
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                relatorioAba === "resumo" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => setRelatorioAba("resumo")}
+            >
+              Resumo Financeiro
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                relatorioAba === "dre" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => setRelatorioAba("dre")}
+            >
+              DRE do Contrato
+            </button>
+          </div>
+          {relatorioAba === "dre" ? (
+            dreLoading ? (
+              <div className="py-12 text-center text-muted-foreground">Carregando DRE...</div>
+            ) : dreData ? (
+              <div className="space-y-4 py-2">
+                <div className="p-4 bg-muted/40 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-mono font-bold text-primary">{dreData.contrato.numero}</p>
+                      <p className="font-semibold">{dreData.contrato.objeto}</p>
+                      <p className="text-sm text-muted-foreground">{dreData.contrato.clienteNome}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Valor Contratado</p>
+                      <p className="text-xl font-bold text-primary">{fmt(dreData.contrato.receitaContratada)}</p>
+                    </div>
+                  </div>
+                </div>
+                {/* Tabela DRE */}
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left p-3 font-semibold">Descrição</th>
+                        <th className="text-right p-3 font-semibold">Previsto</th>
+                        <th className="text-right p-3 font-semibold">Realizado</th>
+                        <th className="text-right p-3 font-semibold">Pend./Saldo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t bg-green-50/50">
+                        <td className="p-3 font-semibold text-green-800">RECEITAS</td>
+                        <td className="p-3 text-right text-green-700">{fmt(dreData.receitas.prevista)}</td>
+                        <td className="p-3 text-right font-bold text-green-800">{fmt(dreData.receitas.realizada)}</td>
+                        <td className="p-3 text-right text-green-600">{fmt(dreData.receitas.pendente)}</td>
+                      </tr>
+                      <tr className="border-t">
+                        <td className="p-3 pl-6 text-muted-foreground">Receita Contratada</td>
+                        <td className="p-3 text-right">{fmt(dreData.receitas.contratada)}</td>
+                        <td className="p-3 text-right">—</td>
+                        <td className="p-3 text-right">—</td>
+                      </tr>
+                      <tr className="border-t">
+                        <td className="p-3 pl-6 text-muted-foreground">Recebimentos Realizados</td>
+                        <td className="p-3 text-right">—</td>
+                        <td className="p-3 text-right">{fmt(dreData.receitas.realizada)}</td>
+                        <td className="p-3 text-right">{fmt(dreData.receitas.pendente)}</td>
+                      </tr>
+                      <tr className="border-t bg-red-50/50">
+                        <td className="p-3 font-semibold text-red-800">CUSTOS</td>
+                        <td className="p-3 text-right text-red-700">{fmt(dreData.custos.previstos)}</td>
+                        <td className="p-3 text-right font-bold text-red-800">{fmt(dreData.custos.realizados)}</td>
+                        <td className="p-3 text-right text-red-600">{fmt(dreData.custos.pendentes)}</td>
+                      </tr>
+                      <tr className="border-t">
+                        <td className="p-3 pl-6 text-muted-foreground">Pagamentos Realizados (CC)</td>
+                        <td className="p-3 text-right">—</td>
+                        <td className="p-3 text-right">{fmt(dreData.custos.realizados)}</td>
+                        <td className="p-3 text-right">{fmt(dreData.custos.pendentes)}</td>
+                      </tr>
+                      <tr className="border-t">
+                        <td className="p-3 pl-6 text-muted-foreground">Custo Estimado das OS</td>
+                        <td className="p-3 text-right">{fmt(dreData.custos.osEstimado)}</td>
+                        <td className="p-3 text-right">{fmt(dreData.custos.osRealizado)}</td>
+                        <td className="p-3 text-right">—</td>
+                      </tr>
+                      <tr className="border-t-2 border-gray-300 bg-muted/30">
+                        <td className="p-3 font-bold">MARGEM BRUTA</td>
+                        <td className="p-3 text-right font-semibold">
+                          {fmt(dreData.margens.prevista)}
+                          <span className="ml-1 text-xs text-muted-foreground">({dreData.margens.previstaPerc.toFixed(1)}%)</span>
+                        </td>
+                        <td className={`p-3 text-right font-bold ${dreData.margens.bruta >= 0 ? "text-green-700" : "text-red-700"}`}>
+                          {fmt(dreData.margens.bruta)}
+                          <span className="ml-1 text-xs">({dreData.margens.brutaPerc.toFixed(1)}%)</span>
+                        </td>
+                        <td className="p-3 text-right">—</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                {/* Indicadores */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 border rounded-lg text-center">
+                    <p className="text-xs text-muted-foreground">OS Vinculadas</p>
+                    <p className="text-xl font-bold">{dreData.os.length}</p>
+                  </div>
+                  <div className="p-3 border rounded-lg text-center">
+                    <p className="text-xs text-muted-foreground">OS Concluídas</p>
+                    <p className="text-xl font-bold text-green-700">{dreData.os.filter(o => o.status === "concluida").length}</p>
+                  </div>
+                  <div className="p-3 border rounded-lg text-center">
+                    <p className="text-xs text-muted-foreground">Recebimentos</p>
+                    <p className="text-xl font-bold text-blue-700">{dreData.recebimentos.length}</p>
+                  </div>
+                  <div className="p-3 border rounded-lg text-center">
+                    <p className="text-xs text-muted-foreground">Pagamentos (CC)</p>
+                    <p className="text-xl font-bold text-orange-700">{dreData.pagamentos.length}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-muted-foreground">Nenhum dado encontrado.</div>
+            )
+          ) : relatorioLoading ? (
             <div className="py-12 text-center text-muted-foreground">Carregando relatório...</div>
           ) : relatorio ? (
             <div className="space-y-6 py-2">
@@ -222,8 +363,8 @@ function ContratosTab() {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono font-bold text-primary text-lg">{relatorio.contrato.numero}</span>
-                      <Badge className={`text-xs ${STATUS_CONTRATO[relatorio.contrato.status ?? "negociacao"]?.color}`}>
-                        {STATUS_CONTRATO[relatorio.contrato.status ?? "negociacao"]?.label}
+                      <Badge className={`text-xs ${(STATUS_CONTRATO[relatorio.contrato.status ?? "proposta"] ?? STATUS_CONTRATO.proposta)?.color}`}>
+                        {(STATUS_CONTRATO[relatorio.contrato.status ?? "proposta"] ?? STATUS_CONTRATO.proposta)?.label}
                       </Badge>
                     </div>
                     <p className="font-semibold text-base mt-1">{relatorio.contrato.objeto}</p>
@@ -270,7 +411,7 @@ function ContratosTab() {
                   </h3>
                   <div className="space-y-2">
                     {relatorio.os.map(os => {
-                      const st = STATUS_OS[os.status ?? "aberta"];
+                      const st = STATUS_OS[os.status ?? "planejada"] ?? STATUS_OS.planejada;
                       return (
                         <div key={os.id} className="flex items-center justify-between p-3 border rounded-lg text-sm">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -376,6 +517,7 @@ function ContratosTab() {
           ) : (
             <div className="py-12 text-center text-muted-foreground">Nenhum dado encontrado.</div>
           )}
+          {/* Fim da aba Resumo */}
           <DialogFooter>
             <Button variant="outline" onClick={() => setRelatorioContratoId(null)}>Fechar</Button>
           </DialogFooter>
@@ -428,6 +570,14 @@ function ContratosTab() {
             <div className="space-y-1">
               <Label>Valor Total (R$) *</Label>
               <Input type="number" min="0" step="0.01" value={form.valorTotal} onChange={e => setForm(p => ({ ...p, valorTotal: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Valor Previsto (R$)</Label>
+              <Input type="number" min="0" step="0.01" placeholder="Valor previsto de receita" value={(form as any).valorPrevisto ?? ""} onChange={e => setForm(p => ({ ...p, valorPrevisto: e.target.value } as any))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Margem Prevista (%)</Label>
+              <Input type="number" min="0" max="100" step="0.1" placeholder="Ex: 25" value={(form as any).margemPrevista ?? ""} onChange={e => setForm(p => ({ ...p, margemPrevista: e.target.value } as any))} />
             </div>
             <div className="space-y-1">
               <Label>Data de Início</Label>
@@ -522,7 +672,7 @@ function OrdensServicoTab() {
   const [editId, setEditId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [form, setForm] = useState({
-    numero: "", titulo: "", descricao: "", status: "aberta" as const,
+    numero: "", titulo: "", descricao: "", status: "planejada" as const,
     prioridade: "media" as const, responsavel: "", dataAbertura: "",
     dataPrevisao: "", valorEstimado: "", observacoes: "",
     contratoId: "" as string | number, clienteId: "" as string | number,
@@ -590,7 +740,7 @@ function OrdensServicoTab() {
   function openNew() {
     setEditId(null);
     setItens([]);
-    setForm({ numero: nextNumero ?? "", titulo: "", descricao: "", status: "aberta", prioridade: "media", responsavel: "", dataAbertura: new Date().toISOString().split("T")[0], dataPrevisao: "", valorEstimado: "", observacoes: "", contratoId: "", clienteId: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
+    setForm({ numero: nextNumero ?? "", titulo: "", descricao: "", status: "planejada", prioridade: "media", responsavel: "", dataAbertura: new Date().toISOString().split("T")[0], dataPrevisao: "", valorEstimado: "", observacoes: "", contratoId: "", clienteId: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
     setShowForm(true);
   }
 
@@ -681,7 +831,7 @@ function OrdensServicoTab() {
       ) : (
         <div className="space-y-3">
           {filtered.map(o => {
-            const st = STATUS_OS[o.status ?? "aberta"];
+            const st = STATUS_OS[o.status ?? "planejada"] ?? STATUS_OS.planejada;
             const pr = PRIORIDADE[o.prioridade ?? "media"];
             const expanded = expandedId === o.id;
             return (
@@ -1253,7 +1403,7 @@ export default function Engenharia() {
 
   const stats = useMemo(() => ({
     contratosAtivos: contratos.filter(c => c.status === "ativo").length,
-    osAbertas: ordens.filter(o => o.status === "aberta").length,
+    osAbertas: ordens.filter(o => o.status === "planejada" || o.status === "autorizada").length,
     osEmExecucao: ordens.filter(o => o.status === "em_execucao").length,
     valorContratos: contratos.filter(c => c.status === "ativo").reduce((s, c) => s + parseFloat(c.valorTotal ?? "0"), 0),
   }), [contratos, ordens]);

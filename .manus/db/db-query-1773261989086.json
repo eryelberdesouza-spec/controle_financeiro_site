@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `contratos` MODIFY COLUMN `status` enum('proposta','em_negociacao','ativo','suspenso','encerrado') NOT NULL DEFAULT 'proposta';\nALTER TABLE `ordens_servico` MODIFY COLUMN `status` enum('planejada','autorizada','em_execucao','concluida','cancelada') NOT NULL DEFAULT 'planejada';\nALTER TABLE `contratos` ADD COLUMN IF NOT EXISTS `valor_previsto` decimal(15,2) DEFAULT NULL;\nALTER TABLE `contratos` ADD COLUMN IF NOT EXISTS `margem_prevista` decimal(5,2) DEFAULT NULL;\nALTER TABLE `contratos` ADD COLUMN IF NOT EXISTS `centro_custo_id` int DEFAULT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute ALTER TABLE `contratos` MODIFY COLUMN `status` enum('proposta','em_negociacao','ativo','suspenso','encerrado') NOT NULL DEFAULT 'proposta';\nALTER TABLE `ordens_servico` MODIFY COLUMN `status` enum('planejada','autorizada','em_execucao','concluida','cancelada') NOT NULL DEFAULT 'planejada';\nALTER TABLE `contratos` ADD COLUMN IF NOT EXISTS `valor_previsto` decimal(15,2) DEFAULT NULL;\nALTER TABLE `contratos` ADD COLUMN IF NOT EXISTS `margem_prevista` decimal(5,2) DEFAULT NULL;\nALTER TABLE `contratos` ADD COLUMN IF NOT EXISTS `centro_custo_id` int DEFAULT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3214
+}

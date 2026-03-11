@@ -327,3 +327,19 @@
 - [x] Aba Geral: filtro de CC usa seletor com os CCs cadastrados no banco
 - [x] Aba Por Centro de Custo: cards de totais, gráfico de evolução mensal, pizza por tipo, tabelas detalhadas, impressão A4
 - [x] TypeScript limpo (0 erros) · 26 testes passando
+
+## Melhorias ERP v2 (script de melhorias)
+- [x] Atualizar STATUS_OS: planejada, autorizada, em_execucao, concluida, cancelada (remover aberta, pausada)
+- [x] Atualizar STATUS_CONTRATO: proposta, em_negociacao, ativo, suspenso, encerrado (remover negociacao, cancelado)
+- [x] Migrar dados existentes de status antigos para novos valores no banco
+- [x] Adicionar colunas valorPrevisto e margemPrevista na tabela contratos
+- [x] Adicionar coluna centroCustoId na tabela contratos
+- [x] Adicionar campos avançados de clientes: tipoPessoa, segmento, inscricaoEstadual, inscricaoMunicipal, emailNfe, celular, nomeContato, cep, logradouro, numero, complemento, bairro, agencia, conta, tipoConta
+- [x] Atualizar router de clientes (create/update) com novos campos avançados
+- [x] Adicionar procedure ativarContrato: muda status para 'ativo' e cria Centro de Custo vinculado automaticamente
+- [x] Adicionar procedure getDRE: calcula DRE por contrato (receitas, custos, margens)
+- [x] Adicionar botão "Ativar Contrato" na lista de contratos (status proposta/em_negociacao)
+- [x] Adicionar campos valorPrevisto e margemPrevista no formulário de contratos
+- [x] Implementar aba "DRE do Contrato" no modal de relatório (tabela com receitas, custos, margem bruta)
+- [x] Atualizar formulário de clientes com todos os novos campos avançados
+- [x] Atualizar testes: 34 testes passando

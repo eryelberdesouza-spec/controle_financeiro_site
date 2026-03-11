@@ -13,7 +13,7 @@ async function requirePerm(userId: number, userRole: string, modulo: string, aca
 }
 import {
   tiposServico, materiais, contratos, ordensServico, osItens, clientes,
-  pagamentos, recebimentos, pagamentoParcelas, recebimentoParcelas
+  pagamentos, recebimentos, pagamentoParcelas, recebimentoParcelas, centrosCusto
 } from "../../drizzle/schema";
 import { eq, like, desc, and, sql, inArray } from "drizzle-orm";
 
@@ -218,7 +218,7 @@ export const contratosRouter = router({
       numero: z.string().min(1).max(50),
       objeto: z.string().min(1),
       tipo: z.enum(["prestacao_servico", "fornecimento", "locacao", "misto"]),
-      status: z.enum(["negociacao", "ativo", "suspenso", "encerrado", "cancelado"]).optional(),
+      status: z.enum(["proposta", "em_negociacao", "ativo", "suspenso", "encerrado"]).optional(),
       clienteId: z.number().optional(),
       valorTotal: z.number(),
       dataInicio: z.string().optional(),
@@ -254,7 +254,7 @@ export const contratosRouter = router({
       numero: z.string().min(1).max(50),
       objeto: z.string().min(1),
       tipo: z.enum(["prestacao_servico", "fornecimento", "locacao", "misto"]),
-      status: z.enum(["negociacao", "ativo", "suspenso", "encerrado", "cancelado"]),
+      status: z.enum(["proposta", "em_negociacao", "ativo", "suspenso", "encerrado"]),
       clienteId: z.number().optional(),
       valorTotal: z.number(),
       dataInicio: z.string().optional(),
@@ -385,7 +385,7 @@ export const ordensServicoRouter = router({
       clienteId: z.number().optional(),
       titulo: z.string().min(1).max(200),
       descricao: z.string().optional(),
-      status: z.enum(["aberta", "em_execucao", "concluida", "cancelada", "pausada"]).optional(),
+      status: z.enum(["planejada", "autorizada", "em_execucao", "concluida", "cancelada"]).optional(),
       prioridade: z.enum(["baixa", "media", "alta", "urgente"]).optional(),
       responsavel: z.string().optional(),
       dataAbertura: z.string().optional(),
@@ -440,7 +440,7 @@ export const ordensServicoRouter = router({
       id: z.number(),
       titulo: z.string().min(1).max(200),
       descricao: z.string().optional(),
-      status: z.enum(["aberta", "em_execucao", "concluida", "cancelada", "pausada"]),
+      status: z.enum(["planejada", "autorizada", "em_execucao", "concluida", "cancelada"]),
       prioridade: z.enum(["baixa", "media", "alta", "urgente"]),
       responsavel: z.string().optional(),
       dataAbertura: z.string().optional(),
@@ -708,7 +708,7 @@ export const relatorioContratoRouter = router({
         .reduce((acc, p) => acc + parseFloat(p.valor ?? "0"), 0);
       const totalPendente = recs.reduce((acc, r) => acc + parseFloat(r.valorTotal ?? "0"), 0) - totalRecebido;
 
-      const osAberta = os.filter(o => ["aberta", "em_execucao", "pausada"].includes(o.status ?? "")).length;
+      const osAberta = os.filter(o => ["planejada", "autorizada", "em_execucao"].includes(o.status ?? "")).length;
       const osConcluida = os.filter(o => o.status === "concluida").length;
 
       return {
@@ -727,6 +727,186 @@ export const relatorioContratoRouter = router({
           osAberta,
           osConcluida,
         },
+      };
+    }),
+
+  ativarContrato: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const d = await getDb();
+      if (!d) throw new Error("DB unavailable");
+
+      // Buscar contrato
+      const [contrato] = await d
+        .select({
+          id: contratos.id,
+          numero: contratos.numero,
+          objeto: contratos.objeto,
+          status: contratos.status,
+          centroCustoId: contratos.centroCustoId,
+          clienteId: contratos.clienteId,
+          clienteNome: clientes.nome,
+        })
+        .from(contratos)
+        .leftJoin(clientes, eq(contratos.clienteId, clientes.id))
+        .where(eq(contratos.id, input.id));
+
+      if (!contrato) throw new TRPCError({ code: "NOT_FOUND", message: "Contrato não encontrado" });
+      if (contrato.status === "ativo") throw new TRPCError({ code: "BAD_REQUEST", message: "Contrato já está ativo" });
+
+      let centroCustoId = contrato.centroCustoId;
+
+      // Criar Centro de Custo automaticamente se não existir
+      if (!centroCustoId) {
+        const nomeCc = `CTR ${contrato.numero} — ${contrato.objeto.substring(0, 60)}`;
+        const [ccResult] = await d.insert(centrosCusto).values({
+          nome: nomeCc,
+          descricao: `Centro de custo criado automaticamente ao ativar o contrato ${contrato.numero}`,
+          tipo: "contrato",
+          contratoId: contrato.id,
+          ativo: true,
+          createdBy: ctx.user.id,
+        });
+        centroCustoId = ccResult.insertId;
+      }
+
+      // Atualizar status do contrato para ativo e vincular CC
+      await d.update(contratos).set({
+        status: "ativo",
+        centroCustoId,
+      }).where(eq(contratos.id, input.id));
+
+      return { success: true, centroCustoId };
+    }),
+
+  getDRE: protectedProcedure
+    .input(z.object({ contratoId: z.number() }))
+    .query(async ({ input }) => {
+      const d = await getDb();
+      if (!d) return null;
+
+      // Dados do contrato
+      const [contrato] = await d
+        .select({
+          id: contratos.id,
+          numero: contratos.numero,
+          objeto: contratos.objeto,
+          status: contratos.status,
+          valorTotal: contratos.valorTotal,
+          valorPrevisto: contratos.valorPrevisto,
+          margemPrevista: contratos.margemPrevista,
+          dataInicio: contratos.dataInicio,
+          dataFim: contratos.dataFim,
+          centroCustoId: contratos.centroCustoId,
+          clienteNome: clientes.nome,
+        })
+        .from(contratos)
+        .leftJoin(clientes, eq(contratos.clienteId, clientes.id))
+        .where(eq(contratos.id, input.contratoId));
+
+      if (!contrato) return null;
+
+      // Receitas: recebimentos vinculados ao contrato (por número)
+      const recs = await d
+        .select({
+          id: recebimentos.id,
+          valorTotal: recebimentos.valorTotal,
+          status: recebimentos.status,
+          dataVencimento: recebimentos.dataVencimento,
+          dataRecebimento: recebimentos.dataRecebimento,
+          descricao: recebimentos.descricao,
+        })
+        .from(recebimentos)
+        .where(eq(recebimentos.numeroContrato, contrato.numero));
+
+      // Custos: pagamentos vinculados ao CC do contrato
+      const custos = contrato.centroCustoId
+        ? await d
+            .select({
+              id: pagamentos.id,
+              valor: pagamentos.valor,
+              status: pagamentos.status,
+              dataPagamento: pagamentos.dataPagamento,
+              descricao: pagamentos.descricao,
+              tipoServico: pagamentos.tipoServico,
+            })
+            .from(pagamentos)
+            .where(eq(pagamentos.centroCustoId, contrato.centroCustoId!))
+        : [];
+
+      // OS vinculadas
+      const os = await d
+        .select({
+          id: ordensServico.id,
+          numero: ordensServico.numero,
+          titulo: ordensServico.titulo,
+          status: ordensServico.status,
+          valorEstimado: ordensServico.valorEstimado,
+          valorRealizado: ordensServico.valorRealizado,
+        })
+        .from(ordensServico)
+        .where(eq(ordensServico.contratoId, input.contratoId));
+
+      // Cálculos DRE
+      const receitaContratada = parseFloat(contrato.valorTotal ?? "0");
+      const receitaPrevista = parseFloat(contrato.valorPrevisto ?? contrato.valorTotal ?? "0");
+      const receitaRealizada = recs
+        .filter(r => r.status === "Recebido")
+        .reduce((s, r) => s + parseFloat(r.valorTotal ?? "0"), 0);
+      const receitaPendente = recs
+        .filter(r => r.status === "Pendente" || r.status === "Atrasado")
+        .reduce((s, r) => s + parseFloat(r.valorTotal ?? "0"), 0);
+
+      const custosRealizados = custos
+        .filter(p => p.status === "Pago")
+        .reduce((s, p) => s + parseFloat(p.valor ?? "0"), 0);
+      const custosPendentes = custos
+        .filter(p => p.status === "Pendente" || p.status === "Processando")
+        .reduce((s, p) => s + parseFloat(p.valor ?? "0"), 0);
+
+      const custoOsEstimado = os
+        .reduce((s, o) => s + parseFloat(o.valorEstimado ?? "0"), 0);
+      const custoOsRealizado = os
+        .filter(o => o.status === "concluida")
+        .reduce((s, o) => s + parseFloat(o.valorRealizado ?? o.valorEstimado ?? "0"), 0);
+
+      const margemPrevistaPerc = parseFloat(contrato.margemPrevista ?? "0");
+      const custosPrevisos = receitaPrevista * (1 - margemPrevistaPerc / 100);
+
+      const margemBrutaRealizada = receitaRealizada - custosRealizados;
+      const margemBrutaPerc = receitaRealizada > 0 ? (margemBrutaRealizada / receitaRealizada) * 100 : 0;
+
+      return {
+        contrato: {
+          ...contrato,
+          receitaContratada,
+          receitaPrevista,
+          margemPrevistaPerc,
+        },
+        receitas: {
+          contratada: receitaContratada,
+          prevista: receitaPrevista,
+          realizada: receitaRealizada,
+          pendente: receitaPendente,
+          total: receitaRealizada + receitaPendente,
+        },
+        custos: {
+          previstos: custosPrevisos,
+          realizados: custosRealizados,
+          pendentes: custosPendentes,
+          osEstimado: custoOsEstimado,
+          osRealizado: custoOsRealizado,
+          total: custosRealizados + custosPendentes,
+        },
+        margens: {
+          bruta: margemBrutaRealizada,
+          brutaPerc: margemBrutaPerc,
+          prevista: receitaPrevista * (margemPrevistaPerc / 100),
+          previstaPerc: margemPrevistaPerc,
+        },
+        os,
+        recebimentos: recs,
+        pagamentos: custos,
       };
     }),
 

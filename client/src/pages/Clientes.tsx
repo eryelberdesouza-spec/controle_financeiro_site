@@ -40,9 +40,15 @@ type TipoPix = typeof TIPOS_PIX[number];
 type FormData = {
   nome: string;
   tipo: Tipo;
+  tipoPessoa: "PF" | "PJ";
+  segmento: string;
   cpfCnpj: string;
+  inscricaoEstadual: string;
+  inscricaoMunicipal: string;
   email: string;
   telefone: string;
+  celular: string;
+  nomeContato: string;
   endereco: string;
   cidade: string;
   estado: string;
@@ -50,12 +56,17 @@ type FormData = {
   tipoPix: TipoPix | "";
   chavePix: string;
   banco: string;
+  agencia: string;
+  conta: string;
+  tipoConta: "corrente" | "poupanca" | "pagamento" | "";
 };
 
 const emptyForm: FormData = {
-  nome: "", tipo: "Cliente", cpfCnpj: "", email: "", telefone: "",
+  nome: "", tipo: "Cliente", tipoPessoa: "PJ", segmento: "",
+  cpfCnpj: "", inscricaoEstadual: "", inscricaoMunicipal: "",
+  email: "", telefone: "", celular: "", nomeContato: "",
   endereco: "", cidade: "", estado: "", observacao: "",
-  tipoPix: "", chavePix: "", banco: "",
+  tipoPix: "", chavePix: "", banco: "", agencia: "", conta: "", tipoConta: "",
 };
 
 export default function Clientes() {
@@ -95,9 +106,15 @@ export default function Clientes() {
     setForm({
       nome: c.nome,
       tipo: c.tipo as Tipo,
+      tipoPessoa: (c.tipoPessoa as "PF" | "PJ") ?? "PJ",
+      segmento: c.segmento ?? "",
       cpfCnpj: c.cpfCnpj ?? "",
+      inscricaoEstadual: c.inscricaoEstadual ?? "",
+      inscricaoMunicipal: c.inscricaoMunicipal ?? "",
       email: c.email ?? "",
       telefone: c.telefone ?? "",
+      celular: c.celular ?? "",
+      nomeContato: c.nomeContato ?? "",
       endereco: c.endereco ?? "",
       cidade: c.cidade ?? "",
       estado: c.estado ?? "",
@@ -105,6 +122,9 @@ export default function Clientes() {
       tipoPix: (c.tipoPix as TipoPix) ?? "",
       chavePix: c.chavePix ?? "",
       banco: c.banco ?? "",
+      agencia: c.agencia ?? "",
+      conta: c.conta ?? "",
+      tipoConta: (c.tipoConta as "corrente" | "poupanca" | "pagamento" | "") ?? "",
     });
     setEditandoId(c.id);
     setDialogAberto(true);
@@ -117,6 +137,14 @@ export default function Clientes() {
       tipoPix: form.tipoPix || undefined,
       chavePix: form.chavePix || undefined,
       banco: form.banco || undefined,
+      agencia: form.agencia || undefined,
+      conta: form.conta || undefined,
+      tipoConta: form.tipoConta || undefined,
+      segmento: form.segmento || undefined,
+      inscricaoEstadual: form.inscricaoEstadual || undefined,
+      inscricaoMunicipal: form.inscricaoMunicipal || undefined,
+      celular: form.celular || undefined,
+      nomeContato: form.nomeContato || undefined,
     };
     if (editandoId) {
       updateMutation.mutate({ id: editandoId, ...payload });
@@ -260,7 +288,7 @@ export default function Clientes() {
                 placeholder="Nome completo ou razão social"
               />
             </div>
-            {/* Tipo */}
+            {/* Tipo e Tipo Pessoa */}
             <div className="space-y-1.5">
               <Label>Tipo</Label>
               <Select value={form.tipo} onValueChange={(v) => setForm(f => ({ ...f, tipo: v as Tipo }))}>
@@ -274,32 +302,87 @@ export default function Clientes() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>Pessoa Física / Jurídica</Label>
+              <Select value={form.tipoPessoa} onValueChange={(v) => setForm(f => ({ ...f, tipoPessoa: v as "PF" | "PJ" }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PF">PF — Pessoa Física</SelectItem>
+                  <SelectItem value="PJ">PJ — Pessoa Jurídica</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Segmento */}
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>Segmento de Atuação</Label>
+              <Input
+                value={form.segmento}
+                onChange={(e) => setForm(f => ({ ...f, segmento: e.target.value }))}
+                placeholder="Ex: Construção Civil, Energia Elétrica, Telecomunicações..."
+              />
+            </div>
             {/* CPF/CNPJ */}
             <div className="space-y-1.5">
-              <Label>CPF / CNPJ</Label>
+              <Label>{form.tipoPessoa === "PF" ? "CPF" : "CNPJ"}</Label>
               <Input
                 value={form.cpfCnpj}
                 onChange={(e) => setForm(f => ({ ...f, cpfCnpj: e.target.value }))}
-                placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                placeholder={form.tipoPessoa === "PF" ? "000.000.000-00" : "00.000.000/0001-00"}
               />
             </div>
+            {/* Insc. Estadual (apenas PJ) */}
+            {form.tipoPessoa === "PJ" && (
+              <div className="space-y-1.5">
+                <Label>Inscrição Estadual</Label>
+                <Input
+                  value={form.inscricaoEstadual}
+                  onChange={(e) => setForm(f => ({ ...f, inscricaoEstadual: e.target.value }))}
+                  placeholder="Isento ou número"
+                />
+              </div>
+            )}
+            {form.tipoPessoa === "PJ" && (
+              <div className="space-y-1.5">
+                <Label>Inscrição Municipal</Label>
+                <Input
+                  value={form.inscricaoMunicipal}
+                  onChange={(e) => setForm(f => ({ ...f, inscricaoMunicipal: e.target.value }))}
+                  placeholder="Número do alvará"
+                />
+              </div>
+            )}
             {/* Email */}
             <div className="space-y-1.5">
               <Label>E-mail</Label>
               <Input
-                type="email"
                 value={form.email}
                 onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="contato@empresa.com.br"
               />
             </div>
-            {/* Telefone */}
+            {/* Telefone e Celular */}
             <div className="space-y-1.5">
               <Label>Telefone</Label>
               <Input
                 value={form.telefone}
                 onChange={(e) => setForm(f => ({ ...f, telefone: e.target.value }))}
+                placeholder="(61) 3333-3333"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Celular / WhatsApp</Label>
+              <Input
+                value={form.celular}
+                onChange={(e) => setForm(f => ({ ...f, celular: e.target.value }))}
                 placeholder="(61) 99999-9999"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nome do Contato</Label>
+              <Input
+                value={form.nomeContato}
+                onChange={(e) => setForm(f => ({ ...f, nomeContato: e.target.value }))}
+                placeholder="Responsável comercial"
               />
             </div>
             {/* Endereço */}
@@ -330,19 +413,50 @@ export default function Clientes() {
                 maxLength={2}
               />
             </div>
-            {/* Dados de Pix */}
+            {/* Dados Bancários */}
             <div className="sm:col-span-2">
               <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Dados de Pix / Banco
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Dados Bancários e Pix
                   <span className="ml-2 text-xs font-normal normal-case">(preenchimento automático em Pagamentos)</span>
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Banco</Label>
                     <Input
                       value={form.banco}
                       onChange={(e) => setForm(f => ({ ...f, banco: e.target.value }))}
-                      placeholder="Ex: Nubank, Bradesco"
+                      placeholder="Ex: Nubank, Bradesco, BB"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Tipo de Conta</Label>
+                    <Select
+                      value={form.tipoConta || "_none"}
+                      onValueChange={(v) => setForm(f => ({ ...f, tipoConta: v === "_none" ? "" : v as any }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">Não informar</SelectItem>
+                        <SelectItem value="corrente">Conta Corrente</SelectItem>
+                        <SelectItem value="poupanca">Conta Poupança</SelectItem>
+                        <SelectItem value="pagamento">Conta Pagamento</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Agência</Label>
+                    <Input
+                      value={form.agencia}
+                      onChange={(e) => setForm(f => ({ ...f, agencia: e.target.value }))}
+                      placeholder="0000"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Número da Conta</Label>
+                    <Input
+                      value={form.conta}
+                      onChange={(e) => setForm(f => ({ ...f, conta: e.target.value }))}
+                      placeholder="00000-0"
                     />
                   </div>
                   <div className="space-y-1.5">

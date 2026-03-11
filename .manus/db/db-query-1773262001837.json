@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `tipo_pessoa` enum('PF','PJ') NOT NULL DEFAULT 'PF';\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `segmento` varchar(100) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `inscricao_estadual` varchar(50) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `inscricao_municipal` varchar(50) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `banco_nome` varchar(100) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `banco_agencia` varchar(20) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `banco_conta` varchar(30) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `banco_tipo_conta` enum('corrente','poupanca','pagamento') DEFAULT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute ALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `tipo_pessoa` enum('PF','PJ') NOT NULL DEFAULT 'PF';\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `segmento` varchar(100) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `inscricao_estadual` varchar(50) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `inscricao_municipal` varchar(50) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `banco_nome` varchar(100) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `banco_agencia` varchar(20) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `banco_conta` varchar(30) DEFAULT NULL;\nALTER TABLE `clientes` ADD COLUMN IF NOT EXISTS `banco_tipo_conta` enum('corrente','poupanca','pagamento') DEFAULT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 6783
+}

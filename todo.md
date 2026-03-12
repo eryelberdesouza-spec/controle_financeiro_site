@@ -391,5 +391,7 @@
 
 ## Correção Schema Contratos (12/03/2026)
 - [x] Remover colunas recebimentoId e pagamentoId do schema Drizzle de contratos
-- [x] Remover foreign keys e colunas recebimentoId/pagamentoId do banco de dados
+- [x] Remover foreign keys- [x] Remover colunas recebimentoId e pagamentoId do schema Drizzle de contratos
+- [x] Remover recebimentoId/pagamentoId do schema Zod de create/update de contratos
+- [x] Usar campos explícitos no INSERT/UPDATE de contratos (sem spread de input)
 - [x] Verificar procedure de criação de contratos no backend

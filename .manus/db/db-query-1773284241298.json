@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO contratos (numero, objeto, tipo, status, valorTotal, createdAt, updatedAt) VALUES ('CTR-TEST-999', 'Teste de inserção', 'prestacao_servico', 'proposta', '1000.00', NOW(), NOW()); DELETE FROM contratos WHERE numero = 'CTR-TEST-999';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute INSERT INTO contratos (numero, objeto, tipo, status, valorTotal, createdAt, updatedAt) VALUES ('CTR-TEST-999', 'Teste de inserção', 'prestacao_servico', 'proposta', '1000.00', NOW(), NOW()); DELETE FROM contratos WHERE numero = 'CTR-TEST-999';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 431
+}

@@ -226,8 +226,6 @@ export const contratosRouter = router({
       dataFim: z.string().optional(),
       descricao: z.string().optional(),
       observacoes: z.string().optional(),
-      recebimentoId: z.number().optional(),
-      pagamentoId: z.number().optional(),
       enderecoLogradouro: z.string().max(255).optional(),
       enderecoNumero: z.string().max(20).optional(),
       enderecoComplemento: z.string().max(100).optional(),
@@ -240,12 +238,25 @@ export const contratosRouter = router({
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
       const [result] = await d.insert(contratos).values({
-        ...input,
+        numero: input.numero,
+        objeto: input.objeto,
+        tipo: input.tipo,
+        status: input.status ?? "proposta",
+        clienteId: input.clienteId,
         valorTotal: input.valorTotal.toString(),
         valorPrevisto: input.valorPrevisto?.toString(),
         margemPrevista: input.margemPrevista?.toString(),
         dataInicio: input.dataInicio ? new Date(input.dataInicio) : null,
         dataFim: input.dataFim ? new Date(input.dataFim) : null,
+        descricao: input.descricao,
+        observacoes: input.observacoes,
+        enderecoLogradouro: input.enderecoLogradouro,
+        enderecoNumero: input.enderecoNumero,
+        enderecoComplemento: input.enderecoComplemento,
+        enderecoBairro: input.enderecoBairro,
+        enderecoCidade: input.enderecoCidade,
+        enderecoEstado: input.enderecoEstado,
+        enderecoCep: input.enderecoCep,
         createdBy: ctx.user.id,
       });
       return { id: result.insertId };
@@ -266,8 +277,6 @@ export const contratosRouter = router({
       dataFim: z.string().optional(),
       descricao: z.string().optional(),
       observacoes: z.string().optional(),
-      recebimentoId: z.number().optional(),
-      pagamentoId: z.number().optional(),
       enderecoLogradouro: z.string().max(255).optional(),
       enderecoNumero: z.string().max(20).optional(),
       enderecoComplemento: z.string().max(100).optional(),
@@ -279,14 +288,27 @@ export const contratosRouter = router({
     .mutation(async ({ input }) => {
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
-      const { id, ...data } = input;
+      const { id } = input;
       await d.update(contratos).set({
-        ...data,
-        valorTotal: data.valorTotal.toString(),
-        valorPrevisto: data.valorPrevisto?.toString(),
-        margemPrevista: data.margemPrevista?.toString(),
-        dataInicio: data.dataInicio ? new Date(data.dataInicio) : null,
-        dataFim: data.dataFim ? new Date(data.dataFim) : null,
+        numero: input.numero,
+        objeto: input.objeto,
+        tipo: input.tipo,
+        status: input.status,
+        clienteId: input.clienteId,
+        valorTotal: input.valorTotal.toString(),
+        valorPrevisto: input.valorPrevisto?.toString(),
+        margemPrevista: input.margemPrevista?.toString(),
+        dataInicio: input.dataInicio ? new Date(input.dataInicio) : null,
+        dataFim: input.dataFim ? new Date(input.dataFim) : null,
+        descricao: input.descricao,
+        observacoes: input.observacoes,
+        enderecoLogradouro: input.enderecoLogradouro,
+        enderecoNumero: input.enderecoNumero,
+        enderecoComplemento: input.enderecoComplemento,
+        enderecoBairro: input.enderecoBairro,
+        enderecoCidade: input.enderecoCidade,
+        enderecoEstado: input.enderecoEstado,
+        enderecoCep: input.enderecoCep,
       }).where(eq(contratos.id, id));
     }),
 

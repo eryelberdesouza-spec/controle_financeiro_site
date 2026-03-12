@@ -395,3 +395,8 @@
 - [x] Remover recebimentoId/pagamentoId do schema Zod de create/update de contratos
 - [x] Usar campos explícitos no INSERT/UPDATE de contratos (sem spread de input)
 - [x] Verificar procedure de criação de contratos no backend
+## Diagnóstico INSERT Contratos (12/03/2026 - rodada 2)
+- [x] Verificar colunas reais da tabela contratos no banco
+- [x] Verificar código atual do INSERT no router de engenharia
+- [x] Corrigir enums status e tipo no banco (em_negociacao, remover om)
+- [x] Reiniciar servidor com código correto e testar INSERT via SQL direto

@@ -369,3 +369,22 @@
 - [x] Automação de ativação de contratos: botão Ativar cria CC automaticamente
 - [x] DRE por contrato: aba DRE no modal de relatório de contrato
 - [x] Campos avançados de clientes: tipoPessoa, segmento, inscrições, celular, contato, endereço, dados bancários
+
+## Correções Contratos e Filtros (v3)
+- [ ] Corrigir erro ao salvar novo contrato (não salva mesmo com todos os campos preenchidos)
+- [ ] Revisar e corrigir procedure createContrato no backend
+- [ ] Revisar e corrigir procedure updateContrato no backend
+- [ ] Revisar e corrigir procedure ativarContrato (criação automática de CC)
+- [ ] Revisar e corrigir getDRE por contrato
+- [ ] Implementar filtros avançados na listagem de contratos (status, cliente, tipo, período)
+- [ ] Implementar filtros avançados na listagem de OS (status, contrato, cliente, período)
+
+## Correções Críticas Contratos v3 (11/03/2026)
+- [x] Corrigir enum de status de contratos no banco (negociacao→em_negociacao, cancelado→encerrado)
+- [x] Corrigir enum de tipo de contratos no banco (remover om)
+- [x] Corrigir enum de status de OS no banco (remover pausada)
+- [x] Adicionar onError nas mutations de criar/atualizar contratos (exibir mensagem de erro)
+- [x] Adicionar valorPrevisto e margemPrevista ao schema Zod do backend de contratos
+- [x] Corrigir payload do handleSubmit de contratos para enviar valorPrevisto e margemPrevista
+- [x] Implementar filtros avançados nos contratos (tipo, cliente)
+- [x] Implementar filtros avançados nas OS (contrato, cliente)

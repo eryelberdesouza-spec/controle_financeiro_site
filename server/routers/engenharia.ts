@@ -224,6 +224,8 @@ export const contratosRouter = router({
       status: z.enum(["proposta", "em_negociacao", "ativo", "suspenso", "encerrado"]).optional(),
       clienteId: z.number().optional(),
       valorTotal: z.number(),
+      valorPrevisto: z.number().optional(),
+      margemPrevista: z.number().optional(),
       dataInicio: z.string().optional(),
       dataFim: z.string().optional(),
       descricao: z.string().optional(),
@@ -244,6 +246,8 @@ export const contratosRouter = router({
       const [result] = await d.insert(contratos).values({
         ...input,
         valorTotal: input.valorTotal.toString(),
+        valorPrevisto: input.valorPrevisto?.toString(),
+        margemPrevista: input.margemPrevista?.toString(),
         dataInicio: input.dataInicio ? new Date(input.dataInicio) : null,
         dataFim: input.dataFim ? new Date(input.dataFim) : null,
         createdBy: ctx.user.id,
@@ -260,6 +264,8 @@ export const contratosRouter = router({
       status: z.enum(["proposta", "em_negociacao", "ativo", "suspenso", "encerrado"]),
       clienteId: z.number().optional(),
       valorTotal: z.number(),
+      valorPrevisto: z.number().optional(),
+      margemPrevista: z.number().optional(),
       dataInicio: z.string().optional(),
       dataFim: z.string().optional(),
       descricao: z.string().optional(),
@@ -281,6 +287,8 @@ export const contratosRouter = router({
       await d.update(contratos).set({
         ...data,
         valorTotal: data.valorTotal.toString(),
+        valorPrevisto: data.valorPrevisto?.toString(),
+        margemPrevista: data.margemPrevista?.toString(),
         dataInicio: data.dataInicio ? new Date(data.dataInicio) : null,
         dataFim: data.dataFim ? new Date(data.dataFim) : null,
       }).where(eq(contratos.id, id));

@@ -1,0 +1,52 @@
+{
+  "query": "SHOW CREATE TABLE contratos;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute SHOW CREATE TABLE contratos;",
+  "rows": [
+    {
+      "Table": "contratos",
+      "Create Table": "CREATE TABLE `contratos` ("
+    }
+  ],
+  "messages": [
+    "  `id` int NOT NULL AUTO_INCREMENT,",
+    "  `numero` varchar(50) NOT NULL,",
+    "  `objeto` text NOT NULL,",
+    "  `tipo` enum('prestacao_servico','fornecimento','locacao','om','misto') NOT NULL DEFAULT 'prestacao_servico',",
+    "  `status` enum('proposta','negociacao','ativo','suspenso','encerrado','cancelado') NOT NULL DEFAULT 'proposta',",
+    "  `clienteId` int DEFAULT NULL,",
+    "  `valorTotal` decimal(15,2) NOT NULL,",
+    "  `dataInicio` date DEFAULT NULL,",
+    "  `dataFim` date DEFAULT NULL,",
+    "  `descricao` text DEFAULT NULL,",
+    "  `observacoes` text DEFAULT NULL,",
+    "  `recebimentoId` int DEFAULT NULL,",
+    "  `pagamentoId` int DEFAULT NULL,",
+    "  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,",
+    "  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,",
+    "  `createdBy` int DEFAULT NULL,",
+    "  `enderecoLogradouro` varchar(255) DEFAULT NULL,",
+    "  `enderecoNumero` varchar(20) DEFAULT NULL,",
+    "  `enderecoComplemento` varchar(100) DEFAULT NULL,",
+    "  `enderecoBairro` varchar(100) DEFAULT NULL,",
+    "  `enderecoCidade` varchar(100) DEFAULT NULL,",
+    "  `enderecoEstado` varchar(2) DEFAULT NULL,",
+    "  `enderecoCep` varchar(10) DEFAULT NULL,",
+    "  `valorPrevisto` decimal(15,2) DEFAULT NULL,",
+    "  `margemPrevista` decimal(5,2) DEFAULT NULL,",
+    "  `centroCustoId` int DEFAULT NULL,",
+    "  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,",
+    "  UNIQUE KEY `contratos_numero_unique` (`numero`),",
+    "  KEY `contratos_clienteId_clientes_id_fk` (`clienteId`),",
+    "  KEY `contratos_recebimentoId_recebimentos_id_fk` (`recebimentoId`),",
+    "  KEY `contratos_pagamentoId_pagamentos_id_fk` (`pagamentoId`),",
+    "  KEY `contratos_createdBy_users_id_fk` (`createdBy`),",
+    "  CONSTRAINT `contratos_clienteId_clientes_id_fk` FOREIGN KEY (`clienteId`) REFERENCES `clientes` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,",
+    "  CONSTRAINT `contratos_recebimentoId_recebimentos_id_fk` FOREIGN KEY (`recebimentoId`) REFERENCES `recebimentos` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,",
+    "  CONSTRAINT `contratos_pagamentoId_pagamentos_id_fk` FOREIGN KEY (`pagamentoId`) REFERENCES `pagamentos` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,",
+    "  CONSTRAINT `contratos_createdBy_users_id_fk` FOREIGN KEY (`createdBy`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION",
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin AUTO_INCREMENT=30001"
+  ],
+  "stdout": "Table\tCreate Table\ncontratos\tCREATE TABLE `contratos` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `numero` varchar(50) NOT NULL,\n  `objeto` text NOT NULL,\n  `tipo` enum('prestacao_servico','fornecimento','locacao','om','misto') NOT NULL DEFAULT 'prestacao_servico',\n  `status` enum('proposta','negociacao','ativo','suspenso','encerrado','cancelado') NOT NULL DEFAULT 'proposta',\n  `clienteId` int DEFAULT NULL,\n  `valorTotal` decimal(15,2) NOT NULL,\n  `dataInicio` date DEFAULT NULL,\n  `dataFim` date DEFAULT NULL,\n  `descricao` text DEFAULT NULL,\n  `observacoes` text DEFAULT NULL,\n  `recebimentoId` int DEFAULT NULL,\n  `pagamentoId` int DEFAULT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  `createdBy` int DEFAULT NULL,\n  `enderecoLogradouro` varchar(255) DEFAULT NULL,\n  `enderecoNumero` varchar(20) DEFAULT NULL,\n  `enderecoComplemento` varchar(100) DEFAULT NULL,\n  `enderecoBairro` varchar(100) DEFAULT NULL,\n  `enderecoCidade` varchar(100) DEFAULT NULL,\n  `enderecoEstado` varchar(2) DEFAULT NULL,\n  `enderecoCep` varchar(10) DEFAULT NULL,\n  `valorPrevisto` decimal(15,2) DEFAULT NULL,\n  `margemPrevista` decimal(5,2) DEFAULT NULL,\n  `centroCustoId` int DEFAULT NULL,\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,\n  UNIQUE KEY `contratos_numero_unique` (`numero`),\n  KEY `contratos_clienteId_clientes_id_fk` (`clienteId`),\n  KEY `contratos_recebimentoId_recebimentos_id_fk` (`recebimentoId`),\n  KEY `contratos_pagamentoId_pagamentos_id_fk` (`pagamentoId`),\n  KEY `contratos_createdBy_users_id_fk` (`createdBy`),\n  CONSTRAINT `contratos_clienteId_clientes_id_fk` FOREIGN KEY (`clienteId`) REFERENCES `clientes` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,\n  CONSTRAINT `contratos_recebimentoId_recebimentos_id_fk` FOREIGN KEY (`recebimentoId`) REFERENCES `recebimentos` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,\n  CONSTRAINT `contratos_pagamentoId_pagamentos_id_fk` FOREIGN KEY (`pagamentoId`) REFERENCES `pagamentos` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,\n  CONSTRAINT `contratos_createdBy_users_id_fk` FOREIGN KEY (`createdBy`) REFERENCES `users` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin AUTO_INCREMENT=30001\n",
+  "stderr": "",
+  "execution_time_ms": 349
+}

@@ -59,6 +59,8 @@ function ContratosTab() {
 
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroTipo, setFiltroTipo] = useState("todos");
+  const [filtroCliente, setFiltroCliente] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [relatorioContratoId, setRelatorioContratoId] = useState<number | null>(null);
@@ -81,10 +83,12 @@ function ContratosTab() {
   });
 
   const createMutation = trpc.contratos.create.useMutation({
-    onSuccess: () => { utils.contratos.list.invalidate(); setShowForm(false); toast.success("Contrato criado!"); }
+    onSuccess: () => { utils.contratos.list.invalidate(); setShowForm(false); toast.success("Contrato criado!"); },
+    onError: (err) => toast.error(`Erro ao criar contrato: ${err.message}`),
   });
   const updateMutation = trpc.contratos.update.useMutation({
-    onSuccess: () => { utils.contratos.list.invalidate(); setShowForm(false); setEditId(null); toast.success("Contrato atualizado!"); }
+    onSuccess: () => { utils.contratos.list.invalidate(); setShowForm(false); setEditId(null); toast.success("Contrato atualizado!"); },
+    onError: (err) => toast.error(`Erro ao atualizar contrato: ${err.message}`),
   });
   const deleteMutation = trpc.contratos.delete.useMutation({
     onSuccess: () => { utils.contratos.list.invalidate(); toast.success("Contrato removido."); }
@@ -104,9 +108,11 @@ function ContratosTab() {
         c.objeto.toLowerCase().includes(busca.toLowerCase()) ||
         (c.clienteNome ?? "").toLowerCase().includes(busca.toLowerCase());
       const matchStatus = filtroStatus === "todos" || c.status === filtroStatus;
-      return matchBusca && matchStatus;
+      const matchTipo = filtroTipo === "todos" || c.tipo === filtroTipo;
+      const matchCliente = !filtroCliente || (c.clienteNome ?? "").toLowerCase().includes(filtroCliente.toLowerCase());
+      return matchBusca && matchStatus && matchTipo && matchCliente;
     });
-  }, [contratos, busca, filtroStatus]);
+  }, [contratos, busca, filtroStatus, filtroTipo, filtroCliente]);
 
   function openNew() {
     setEditId(null);
@@ -133,7 +139,9 @@ function ContratosTab() {
     const payload = {
       numero: form.numero, objeto: form.objeto, tipo: form.tipo, status: form.status,
       clienteId: form.clienteId ? Number(form.clienteId) : undefined,
-      valorTotal: parseFloat(form.valorTotal.replace(",", ".")) || 0,
+      valorTotal: parseFloat(String(form.valorTotal).replace(",", ".")) || 0,
+      valorPrevisto: (form as any).valorPrevisto ? parseFloat(String((form as any).valorPrevisto).replace(",", ".")) : undefined,
+      margemPrevista: (form as any).margemPrevista ? parseFloat(String((form as any).margemPrevista).replace(",", ".")) : undefined,
       dataInicio: form.dataInicio || undefined, dataFim: form.dataFim || undefined,
       descricao: form.descricao || undefined, observacoes: form.observacoes || undefined,
       enderecoLogradouro: form.enderecoLogradouro || undefined,
@@ -159,10 +167,24 @@ function ContratosTab() {
           <Select value={filtroStatus} onValueChange={setFiltroStatus}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="todos">Todos os Status</SelectItem>
               {Object.entries(STATUS_CONTRATO).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os Tipos</SelectItem>
+              <SelectItem value="prestacao_servico">Prestação de Serviço</SelectItem>
+              <SelectItem value="fornecimento">Fornecimento</SelectItem>
+              <SelectItem value="locacao">Locação</SelectItem>
+              <SelectItem value="misto">Misto</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Filtrar cliente..." className="pl-9 w-44" value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} />
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setImpressaoContratos(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
@@ -668,6 +690,8 @@ function OrdensServicoTab() {
 
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroContrato, setFiltroContrato] = useState("");
+  const [filtroClienteOS, setFiltroClienteOS] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -733,9 +757,11 @@ function OrdensServicoTab() {
         o.titulo.toLowerCase().includes(busca.toLowerCase()) ||
         (o.clienteNome ?? "").toLowerCase().includes(busca.toLowerCase());
       const matchStatus = filtroStatus === "todos" || o.status === filtroStatus;
-      return matchBusca && matchStatus;
+      const matchContrato = !filtroContrato || (o.contratoNumero ?? "").toLowerCase().includes(filtroContrato.toLowerCase());
+      const matchCliente = !filtroClienteOS || (o.clienteNome ?? "").toLowerCase().includes(filtroClienteOS.toLowerCase());
+      return matchBusca && matchStatus && matchContrato && matchCliente;
     });
-  }, [ordens, busca, filtroStatus]);
+  }, [ordens, busca, filtroStatus, filtroContrato, filtroClienteOS]);
 
   function openNew() {
     setEditId(null);
@@ -811,10 +837,18 @@ function OrdensServicoTab() {
           <Select value={filtroStatus} onValueChange={setFiltroStatus}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="todos">Todos os Status</SelectItem>
               {Object.entries(STATUS_OS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Nº do Contrato..." className="pl-9 w-40" value={filtroContrato} onChange={e => setFiltroContrato(e.target.value)} />
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Filtrar cliente..." className="pl-9 w-40" value={filtroClienteOS} onChange={e => setFiltroClienteOS(e.target.value)} />
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setImpressaoOS(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">

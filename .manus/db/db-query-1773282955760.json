@@ -1,0 +1,18 @@
+{
+  "query": "\nSELECT COLUMN_NAME, COLUMN_TYPE \nFROM INFORMATION_SCHEMA.COLUMNS \nWHERE TABLE_SCHEMA = DATABASE() \nAND TABLE_NAME IN ('contratos', 'ordens_servico') \nAND COLUMN_NAME = 'status';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute \nSELECT COLUMN_NAME, COLUMN_TYPE \nFROM INFORMATION_SCHEMA.COLUMNS \nWHERE TABLE_SCHEMA = DATABASE() \nAND TABLE_NAME IN ('contratos', 'ordens_servico') \nAND COLUMN_NAME = 'status';\n",
+  "rows": [
+    {
+      "COLUMN_NAME": "status",
+      "COLUMN_TYPE": "enum('proposta','negociacao','ativo','suspenso','encerrado','cancelado')"
+    },
+    {
+      "COLUMN_NAME": "status",
+      "COLUMN_TYPE": "enum('planejada','autorizada','em_execucao','concluida','cancelada','pausada')"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tCOLUMN_TYPE\nstatus\tenum('proposta','negociacao','ativo','suspenso','encerrado','cancelado')\nstatus\tenum('planejada','autorizada','em_execucao','concluida','cancelada','pausada')\n",
+  "stderr": "",
+  "execution_time_ms": 364
+}

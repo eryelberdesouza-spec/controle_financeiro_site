@@ -127,6 +127,20 @@
       "when": 1773283879319,
       "tag": "0017_serious_franklin_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1773358728640,
+      "tag": "0018_nostalgic_roxanne_simpson",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1773359313358,
+      "tag": "0019_exotic_roland_deschain",
+      "breakpoints": true
     }
   ]
 }

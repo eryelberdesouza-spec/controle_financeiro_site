@@ -405,3 +405,28 @@
 - [x] Substituir INSERT/UPDATE Drizzle por SQL raw em contratos (resolve DEFAULT incompatível com TiDB)
 - [x] Testar INSERT via script e confirmar sucesso
 - [x] 34 testes passando, sem erros TypeScript
+
+## Upload de Anexos e Correções (v30)
+- [x] Criar tabela `anexos` no schema (modulo, registroId, nomeArquivo, tipoArquivo, tamanho, s3Key, s3Url, uploadPor)
+- [x] Executar migração do banco (pnpm db:push)
+- [x] Criar helpers de DB para anexos (listAnexos, createAnexo, deleteAnexo)
+- [x] Criar procedures tRPC para anexos (list, upload, delete) com upload para S3
+- [x] Criar componente reutilizável AnexosPanel (upload múltiplo, lista com download, exclusão)
+- [x] Integrar AnexosPanel em Pagamentos (comprovantes, notas)
+- [x] Integrar AnexosPanel em Recebimentos (comprovantes, notas)
+- [x] Integrar AnexosPanel em Contratos (contratos assinados, propostas)
+- [x] Integrar AnexosPanel em OS (fotos, laudos, relatórios de execução)
+- [x] Integrar AnexosPanel em Clientes (contratos, documentos, certidões)
+- [x] Corrigir número de controle em Pagamentos: useEffect garante preenchimento automático ao abrir modal
+- [x] Criar geração automática de número de controle em Recebimentos (REC-2026-157+)
+- [x] Corrigir padrão de número de Contratos para CTR-AAAA-MM-NNN (inclui mês)
+- [x] Corrigir carregamento automático de número em Contratos e OS via useEffect
+- [x] Adicionar filtro por Centro de Custo em Pagamentos
+- [x] Adicionar filtro por período (data início/fim) em Pagamentos
+- [x] Adicionar filtro por Centro de Custo em Recebimentos
+- [x] Adicionar filtro por período (data início/fim) em Recebimentos
+- [x] Adicionar filtro por Centro de Custo em Contratos
+- [x] Adicionar filtro por Centro de Custo em OS
+- [x] Adicionar campos responsavel e observacoes no schema de centros_custo
+- [x] Adicionar campo centroCustoId no schema de ordens_servico
+- [x] Escrever e passar 13 novos testes (total: 47 testes)

@@ -321,12 +321,24 @@ export const contratosRouter = router({
 
   nextNumero: protectedProcedure.query(async () => {
     const d = await getDb();
-    if (!d) return `CTR-${new Date().getFullYear()}-001`;
-    const [row] = await d
-      .select({ max: sql<string>`MAX(CAST(SUBSTRING_INDEX(numero, '-', -1) AS UNSIGNED))` })
-      .from(contratos);
-    const next = (parseInt(row?.max ?? "0") || 0) + 1;
-    return `CTR-${new Date().getFullYear()}-${String(next).padStart(3, "0")}`;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    if (!d) return `CTR-${year}-${month}-001`;
+    // Busca todos os contratos para encontrar o maior sequencial global
+    const rows = await d.select({ numero: contratos.numero }).from(contratos);
+    let maxNum = 0;
+    for (const row of rows) {
+      if (!row.numero) continue;
+      // Extrai o último segmento numérico (ex: CTR-2026-03-042 -> 42)
+      const match = row.numero.match(/(\d+)\s*$/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    }
+    const next = maxNum + 1;
+    return `CTR-${year}-${month}-${String(next).padStart(3, "0")}`;
   }),
 });
 
@@ -335,6 +347,8 @@ export const ordensServicoRouter = router({
   list: protectedProcedure
     .input(z.object({
       contratoId: z.number().optional(),
+      centroCustoId: z.number().optional(),
+      clienteId: z.number().optional(),
       status: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
@@ -342,12 +356,15 @@ export const ordensServicoRouter = router({
       if (!d) return [];
       const conditions = [];
       if (input?.contratoId) conditions.push(eq(ordensServico.contratoId, input.contratoId));
+      if (input?.centroCustoId) conditions.push(eq(ordensServico.centroCustoId, input.centroCustoId));
+      if (input?.clienteId) conditions.push(eq(ordensServico.clienteId, input.clienteId));
       if (input?.status) conditions.push(eq(ordensServico.status, input.status as any));
       return d
         .select({
           id: ordensServico.id,
           numero: ordensServico.numero,
           contratoId: ordensServico.contratoId,
+          centroCustoId: ordensServico.centroCustoId,
           clienteId: ordensServico.clienteId,
           titulo: ordensServico.titulo,
           descricao: ordensServico.descricao,
@@ -363,6 +380,7 @@ export const ordensServicoRouter = router({
           createdAt: ordensServico.createdAt,
           clienteNome: clientes.nome,
           contratoNumero: contratos.numero,
+          centroCustoNome: centrosCusto.nome,
           enderecoLogradouro: ordensServico.enderecoLogradouro,
           enderecoNumero: ordensServico.enderecoNumero,
           enderecoComplemento: ordensServico.enderecoComplemento,
@@ -374,6 +392,7 @@ export const ordensServicoRouter = router({
         .from(ordensServico)
         .leftJoin(clientes, eq(ordensServico.clienteId, clientes.id))
         .leftJoin(contratos, eq(ordensServico.contratoId, contratos.id))
+        .leftJoin(centrosCusto, eq(ordensServico.centroCustoId, centrosCusto.id))
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(desc(ordensServico.createdAt));
     }),
@@ -409,6 +428,7 @@ export const ordensServicoRouter = router({
     .input(z.object({
       numero: z.string().min(1).max(50),
       contratoId: z.number().optional(),
+      centroCustoId: z.number().optional(),
       clienteId: z.number().optional(),
       titulo: z.string().min(1).max(200),
       descricao: z.string().optional(),
@@ -477,6 +497,7 @@ export const ordensServicoRouter = router({
       valorRealizado: z.number().optional(),
       observacoes: z.string().optional(),
       contratoId: z.number().optional(),
+      centroCustoId: z.number().optional(),
       clienteId: z.number().optional(),
       enderecoLogradouro: z.string().max(255).optional(),
       enderecoNumero: z.string().max(20).optional(),

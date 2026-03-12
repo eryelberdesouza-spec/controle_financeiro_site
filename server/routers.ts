@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { tiposServicoRouter, materiaisRouter, contratosRouter, ordensServicoRouter, relatorioContratoRouter } from "./routers/engenharia";
+import { listAnexos, createAnexo, deleteAnexo, type AnexoModulo } from "./db.anexos";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -53,6 +54,7 @@ import {
   updateUserRole,
   upsertEmpresaConfig,
   getNextNumeroControlePagamento,
+  getNextNumeroControleRecebimento,
   getVencimentosProximos,
   getDashboardConfig,
   saveDashboardConfig,
@@ -151,6 +153,8 @@ const pagamentosRouter = router({
     .input(z.object({
       status: z.string().optional(),
       centroCusto: z.string().optional(),
+      centroCustoId: z.number().optional(),
+      clienteId: z.number().optional(),
       dataInicio: z.date().optional(),
       dataFim: z.date().optional(),
     }).optional())
@@ -219,6 +223,8 @@ const recebimentosRouter = router({
     .input(z.object({
       status: z.string().optional(),
       tipoRecebimento: z.string().optional(),
+      centroCustoId: z.number().optional(),
+      clienteId: z.number().optional(),
       dataInicio: z.date().optional(),
       dataFim: z.date().optional(),
     }).optional())
@@ -285,6 +291,9 @@ const recebimentosRouter = router({
     }),
 
   stats: staffProcedure.query(() => getRecebimentosStats()),
+
+  // Retorna o próximo número de controle sugerido (ex: REC-2026-157)
+  nextNumeroControle: staffProcedure.query(() => getNextNumeroControleRecebimento()),
 });
 
 const relatorioCCRouter = router({
@@ -405,6 +414,10 @@ const centrosCustoRouter = router({
     .input(z.object({
       nome: z.string().min(1, "Nome é obrigatório"),
       descricao: z.string().optional(),
+      tipo: z.enum(["operacional", "administrativo", "contrato", "projeto", "investimento", "outro"]).optional(),
+      responsavel: z.string().optional(),
+      observacoes: z.string().optional(),
+      contratoId: z.number().optional(),
     }))
     .mutation(({ input, ctx }) => createCentroCusto({ ...input, createdBy: ctx.user.id })),
   update: staffProcedure
@@ -412,6 +425,9 @@ const centrosCustoRouter = router({
       id: z.number(),
       nome: z.string().min(1).optional(),
       descricao: z.string().optional(),
+      tipo: z.enum(["operacional", "administrativo", "contrato", "projeto", "investimento", "outro"]).optional(),
+      responsavel: z.string().optional(),
+      observacoes: z.string().optional(),
       ativo: z.boolean().optional(),
     }))
     .mutation(({ input }) => { const { id, ...data } = input; return updateCentroCusto(id, data); }),
@@ -422,6 +438,17 @@ const centrosCustoRouter = router({
       await requirePermission(user.id, user.role, "centros_custo", "podeExcluir");
       return deleteCentroCusto(input.id);
     }),
+  relatorio: staffProcedure
+    .input(z.object({
+      centroCustoId: z.number().optional(),
+      dataInicio: z.date().optional(),
+      dataFim: z.date().optional(),
+    }).optional())
+    .query(({ input }) => getRelatorioCentroCusto({
+      centroCustoId: input?.centroCustoId ?? null,
+      dataInicio: input?.dataInicio,
+      dataFim: input?.dataFim,
+    })),
 });
 
 const usersRouter = router({
@@ -587,6 +614,47 @@ const recebimentoParcelasRouter = router({
     .mutation(({ input }) => deleteRecebimentoParcelas(input.recebimentoId)),
 });
 
+// ─── Anexos ───────────────────────────────────────────────────────────────────
+const MODULOS_ANEXO = ["pagamento", "recebimento", "contrato", "os", "cliente"] as const;
+
+const anexosRouter = router({
+  list: staffProcedure
+    .input(z.object({
+      modulo: z.enum(MODULOS_ANEXO),
+      registroId: z.number(),
+    }))
+    .query(({ input }) => listAnexos(input.modulo as AnexoModulo, input.registroId)),
+
+  upload: staffProcedure
+    .input(z.object({
+      modulo: z.enum(MODULOS_ANEXO),
+      registroId: z.number(),
+      nomeOriginal: z.string().min(1).max(255),
+      mimeType: z.string().default("application/octet-stream"),
+      tamanho: z.number().optional(),
+      descricao: z.string().optional(),
+      // Arquivo codificado em base64
+      fileBase64: z.string().min(1),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const buffer = Buffer.from(input.fileBase64, "base64");
+      return createAnexo({
+        modulo: input.modulo as AnexoModulo,
+        registroId: input.registroId,
+        nomeOriginal: input.nomeOriginal,
+        fileBuffer: buffer,
+        mimeType: input.mimeType,
+        tamanho: input.tamanho ?? buffer.length,
+        descricao: input.descricao,
+        createdBy: ctx.user.id,
+      });
+    }),
+
+  delete: staffProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => deleteAnexo(input.id)),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -614,6 +682,7 @@ export const appRouter = router({
   relatorioContrato: relatorioContratoRouter,
   relatorioCentroCusto: relatorioCCRouter,
   permissoes: permissoesRouter,
+  anexos: anexosRouter,
 });
 
 export type AppRouter = typeof appRouter;

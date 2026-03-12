@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import AnexosPanel from "@/components/AnexosPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -184,6 +185,9 @@ export default function Pagamentos() {
   const [parcelas, setParcelas] = useState<ParcelaLocal[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [filterCC, setFilterCC] = useState<string>("todos");
+  const [filterDataInicio, setFilterDataInicio] = useState<string>("");
+  const [filterDataFim, setFilterDataFim] = useState<string>("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [selecionados, setSelecionados] = useState<Set<number>>(new Set());
   const [comprovanteOpen, setComprovanteOpen] = useState(false);
@@ -258,10 +262,21 @@ export default function Pagamentos() {
 
   const { data: pagamentos = [], isLoading } = trpc.pagamentos.list.useQuery();
   const { data: nextNumeroControle } = trpc.pagamentos.nextNumeroControle.useQuery(undefined, {
-    // Só busca quando o formulário está aberto para novo pagamento
-    enabled: open && !editId,
-    staleTime: 0, // Sempre busca o mais recente
+    // Sempre busca o mais recente (staleTime: 0 garante refetch ao reabrir)
+    staleTime: 0,
+    refetchOnMount: true,
   });
+
+  // Atualiza o número de controle automaticamente quando o valor chega do servidor
+  // Isso corrige o problema de aparecer em branco na primeira abertura do modal
+  useEffect(() => {
+    if (!editId && open && nextNumeroControle) {
+      setForm(prev => ({
+        ...prev,
+        numeroControle: prev.numeroControle || nextNumeroControle,
+      }));
+    }
+  }, [nextNumeroControle, open, editId]);
 
   // Carrega parcelas existentes ao abrir edição de pagamento parcelado
   const { data: parcelasExistentes } = trpc.pagamentoParcelas.list.useQuery(
@@ -401,13 +416,19 @@ export default function Pagamentos() {
     setOpen(true);
   };
 
+  // Busca lista de centros de custo para o filtro
+  const { data: centrosCustoList = [] } = trpc.centrosCusto.list.useQuery();
+
   const filtered = pagamentos.filter(p => {
     const matchSearch = !search ||
       p.nomeCompleto.toLowerCase().includes(search.toLowerCase()) ||
       (p.cpf ?? "").includes(search) ||
       (p.numeroControle ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "todos" || p.status === filterStatus;
-    return matchSearch && matchStatus;
+    const matchCC = filterCC === "todos" || String(p.centroCustoId ?? "") === filterCC;
+    const matchDataInicio = !filterDataInicio || new Date(p.dataPagamento) >= new Date(filterDataInicio);
+    const matchDataFim = !filterDataFim || new Date(p.dataPagamento) <= new Date(filterDataFim + "T23:59:59");
+    return matchSearch && matchStatus && matchCC && matchDataInicio && matchDataFim;
   });
 
   const totalFiltrado = filtered.reduce((acc, p) => acc + parseFloat(String(p.valor ?? 0)), 0);
@@ -430,7 +451,7 @@ export default function Pagamentos() {
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
             {podeCriar && (
-              <Button onClick={() => { setEditId(null); setForm({ ...defaultForm, numeroControle: nextNumeroControle ?? "" }); setParcelas([]); setOpen(true); }} className="gap-2">
+              <Button onClick={() => { setEditId(null); setForm({ ...defaultForm, numeroControle: nextNumeroControle ?? "" }); setParcelas([]); setOpen(true); }} className="gap-2" title="O número de controle será preenchido automaticamente">
                 <Plus className="h-4 w-4" /> Novo Pagamento
               </Button>
             )}
@@ -452,6 +473,36 @@ export default function Pagamentos() {
               <SelectItem value="Cancelado">Cancelado</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filterCC} onValueChange={setFilterCC}>
+            <SelectTrigger className="w-[190px]"><SelectValue placeholder="Centro de Custo" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os CC</SelectItem>
+              {centrosCustoList.map(cc => (
+                <SelectItem key={cc.id} value={String(cc.id)}>{cc.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={filterDataInicio}
+            onChange={e => setFilterDataInicio(e.target.value)}
+            className="w-[150px]"
+            title="Data inicial"
+            placeholder="Data inicial"
+          />
+          <Input
+            type="date"
+            value={filterDataFim}
+            onChange={e => setFilterDataFim(e.target.value)}
+            className="w-[150px]"
+            title="Data final"
+            placeholder="Data final"
+          />
+          {(filterCC !== "todos" || filterDataInicio || filterDataFim) && (
+            <Button variant="ghost" size="sm" onClick={() => { setFilterCC("todos"); setFilterDataInicio(""); setFilterDataFim(""); }} className="text-muted-foreground">
+              Limpar filtros
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -792,6 +843,17 @@ export default function Pagamentos() {
                 </div>
               )}
             </div>
+
+            {/* Anexos — só exibe após o registro ser salvo */}
+            {editId && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <span>Anexos</span>
+                  <span className="text-xs text-muted-foreground font-normal">(comprovantes, notas, documentos)</span>
+                </p>
+                <AnexosPanel modulo="pagamento" registroId={editId} podeAnexar podeExcluir />
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

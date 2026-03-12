@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Search, Pencil, Trash2, Users, Building2, Wrench, Hotel, Handshake, MoreHorizontal } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+import AnexosPanel from "@/components/AnexosPanel";
 
 const TIPOS = ["Cliente", "Prestador de Serviço", "Fornecedor", "Hotel", "Parceiro", "Outro"] as const;
 type Tipo = typeof TIPOS[number];
@@ -494,6 +495,16 @@ export default function Clientes() {
               />
             </div>
           </div>
+          {/* Anexos do Cliente */}
+          {editandoId && (
+            <div className="space-y-2 px-1 pb-2">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <span>Anexos</span>
+                <span className="text-xs text-muted-foreground font-normal">(contratos, documentos, certidões)</span>
+              </p>
+              <AnexosPanel modulo="cliente" registroId={editandoId} podeAnexar podeExcluir />
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={fecharDialog}>Cancelar</Button>
             <Button

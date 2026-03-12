@@ -89,12 +89,14 @@ export async function deleteUser(id: number) {
 
 // ==================== PAGAMENTOS ====================
 
-export async function listPagamentos(filters?: { status?: string; centroCusto?: string; dataInicio?: Date; dataFim?: Date }) {
+export async function listPagamentos(filters?: { status?: string; centroCusto?: string; centroCustoId?: number; clienteId?: number; dataInicio?: Date; dataFim?: Date }) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
   if (filters?.status) conditions.push(eq(pagamentos.status, filters.status as any));
   if (filters?.centroCusto) conditions.push(eq(pagamentos.centroCusto, filters.centroCusto));
+  if (filters?.centroCustoId) conditions.push(eq(pagamentos.centroCustoId, filters.centroCustoId));
+  if (filters?.clienteId) conditions.push(eq(pagamentos.clienteId, filters.clienteId));
   if (filters?.dataInicio) conditions.push(gte(pagamentos.dataPagamento, filters.dataInicio));
   if (filters?.dataFim) conditions.push(lte(pagamentos.dataPagamento, filters.dataFim));
   return db.select({
@@ -180,6 +182,26 @@ export async function getNextNumeroControlePagamento(): Promise<string> {
   return `PAG-${year}-${String(next).padStart(3, "0")}`;
 }
 
+export async function getNextNumeroControleRecebimento(): Promise<string> {
+  const db = await getDb();
+  const year = new Date().getFullYear();
+  if (!db) return `REC-${year}-157`;
+  const result = await db.select({ numeroControle: recebimentos.numeroControle }).from(recebimentos);
+  // Número mínimo de partida: 156 (próximo será 157)
+  let maxNum = 156;
+  for (const row of result) {
+    if (!row.numeroControle) continue;
+    // Extrai o último segmento numérico (ex: REC-2026-157 -> 157)
+    const match = row.numeroControle.match(/(\d+)\s*$/);
+    if (match) {
+      const n = parseInt(match[1], 10);
+      if (n > maxNum) maxNum = n;
+    }
+  }
+  const next = maxNum + 1;
+  return `REC-${year}-${String(next).padStart(3, "0")}`;
+}
+
 export async function getPagamentosStats() {
   const db = await getDb();
   if (!db) return null;
@@ -192,12 +214,14 @@ export async function getPagamentosStats() {
 
 // ==================== RECEBIMENTOS ====================
 
-export async function listRecebimentos(filters?: { status?: string; tipoRecebimento?: string; dataInicio?: Date; dataFim?: Date }) {
+export async function listRecebimentos(filters?: { status?: string; tipoRecebimento?: string; centroCustoId?: number; clienteId?: number; dataInicio?: Date; dataFim?: Date }) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
   if (filters?.status) conditions.push(eq(recebimentos.status, filters.status as any));
   if (filters?.tipoRecebimento) conditions.push(eq(recebimentos.tipoRecebimento, filters.tipoRecebimento as any));
+  if (filters?.centroCustoId) conditions.push(eq(recebimentos.centroCustoId, filters.centroCustoId));
+  if (filters?.clienteId) conditions.push(eq(recebimentos.clienteId, filters.clienteId));
   if (filters?.dataInicio) conditions.push(gte(recebimentos.dataVencimento, filters.dataInicio));
   if (filters?.dataFim) conditions.push(lte(recebimentos.dataVencimento, filters.dataFim));
   return db.select({

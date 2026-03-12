@@ -23,7 +23,11 @@ export const centrosCusto = mysqlTable("centros_custo", {
   descricao: text("descricao"),
   // Vínculo com contrato (criado automaticamente ao ativar contrato)
   contratoId: int("contratoId"),
-  tipo: mysqlEnum("tipo", ["operacional", "administrativo", "contrato", "projeto", "outro"]).default("operacional").notNull(),
+  tipo: mysqlEnum("tipo", ["operacional", "administrativo", "contrato", "projeto", "investimento", "outro"]).default("operacional").notNull(),
+  // Responsável pelo centro de custo
+  responsavel: varchar("responsavel", { length: 150 }),
+  // Observações livres
+  observacoes: text("observacoes"),
   ativo: boolean("ativo").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -324,6 +328,8 @@ export const ordensServico = mysqlTable("ordens_servico", {
   enderecoCidade: varchar("enderecoCidade", { length: 100 }),
   enderecoEstado: varchar("enderecoEstado", { length: 2 }),
   enderecoCep: varchar("enderecoCep", { length: 10 }),
+  // Centro de Custo vinculado (herdado do contrato ou definido manualmente)
+  centroCustoId: int("centroCustoId").references(() => centrosCusto.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -396,3 +402,24 @@ export const DEFAULT_PERMISSIONS: Record<string, Record<string, { podeVer: boole
   },
   user: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false }])),
 };
+
+// ─── Anexos ────────────────────────────────────────────────────────────────────
+// Tabela genérica de anexos vinculada a qualquer módulo/registro do sistema.
+// modulo: "pagamento" | "recebimento" | "contrato" | "os" | "cliente"
+// registroId: ID do registro no módulo correspondente
+export const anexos = mysqlTable("anexos", {
+  id: int("id").autoincrement().primaryKey(),
+  modulo: varchar("modulo", { length: 50 }).notNull(),
+  registroId: int("registroId").notNull(),
+  nomeOriginal: varchar("nomeOriginal", { length: 255 }).notNull(),
+  fileKey: varchar("fileKey", { length: 500 }).notNull(),
+  url: text("url").notNull(),
+  mimeType: varchar("mimeType", { length: 100 }),
+  tamanho: int("tamanho"), // bytes
+  descricao: varchar("descricao", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+
+export type Anexo = typeof anexos.$inferSelect;
+export type InsertAnexo = typeof anexos.$inferInsert;

@@ -4,6 +4,7 @@ import { TabelaParcelas, gerarParcelas, type ParcelaLocal } from "@/components/T
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import AnexosPanel from "@/components/AnexosPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -228,6 +229,9 @@ export default function Recebimentos() {
   const [parcelas, setParcelas] = useState<ParcelaLocal[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [filterCC, setFilterCC] = useState<string>("todos");
+  const [filterDataInicio, setFilterDataInicio] = useState<string>("");
+  const [filterDataFim, setFilterDataFim] = useState<string>("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [selecionados, setSelecionados] = useState<Set<number>>(new Set());
   const [comprovanteOpen, setComprovanteOpen] = useState(false);
@@ -275,6 +279,20 @@ export default function Recebimentos() {
   };
 
   const { data: recebimentos = [], isLoading } = trpc.recebimentos.list.useQuery();
+  const { data: nextNumeroControle } = trpc.recebimentos.nextNumeroControle.useQuery(undefined, {
+    staleTime: 0,
+    refetchOnMount: true,
+  });
+
+  // Atualiza o número de controle automaticamente quando o valor chega do servidor
+  useEffect(() => {
+    if (!editId && open && nextNumeroControle) {
+      setForm(prev => ({
+        ...prev,
+        numeroControle: prev.numeroControle || nextNumeroControle,
+      }));
+    }
+  }, [nextNumeroControle, open, editId]);
 
   // Carrega parcelas existentes ao abrir edição de recebimento parcelado
   // Habilitado sempre que editId existe e o modal está aberto (independente de parcelado)
@@ -433,13 +451,20 @@ export default function Recebimentos() {
     setOpen(true);
   };
 
+  // Busca lista de centros de custo para o filtro
+  const { data: centrosCustoList = [] } = trpc.centrosCusto.list.useQuery();
+
   const filtered = recebimentos.filter(r => {
     const matchSearch = !search ||
       r.nomeRazaoSocial.toLowerCase().includes(search.toLowerCase()) ||
       (r.numeroContrato ?? "").includes(search) ||
       (r.numeroControle ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "todos" || r.status === filterStatus;
-    return matchSearch && matchStatus;
+    const matchCC = filterCC === "todos" || String(r.centroCustoId ?? "") === filterCC;
+    const dataRef = r.dataVencimento ?? r.dataRecebimento;
+    const matchDataInicio = !filterDataInicio || !dataRef || new Date(dataRef) >= new Date(filterDataInicio);
+    const matchDataFim = !filterDataFim || !dataRef || new Date(dataRef) <= new Date(filterDataFim + "T23:59:59");
+    return matchSearch && matchStatus && matchCC && matchDataInicio && matchDataFim;
   });
 
   const totalFiltrado = filtered.reduce((acc, r) => acc + parseFloat(String(r.valorTotal ?? 0)), 0);
@@ -469,7 +494,7 @@ export default function Recebimentos() {
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
             {podeCriar && (
-              <Button onClick={() => { setEditId(null); setForm(defaultForm); setParcelas([]); setOpen(true); }} className="gap-2">
+              <Button onClick={() => { setEditId(null); setForm({ ...defaultForm, numeroControle: nextNumeroControle ?? "" }); setParcelas([]); setOpen(true); }} className="gap-2">
                 <Plus className="h-4 w-4" /> Novo Recebimento
               </Button>
             )}
@@ -491,6 +516,34 @@ export default function Recebimentos() {
               <SelectItem value="Cancelado">Cancelado</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filterCC} onValueChange={setFilterCC}>
+            <SelectTrigger className="w-[190px]"><SelectValue placeholder="Centro de Custo" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os CC</SelectItem>
+              {centrosCustoList.map(cc => (
+                <SelectItem key={cc.id} value={String(cc.id)}>{cc.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={filterDataInicio}
+            onChange={e => setFilterDataInicio(e.target.value)}
+            className="w-[150px]"
+            title="Data inicial"
+          />
+          <Input
+            type="date"
+            value={filterDataFim}
+            onChange={e => setFilterDataFim(e.target.value)}
+            className="w-[150px]"
+            title="Data final"
+          />
+          {(filterCC !== "todos" || filterDataInicio || filterDataFim) && (
+            <Button variant="ghost" size="sm" onClick={() => { setFilterCC("todos"); setFilterDataInicio(""); setFilterDataFim(""); }} className="text-muted-foreground">
+              Limpar filtros
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -853,6 +906,17 @@ export default function Recebimentos() {
                 )}
               </div>
             </div>
+
+            {/* Anexos — só exibe após o registro ser salvo */}
+            {editId && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <span>Anexos</span>
+                  <span className="text-xs text-muted-foreground font-normal">(comprovantes, notas, documentos)</span>
+                </p>
+                <AnexosPanel modulo="recebimento" registroId={editId} podeAnexar podeExcluir />
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

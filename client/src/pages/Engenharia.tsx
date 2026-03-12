@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -18,6 +18,7 @@ import {
   Plus, Search, Edit2, Trash2, FileText, Wrench, Package, ClipboardList,
   ChevronDown, ChevronUp, Eye, Link2, DollarSign, BarChart2, MapPin, Printer
 } from "lucide-react";
+import AnexosPanel from "@/components/AnexosPanel";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v: string | number | null | undefined) =>
@@ -55,12 +56,14 @@ function ContratosTab() {
   const utils = trpc.useUtils();
   const { data: contratos = [], isLoading } = trpc.contratos.list.useQuery();
   const { data: clientes = [] } = trpc.clientes.list.useQuery();
+  const { data: centrosCustoList = [] } = trpc.centrosCusto.list.useQuery();
   const { data: nextNumero } = trpc.contratos.nextNumero.useQuery();
 
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [filtroCliente, setFiltroCliente] = useState("");
+  const [filtroCC, setFiltroCC] = useState("todos");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [relatorioContratoId, setRelatorioContratoId] = useState<number | null>(null);
@@ -110,9 +113,20 @@ function ContratosTab() {
       const matchStatus = filtroStatus === "todos" || c.status === filtroStatus;
       const matchTipo = filtroTipo === "todos" || c.tipo === filtroTipo;
       const matchCliente = !filtroCliente || (c.clienteNome ?? "").toLowerCase().includes(filtroCliente.toLowerCase());
-      return matchBusca && matchStatus && matchTipo && matchCliente;
+      const matchCC = filtroCC === "todos" || String((c as any).centroCustoId ?? "") === filtroCC;
+      return matchBusca && matchStatus && matchTipo && matchCliente && matchCC;
     });
-  }, [contratos, busca, filtroStatus, filtroTipo, filtroCliente]);
+  }, [contratos, busca, filtroStatus, filtroTipo, filtroCliente, filtroCC]);
+
+  // Atualiza o número automaticamente quando nextNumero chegar do servidor
+  useEffect(() => {
+    if (!editId && showForm && nextNumero) {
+      setForm(prev => ({
+        ...prev,
+        numero: prev.numero || nextNumero,
+      }));
+    }
+  }, [nextNumero, showForm, editId]);
 
   function openNew() {
     setEditId(null);
@@ -185,6 +199,18 @@ function ContratosTab() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Filtrar cliente..." className="pl-9 w-44" value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} />
           </div>
+          <Select value={filtroCC} onValueChange={setFiltroCC}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Centro de Custo" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os CC</SelectItem>
+              {centrosCustoList.map(cc => (
+                <SelectItem key={cc.id} value={String(cc.id)}>{cc.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {filtroCC !== "todos" && (
+            <Button variant="ghost" size="sm" onClick={() => setFiltroCC("todos")} className="text-muted-foreground">Limpar CC</Button>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setImpressaoContratos(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
@@ -652,6 +678,16 @@ function ContratosTab() {
               <Input maxLength={2} placeholder="SP" value={form.enderecoEstado} onChange={e => setForm(p => ({ ...p, enderecoEstado: e.target.value.toUpperCase() }))} />
             </div>
           </div>
+          {/* Anexos do Contrato */}
+          {editId && (
+            <div className="space-y-2 px-1">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <span>Anexos</span>
+                <span className="text-xs text-muted-foreground font-normal">(contratos assinados, propostas, documentos)</span>
+              </p>
+              <AnexosPanel modulo="contrato" registroId={editId} podeAnexar podeExcluir />
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
@@ -686,12 +722,14 @@ function OrdensServicoTab() {
   const { data: contratos = [] } = trpc.contratos.list.useQuery();
   const { data: tiposServico = [] } = trpc.tiposServico.list.useQuery();
   const { data: materiais = [] } = trpc.materiais.list.useQuery();
+  const { data: centrosCustoList = [] } = trpc.centrosCusto.list.useQuery();
   const { data: nextNumero } = trpc.ordensServico.nextNumero.useQuery();
 
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroContrato, setFiltroContrato] = useState("");
   const [filtroClienteOS, setFiltroClienteOS] = useState("");
+  const [filtroCC, setFiltroCC] = useState("todos");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -759,9 +797,20 @@ function OrdensServicoTab() {
       const matchStatus = filtroStatus === "todos" || o.status === filtroStatus;
       const matchContrato = !filtroContrato || (o.contratoNumero ?? "").toLowerCase().includes(filtroContrato.toLowerCase());
       const matchCliente = !filtroClienteOS || (o.clienteNome ?? "").toLowerCase().includes(filtroClienteOS.toLowerCase());
-      return matchBusca && matchStatus && matchContrato && matchCliente;
+      const matchCC = filtroCC === "todos" || String((o as any).centroCustoId ?? "") === filtroCC;
+      return matchBusca && matchStatus && matchContrato && matchCliente && matchCC;
     });
-  }, [ordens, busca, filtroStatus, filtroContrato, filtroClienteOS]);
+  }, [ordens, busca, filtroStatus, filtroContrato, filtroClienteOS, filtroCC]);
+
+  // Atualiza o número da OS automaticamente quando nextNumero chegar do servidor
+  useEffect(() => {
+    if (!editId && showForm && nextNumero) {
+      setForm(prev => ({
+        ...prev,
+        numero: prev.numero || nextNumero,
+      }));
+    }
+  }, [nextNumero, showForm, editId]);
 
   function openNew() {
     setEditId(null);
@@ -849,6 +898,18 @@ function OrdensServicoTab() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Filtrar cliente..." className="pl-9 w-40" value={filtroClienteOS} onChange={e => setFiltroClienteOS(e.target.value)} />
           </div>
+          <Select value={filtroCC} onValueChange={setFiltroCC}>
+            <SelectTrigger className="w-[170px]"><SelectValue placeholder="Centro de Custo" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os CC</SelectItem>
+              {centrosCustoList.map(cc => (
+                <SelectItem key={cc.id} value={String(cc.id)}>{cc.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {filtroCC !== "todos" && (
+            <Button variant="ghost" size="sm" onClick={() => setFiltroCC("todos")} className="text-muted-foreground">Limpar CC</Button>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setImpressaoOS(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
@@ -1179,6 +1240,16 @@ function OrdensServicoTab() {
               </div>
             )}
           </div>
+          {/* Anexos da OS */}
+          {editId && (
+            <div className="space-y-2 px-1">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <span>Anexos</span>
+                <span className="text-xs text-muted-foreground font-normal">(fotos, laudos, relatórios de execução)</span>
+              </p>
+              <AnexosPanel modulo="os" registroId={editId} podeAnexar podeExcluir />
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>

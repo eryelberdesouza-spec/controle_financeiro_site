@@ -388,3 +388,8 @@
 - [x] Corrigir payload do handleSubmit de contratos para enviar valorPrevisto e margemPrevista
 - [x] Implementar filtros avançados nos contratos (tipo, cliente)
 - [x] Implementar filtros avançados nas OS (contrato, cliente)
+
+## Correção Schema Contratos (12/03/2026)
+- [x] Remover colunas recebimentoId e pagamentoId do schema Drizzle de contratos
+- [x] Remover foreign keys e colunas recebimentoId/pagamentoId do banco de dados
+- [x] Verificar procedure de criação de contratos no backend

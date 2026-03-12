@@ -269,7 +269,7 @@ export const contratos = mysqlTable("contratos", {
   id: int("id").autoincrement().primaryKey(),
   numero: varchar("numero", { length: 50 }).notNull().unique(),
   objeto: text("objeto").notNull(),
-  tipo: mysqlEnum("tipo", ["prestacao_servico", "fornecimento", "locacao", "om", "misto"]).default("prestacao_servico").notNull(),
+  tipo: mysqlEnum("tipo", ["prestacao_servico", "fornecimento", "locacao", "misto"]).default("prestacao_servico").notNull(),
   // Status alinhado com fluxo ERP: proposta → negociacao → ativo → suspenso → encerrado
   status: mysqlEnum("status", ["proposta", "em_negociacao", "ativo", "suspenso", "encerrado"]).default("proposta").notNull(),
   clienteId: int("clienteId").references(() => clientes.id),
@@ -291,9 +291,6 @@ export const contratos = mysqlTable("contratos", {
   enderecoCidade: varchar("enderecoCidade", { length: 100 }),
   enderecoEstado: varchar("enderecoEstado", { length: 2 }),
   enderecoCep: varchar("enderecoCep", { length: 10 }),
-  // Vinculação financeira
-  recebimentoId: int("recebimentoId").references(() => recebimentos.id),
-  pagamentoId: int("pagamentoId").references(() => pagamentos.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),

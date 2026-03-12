@@ -169,8 +169,6 @@ export const contratosRouter = router({
           centroCustoId: contratos.centroCustoId,
           valorPrevisto: contratos.valorPrevisto,
           margemPrevista: contratos.margemPrevista,
-          recebimentoId: contratos.recebimentoId,
-          pagamentoId: contratos.pagamentoId,
           createdAt: contratos.createdAt,
           clienteNome: clientes.nome,
           enderecoLogradouro: contratos.enderecoLogradouro,
@@ -205,8 +203,6 @@ export const contratosRouter = router({
           descricao: contratos.descricao,
           observacoes: contratos.observacoes,
           clienteId: contratos.clienteId,
-          recebimentoId: contratos.recebimentoId,
-          pagamentoId: contratos.pagamentoId,
           createdAt: contratos.createdAt,
           clienteNome: clientes.nome,
         })

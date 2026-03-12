@@ -1,0 +1,16 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'contratos' AND COLUMN_NAME IN ('recebimentoId', 'pagamentoId');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'contratos' AND COLUMN_NAME IN ('recebimentoId', 'pagamentoId');",
+  "rows": [
+    {
+      "COLUMN_NAME": "recebimentoId"
+    },
+    {
+      "COLUMN_NAME": "pagamentoId"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nrecebimentoId\npagamentoId\n",
+  "stderr": "",
+  "execution_time_ms": 472
+}

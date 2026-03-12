@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE contratos DROP COLUMN IF EXISTS recebimentoId; ALTER TABLE contratos DROP COLUMN IF EXISTS pagamentoId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute ALTER TABLE contratos DROP COLUMN IF EXISTS recebimentoId; ALTER TABLE contratos DROP COLUMN IF EXISTS pagamentoId;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1828 (HY000) at line 1: Cannot drop column 'recebimentoid': needed in a foreign key constraint 'contratos_recebimentoId_recebimentos_id_fk'"
+  ]
+}

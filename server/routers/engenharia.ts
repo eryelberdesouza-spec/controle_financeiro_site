@@ -237,29 +237,25 @@ export const contratosRouter = router({
     .mutation(async ({ input, ctx }) => {
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
-      const [result] = await d.insert(contratos).values({
-        numero: input.numero,
-        objeto: input.objeto,
-        tipo: input.tipo,
-        status: input.status ?? "proposta",
-        clienteId: input.clienteId,
-        valorTotal: input.valorTotal.toString(),
-        valorPrevisto: input.valorPrevisto?.toString(),
-        margemPrevista: input.margemPrevista?.toString(),
-        dataInicio: input.dataInicio ? new Date(input.dataInicio) : null,
-        dataFim: input.dataFim ? new Date(input.dataFim) : null,
-        descricao: input.descricao,
-        observacoes: input.observacoes,
-        enderecoLogradouro: input.enderecoLogradouro,
-        enderecoNumero: input.enderecoNumero,
-        enderecoComplemento: input.enderecoComplemento,
-        enderecoBairro: input.enderecoBairro,
-        enderecoCidade: input.enderecoCidade,
-        enderecoEstado: input.enderecoEstado,
-        enderecoCep: input.enderecoCep,
-        createdBy: ctx.user.id,
-      });
-      return { id: result.insertId };
+      // Usar SQL raw para evitar que o Drizzle inclua DEFAULT em colunas opcionais
+      const [result] = await d.execute(sql`
+        INSERT INTO contratos (numero, objeto, tipo, status, clienteId, valorTotal,
+          valorPrevisto, margemPrevista, dataInicio, dataFim, descricao, observacoes,
+          enderecoLogradouro, enderecoNumero, enderecoComplemento, enderecoBairro,
+          enderecoCidade, enderecoEstado, enderecoCep, createdBy)
+        VALUES (
+          ${input.numero}, ${input.objeto}, ${input.tipo}, ${input.status ?? "proposta"},
+          ${input.clienteId ?? null}, ${input.valorTotal.toString()},
+          ${input.valorPrevisto?.toString() ?? null}, ${input.margemPrevista?.toString() ?? null},
+          ${input.dataInicio ?? null}, ${input.dataFim ?? null},
+          ${input.descricao ?? null}, ${input.observacoes ?? null},
+          ${input.enderecoLogradouro ?? null}, ${input.enderecoNumero ?? null},
+          ${input.enderecoComplemento ?? null}, ${input.enderecoBairro ?? null},
+          ${input.enderecoCidade ?? null}, ${input.enderecoEstado ?? null},
+          ${input.enderecoCep ?? null}, ${ctx.user.id}
+        )
+      `);
+      return { id: (result as any).insertId };
     }),
 
   update: protectedProcedure
@@ -288,28 +284,30 @@ export const contratosRouter = router({
     .mutation(async ({ input }) => {
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
-      const { id } = input;
-      await d.update(contratos).set({
-        numero: input.numero,
-        objeto: input.objeto,
-        tipo: input.tipo,
-        status: input.status,
-        clienteId: input.clienteId,
-        valorTotal: input.valorTotal.toString(),
-        valorPrevisto: input.valorPrevisto?.toString(),
-        margemPrevista: input.margemPrevista?.toString(),
-        dataInicio: input.dataInicio ? new Date(input.dataInicio) : null,
-        dataFim: input.dataFim ? new Date(input.dataFim) : null,
-        descricao: input.descricao,
-        observacoes: input.observacoes,
-        enderecoLogradouro: input.enderecoLogradouro,
-        enderecoNumero: input.enderecoNumero,
-        enderecoComplemento: input.enderecoComplemento,
-        enderecoBairro: input.enderecoBairro,
-        enderecoCidade: input.enderecoCidade,
-        enderecoEstado: input.enderecoEstado,
-        enderecoCep: input.enderecoCep,
-      }).where(eq(contratos.id, id));
+      // Usar SQL raw para evitar que o Drizzle inclua DEFAULT em colunas opcionais
+      await d.execute(sql`
+        UPDATE contratos SET
+          numero = ${input.numero},
+          objeto = ${input.objeto},
+          tipo = ${input.tipo},
+          status = ${input.status},
+          clienteId = ${input.clienteId ?? null},
+          valorTotal = ${input.valorTotal.toString()},
+          valorPrevisto = ${input.valorPrevisto?.toString() ?? null},
+          margemPrevista = ${input.margemPrevista?.toString() ?? null},
+          dataInicio = ${input.dataInicio ?? null},
+          dataFim = ${input.dataFim ?? null},
+          descricao = ${input.descricao ?? null},
+          observacoes = ${input.observacoes ?? null},
+          enderecoLogradouro = ${input.enderecoLogradouro ?? null},
+          enderecoNumero = ${input.enderecoNumero ?? null},
+          enderecoComplemento = ${input.enderecoComplemento ?? null},
+          enderecoBairro = ${input.enderecoBairro ?? null},
+          enderecoCidade = ${input.enderecoCidade ?? null},
+          enderecoEstado = ${input.enderecoEstado ?? null},
+          enderecoCep = ${input.enderecoCep ?? null}
+        WHERE id = ${input.id}
+      `);
     }),
 
   delete: protectedProcedure

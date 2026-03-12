@@ -400,3 +400,8 @@
 - [x] Verificar código atual do INSERT no router de engenharia
 - [x] Corrigir enums status e tipo no banco (em_negociacao, remover om)
 - [x] Reiniciar servidor com código correto e testar INSERT via SQL direto
+
+## URGENTE - Correção INSERT Contratos (12/03/2026)
+- [x] Substituir INSERT/UPDATE Drizzle por SQL raw em contratos (resolve DEFAULT incompatível com TiDB)
+- [x] Testar INSERT via script e confirmar sucesso
+- [x] 34 testes passando, sem erros TypeScript

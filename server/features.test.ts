@@ -118,6 +118,71 @@ describe("Filtro por Centro de Custo", () => {
   });
 });
 
+// ─── Testes: Filtro CC em Relatórios ─────────────────────────────────────────
+
+describe("Filtro por CC nos Relatórios", () => {
+  const centrosCusto = [
+    { id: 1, nome: "Administrativo" },
+    { id: 2, nome: "Projeto Alpha" },
+    { id: 3, nome: "Operacional" },
+  ];
+
+  it("deve encontrar o CC selecionado pelo id", () => {
+    const centroCustoId = "2";
+    const ccSelecionado = centroCustoId
+      ? centrosCusto.find(cc => String(cc.id) === centroCustoId)
+      : null;
+    expect(ccSelecionado).not.toBeNull();
+    expect(ccSelecionado?.nome).toBe("Projeto Alpha");
+  });
+
+  it("deve retornar null quando nenhum CC está selecionado", () => {
+    const centroCustoId = "";
+    const ccSelecionado = centroCustoId
+      ? centrosCusto.find(cc => String(cc.id) === centroCustoId)
+      : null;
+    expect(ccSelecionado).toBeNull();
+  });
+
+  it("deve incluir CC no cabeçalho de exportação TXT quando selecionado", () => {
+    const ccSelecionado = { id: 1, nome: "Administrativo" };
+    const ccLinha = ccSelecionado ? `Centro de Custo: ${ccSelecionado.nome}` : "Centro de Custo: Todos";
+    expect(ccLinha).toBe("Centro de Custo: Administrativo");
+  });
+
+  it("deve exibir 'Todos' no cabeçalho quando nenhum CC está selecionado", () => {
+    const ccSelecionado = null;
+    const ccLinha = ccSelecionado ? `Centro de Custo: ${(ccSelecionado as any).nome}` : "Centro de Custo: Todos";
+    expect(ccLinha).toBe("Centro de Custo: Todos");
+  });
+
+  it("deve filtrar pagamentos pelo CC selecionado", () => {
+    const pagamentos = [
+      { id: 1, nomeCompleto: "Fornecedor A", centroCustoId: 1 },
+      { id: 2, nomeCompleto: "Fornecedor B", centroCustoId: 2 },
+      { id: 3, nomeCompleto: "Fornecedor C", centroCustoId: 1 },
+    ];
+    const centroCustoId = "1";
+    const filtrados = pagamentos.filter(p =>
+      !centroCustoId || String(p.centroCustoId) === centroCustoId
+    );
+    expect(filtrados).toHaveLength(2);
+    expect(filtrados.every(p => p.centroCustoId === 1)).toBe(true);
+  });
+
+  it("deve retornar todos os pagamentos quando CC = '' (sem filtro)", () => {
+    const pagamentos = [
+      { id: 1, nomeCompleto: "Fornecedor A", centroCustoId: 1 },
+      { id: 2, nomeCompleto: "Fornecedor B", centroCustoId: 2 },
+    ];
+    const centroCustoId = "";
+    const filtrados = pagamentos.filter(p =>
+      !centroCustoId || String(p.centroCustoId) === centroCustoId
+    );
+    expect(filtrados).toHaveLength(2);
+  });
+});
+
 // ─── Testes: Schema de Anexos ─────────────────────────────────────────────────
 
 describe("Módulos suportados para anexos", () => {

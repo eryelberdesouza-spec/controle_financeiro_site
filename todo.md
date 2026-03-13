@@ -430,3 +430,10 @@
 - [x] Adicionar campos responsavel e observacoes no schema de centros_custo
 - [x] Adicionar campo centroCustoId no schema de ordens_servico
 - [x] Escrever e passar 13 novos testes (total: 47 testes)
+
+## Filtro por CC nos Relatórios (v31)
+- [x] Adicionar parâmetro centroCustoId nas queries de relatório (pagamentos e recebimentos)
+- [x] Atualizar procedures tRPC de relatórios para aceitar filtro por CC
+- [x] Adicionar Select de Centro de Custo nos filtros da página de Relatórios
+- [x] Exibir CC selecionado no cabeçalho do relatório impresso
+- [x] Atualizar exportação TXT para incluir CC no cabeçalho

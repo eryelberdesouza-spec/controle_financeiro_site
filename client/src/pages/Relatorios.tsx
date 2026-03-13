@@ -134,16 +134,21 @@ function AbaGeral() {
 
   const nomeEmpresa = empresa?.nomeEmpresa || "Relatório Financeiro";
   const logoUrl = empresa?.logoUrl;
+  const ccSelecionado = filtros.centroCustoId
+    ? centrosCusto.find(cc => String(cc.id) === filtros.centroCustoId)
+    : null;
 
   const exportRelatorio = () => {
     const now = new Date().toLocaleDateString("pt-BR");
     const periodo = filtros.dataInicio || filtros.dataFim
       ? `Período: ${filtros.dataInicio ? formatDate(filtros.dataInicio) : "início"} até ${filtros.dataFim ? formatDate(filtros.dataFim) : "hoje"}`
       : "Período: Todos os registros";
+    const ccLinha = ccSelecionado ? `Centro de Custo: ${ccSelecionado.nome}` : "Centro de Custo: Todos";
     const lines = [
       nomeEmpresa.toUpperCase(),
       `RELATÓRIO FINANCEIRO - ${now}`,
       periodo,
+      ccLinha,
       ``,
       `=== RESUMO GERAL (FILTRADO) ===`,
       `Total Recebimentos: ${formatCurrency(totalRecFiltrado)} (${recFiltrados.length} registros)`,
@@ -294,6 +299,16 @@ function AbaGeral() {
                 Período: {filtros.dataInicio ? formatDate(filtros.dataInicio) : "início"} até {filtros.dataFim ? formatDate(filtros.dataFim) : "hoje"}
               </p>
             )}
+            {ccSelecionado && (
+              <p className="text-sm text-muted-foreground">
+                Centro de Custo: <strong>{ccSelecionado.nome}</strong>
+              </p>
+            )}
+            {filtros.status !== "todos" && (
+              <p className="text-sm text-muted-foreground">
+                Status: <strong>{filtros.status}</strong>
+              </p>
+            )}
           </div>
         </div>
 
@@ -301,7 +316,26 @@ function AbaGeral() {
         {temFiltros && (
           <Card className="border-primary/20 bg-primary/5 mb-6">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-primary">Resumo do Período Filtrado</CardTitle>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-sm font-semibold text-primary">Resumo do Período Filtrado</CardTitle>
+                <div className="flex flex-wrap gap-2">
+                  {ccSelecionado && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium">
+                      <Building2 className="h-3 w-3" /> CC: {ccSelecionado.nome}
+                    </span>
+                  )}
+                  {filtros.status !== "todos" && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-medium">
+                      Status: {filtros.status}
+                    </span>
+                  )}
+                  {(filtros.dataInicio || filtros.dataFim) && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full font-medium">
+                      {filtros.dataInicio ? formatDate(filtros.dataInicio) : "início"} → {filtros.dataFim ? formatDate(filtros.dataFim) : "hoje"}
+                    </span>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

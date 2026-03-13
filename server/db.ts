@@ -164,42 +164,58 @@ export async function deletePagamento(id: number) {
  * Formato: PAG-YYYY-NNN (ex: PAG-2026-042)
  */
 export async function getNextNumeroControlePagamento(): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+
   const db = await getDb();
-  if (!db) return `PAG-${new Date().getFullYear()}-001`;
+  if (!db) return `PAG-${year}-${month}-001`;
+
   const result = await db.select({ numeroControle: pagamentos.numeroControle }).from(pagamentos);
+
+  // Extrai o sequencial de qualquer formato existente (PAG-AAAA-NNN ou PAG-AAAA-MM-NNN)
+  // para manter continuidade com a numeração anterior
   let maxNum = 0;
   for (const row of result) {
     if (!row.numeroControle) continue;
-    // Extrai o último segmento numérico (ex: PAG-2026-042 -> 42, ou 42 -> 42)
     const match = row.numeroControle.match(/(\d+)\s*$/);
     if (match) {
       const n = parseInt(match[1], 10);
       if (n > maxNum) maxNum = n;
     }
   }
+
   const next = maxNum + 1;
-  const year = new Date().getFullYear();
-  return `PAG-${year}-${String(next).padStart(3, "0")}`;
+  return `PAG-${year}-${month}-${String(next).padStart(3, '0')}`;
 }
 
 export async function getNextNumeroControleRecebimento(): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const fallback = `REC-${year}-${month}-157`;
+
   const db = await getDb();
-  const year = new Date().getFullYear();
-  if (!db) return `REC-${year}-157`;
+  if (!db) return fallback;
+
   const result = await db.select({ numeroControle: recebimentos.numeroControle }).from(recebimentos);
+
   // Número mínimo de partida: 156 (próximo será 157)
+  // Considera APENAS registros que seguem o padrão REC-AAAA-MM-NNN
+  // O sequencial é GLOBAL (não reinicia por mês/ano)
   let maxNum = 156;
   for (const row of result) {
     if (!row.numeroControle) continue;
-    // Extrai o último segmento numérico (ex: REC-2026-157 -> 157)
-    const match = row.numeroControle.match(/(\d+)\s*$/);
+    // Aceita apenas o padrão REC-AAAA-MM-NNN (ex: REC-2026-03-157)
+    const match = row.numeroControle.match(/^REC-\d{4}-\d{2}-(\d+)$/);
     if (match) {
       const n = parseInt(match[1], 10);
       if (n > maxNum) maxNum = n;
     }
   }
+
   const next = maxNum + 1;
-  return `REC-${year}-${String(next).padStart(3, "0")}`;
+  return `REC-${year}-${month}-${String(next).padStart(3, '0')}`;
 }
 
 export async function getPagamentosStats() {

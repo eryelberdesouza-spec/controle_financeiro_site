@@ -535,12 +535,24 @@ export const ordensServicoRouter = router({
 
   nextNumero: protectedProcedure.query(async () => {
     const d = await getDb();
-    if (!d) return `OS-${new Date().getFullYear()}-001`;
-    const [row] = await d
-      .select({ max: sql<string>`MAX(CAST(SUBSTRING_INDEX(numero, '-', -1) AS UNSIGNED))` })
-      .from(ordensServico);
-    const next = (parseInt(row?.max ?? "0") || 0) + 1;
-    return `OS-${new Date().getFullYear()}-${String(next).padStart(3, "0")}`;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    if (!d) return `OS-${year}-${month}-001`;
+    // Busca todos os números de OS para encontrar o maior sequencial global
+    const rows = await d.select({ numero: ordensServico.numero }).from(ordensServico);
+    let maxNum = 0;
+    for (const row of rows) {
+      if (!row.numero) continue;
+      // Extrai o último segmento numérico (ex: OS-2026-03-042 -> 42, ou OS-2026-042 -> 42)
+      const match = row.numero.match(/(\d+)\s*$/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    }
+    const next = maxNum + 1;
+    return `OS-${year}-${month}-${String(next).padStart(3, '0')}`;
   }),
 
   addItem: protectedProcedure

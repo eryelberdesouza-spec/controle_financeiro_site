@@ -1,0 +1,54 @@
+{
+  "query": "SELECT id, numeroControle FROM recebimentos ORDER BY id ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute SELECT id, numeroControle FROM recebimentos ORDER BY id ASC;",
+  "rows": [
+    {
+      "id": "1",
+      "numeroControle": "135"
+    },
+    {
+      "id": "30001",
+      "numeroControle": "154"
+    },
+    {
+      "id": "60001",
+      "numeroControle": "152"
+    },
+    {
+      "id": "60002",
+      "numeroControle": "150"
+    },
+    {
+      "id": "90001",
+      "numeroControle": "151"
+    },
+    {
+      "id": "120001",
+      "numeroControle": "736"
+    },
+    {
+      "id": "150001",
+      "numeroControle": "REC-2026-155"
+    },
+    {
+      "id": "180001",
+      "numeroControle": "REC-2026-129"
+    },
+    {
+      "id": "180002",
+      "numeroControle": "REC-2025-131"
+    },
+    {
+      "id": "180003",
+      "numeroControle": "REC-2026-149"
+    },
+    {
+      "id": "210001",
+      "numeroControle": "REC-2026-156"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnumeroControle\n1\t135\n30001\t154\n60001\t152\n60002\t150\n90001\t151\n120001\t736\n150001\tREC-2026-155\n180001\tREC-2026-129\n180002\tREC-2025-131\n180003\tREC-2026-149\n210001\tREC-2026-156\n",
+  "stderr": "",
+  "execution_time_ms": 351
+}

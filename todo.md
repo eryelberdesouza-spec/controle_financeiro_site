@@ -464,3 +464,12 @@
 - [x] Adicionar filtros por tipo e status na listagem de CC
 - [x] Página já tem dashboard financeiro por CC (receitas, despesas, saldo)
 - [ ] Exibir coluna CC na listagem de Pagamentos e Recebimentos (pendente)
+
+## Correção Número de Controle Recebimentos
+- [x] Corrigir padrão para REC-AAAA-MM-NNN com sequencial global iniciando em 157 (não reinicia por mês/ano)
+
+## Correção Padrão Números de Controle (AAAA-MM-NNN)
+- [x] Corrigir PAG: padrão PAG-AAAA-MM-NNN mantendo sequencial atual
+- [x] Corrigir CTR: padrão CTR-AAAA-MM-NNN (já estava correto)
+- [x] Corrigir OS: padrão OS-AAAA-MM-NNN com sequencial global
+- [x] REC: padrão REC-AAAA-MM-NNN iniciando em 157 (ignora formatos antigos)

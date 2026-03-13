@@ -1,0 +1,40 @@
+{
+  "query": "SELECT numeroControle FROM recebimentos ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute SELECT numeroControle FROM recebimentos ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "numeroControle": "REC-2026-156"
+    },
+    {
+      "numeroControle": "REC-2026-149"
+    },
+    {
+      "numeroControle": "REC-2025-131"
+    },
+    {
+      "numeroControle": "REC-2026-129"
+    },
+    {
+      "numeroControle": "REC-2026-155"
+    },
+    {
+      "numeroControle": "736"
+    },
+    {
+      "numeroControle": "151"
+    },
+    {
+      "numeroControle": "150"
+    },
+    {
+      "numeroControle": "152"
+    },
+    {
+      "numeroControle": "154"
+    }
+  ],
+  "messages": [],
+  "stdout": "numeroControle\nREC-2026-156\nREC-2026-149\nREC-2025-131\nREC-2026-129\nREC-2026-155\n736\n151\n150\n152\n154\n",
+  "stderr": "",
+  "execution_time_ms": 364
+}

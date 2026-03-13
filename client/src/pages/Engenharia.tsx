@@ -80,6 +80,7 @@ function ContratosTab() {
   const [form, setForm] = useState({
     numero: "", objeto: "", tipo: "prestacao_servico" as const,
     status: "proposta" as const, clienteId: "" as string | number,
+    centroCustoId: null as number | null,
     valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "",
     enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "",
     enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "",
@@ -95,6 +96,14 @@ function ContratosTab() {
   });
   const deleteMutation = trpc.contratos.delete.useMutation({
     onSuccess: () => { utils.contratos.list.invalidate(); toast.success("Contrato removido."); }
+  });
+  const criarCCRapidoMutation = trpc.centrosCusto.create.useMutation({
+    onSuccess: (cc: any) => {
+      utils.centrosCusto.list.invalidate();
+      setForm(p => ({ ...p, centroCustoId: cc.id }));
+      toast.success(`CC criado e vinculado!`);
+    },
+    onError: (err: any) => toast.error(err.message),
   });
   const ativarMutation = trpc.relatorioContrato.ativarContrato.useMutation({
     onSuccess: (data) => {
@@ -130,7 +139,7 @@ function ContratosTab() {
 
   function openNew() {
     setEditId(null);
-    setForm({ numero: nextNumero ?? "", objeto: "", tipo: "prestacao_servico", status: "proposta", clienteId: "", valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
+    setForm({ numero: nextNumero ?? "", objeto: "", tipo: "prestacao_servico", status: "proposta", clienteId: "", centroCustoId: null, valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
     setShowForm(true);
   }
 
@@ -139,6 +148,7 @@ function ContratosTab() {
     setForm({
       numero: c.numero, objeto: c.objeto, tipo: c.tipo as any,
       status: c.status as any, clienteId: c.clienteId ?? "",
+      centroCustoId: (c as any).centroCustoId ?? null,
       valorTotal: c.valorTotal ?? "", dataInicio: c.dataInicio ? new Date(c.dataInicio).toISOString().split("T")[0] : "",
       dataFim: c.dataFim ? new Date(c.dataFim).toISOString().split("T")[0] : "",
       descricao: c.descricao ?? "", observacoes: c.observacoes ?? "",
@@ -153,6 +163,7 @@ function ContratosTab() {
     const payload = {
       numero: form.numero, objeto: form.objeto, tipo: form.tipo, status: form.status,
       clienteId: form.clienteId ? Number(form.clienteId) : undefined,
+      centroCustoId: form.centroCustoId ?? undefined,
       valorTotal: parseFloat(String(form.valorTotal).replace(",", ".")) || 0,
       valorPrevisto: (form as any).valorPrevisto ? parseFloat(String((form as any).valorPrevisto).replace(",", ".")) : undefined,
       margemPrevista: (form as any).margemPrevista ? parseFloat(String((form as any).margemPrevista).replace(",", ".")) : undefined,
@@ -616,6 +627,32 @@ function ContratosTab() {
               </Select>
             </div>
             <div className="space-y-1">
+              <Label className="flex items-center justify-between">
+                <span>Centro de Custo</span>
+                <button
+                  type="button"
+                  className="text-xs text-primary underline hover:no-underline"
+                  onClick={() => {
+                    const nome = prompt("Nome do novo Centro de Custo:");
+                    if (!nome?.trim()) return;
+                    criarCCRapidoMutation.mutate({ nome: nome.trim(), tipo: "contrato" });
+                  }}
+                >+ Criar novo CC</button>
+              </Label>
+              <Select
+                value={form.centroCustoId ? String(form.centroCustoId) : "none"}
+                onValueChange={v => setForm(p => ({ ...p, centroCustoId: v === "none" ? null : Number(v) }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecionar CC..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Nenhum —</SelectItem>
+                  {centrosCustoList.map((cc: any) => (
+                    <SelectItem key={cc.id} value={String(cc.id)}>{cc.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <Label>Valor Total (R$) *</Label>
               <Input type="number" min="0" step="0.01" value={form.valorTotal} onChange={e => setForm(p => ({ ...p, valorTotal: e.target.value }))} />
             </div>
@@ -738,6 +775,7 @@ function OrdensServicoTab() {
     prioridade: "media" as const, responsavel: "", dataAbertura: "",
     dataPrevisao: "", valorEstimado: "", observacoes: "",
     contratoId: "" as string | number, clienteId: "" as string | number,
+    centroCustoId: null as number | null,
     enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "",
     enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "",
   });
@@ -815,7 +853,7 @@ function OrdensServicoTab() {
   function openNew() {
     setEditId(null);
     setItens([]);
-    setForm({ numero: nextNumero ?? "", titulo: "", descricao: "", status: "planejada", prioridade: "media", responsavel: "", dataAbertura: new Date().toISOString().split("T")[0], dataPrevisao: "", valorEstimado: "", observacoes: "", contratoId: "", clienteId: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
+    setForm({ numero: nextNumero ?? "", titulo: "", descricao: "", status: "planejada", prioridade: "media", responsavel: "", dataAbertura: new Date().toISOString().split("T")[0], dataPrevisao: "", valorEstimado: "", observacoes: "", contratoId: "", clienteId: "", centroCustoId: null, enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
     setShowForm(true);
   }
 
@@ -830,6 +868,7 @@ function OrdensServicoTab() {
       dataPrevisao: o.dataPrevisao ? new Date(o.dataPrevisao).toISOString().split("T")[0] : "",
       valorEstimado: o.valorEstimado ?? "",
       contratoId: o.contratoId ?? "", clienteId: o.clienteId ?? "",
+      centroCustoId: (o as any).centroCustoId ?? null,
       enderecoLogradouro: o.enderecoLogradouro ?? "", enderecoNumero: o.enderecoNumero ?? "",
       enderecoComplemento: o.enderecoComplemento ?? "", enderecoBairro: o.enderecoBairro ?? "",
       enderecoCidade: o.enderecoCidade ?? "", enderecoEstado: o.enderecoEstado ?? "", enderecoCep: o.enderecoCep ?? "",
@@ -863,6 +902,7 @@ function OrdensServicoTab() {
       observacoes: form.observacoes || undefined,
       contratoId: form.contratoId ? Number(form.contratoId) : undefined,
       clienteId: form.clienteId ? Number(form.clienteId) : undefined,
+      centroCustoId: form.centroCustoId ?? undefined,
       enderecoLogradouro: form.enderecoLogradouro || undefined,
       enderecoNumero: form.enderecoNumero || undefined,
       enderecoComplemento: form.enderecoComplemento || undefined,
@@ -1096,6 +1136,8 @@ function OrdensServicoTab() {
                   contratoId: v === "none" ? "" : v,
                   // Herda cliente do contrato automaticamente
                   clienteId: contratoSelecionado?.clienteId ? String(contratoSelecionado.clienteId) : p.clienteId,
+                  // Herda CC do contrato automaticamente
+                  centroCustoId: contratoSelecionado ? ((contratoSelecionado as any).centroCustoId ?? p.centroCustoId) : p.centroCustoId,
                 }));
               }}>
                 <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
@@ -1112,6 +1154,21 @@ function OrdensServicoTab() {
                 <SelectContent>
                   <SelectItem value="none">— Nenhum —</SelectItem>
                   {clientes.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Centro de Custo <span className="text-xs text-muted-foreground">(herdado do contrato)</span></Label>
+              <Select
+                value={form.centroCustoId ? String(form.centroCustoId) : "none"}
+                onValueChange={v => setForm(p => ({ ...p, centroCustoId: v === "none" ? null : Number(v) }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecionar CC..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Nenhum —</SelectItem>
+                  {centrosCustoList.filter((cc: any) => cc.ativo).map((cc: any) => (
+                    <SelectItem key={cc.id} value={String(cc.id)}>{cc.nome}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

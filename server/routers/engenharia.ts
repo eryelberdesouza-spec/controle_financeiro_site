@@ -219,6 +219,7 @@ export const contratosRouter = router({
       tipo: z.enum(["prestacao_servico", "fornecimento", "locacao", "misto"]),
       status: z.enum(["proposta", "em_negociacao", "ativo", "suspenso", "encerrado"]).optional(),
       clienteId: z.number().optional(),
+      centroCustoId: z.number().optional(),
       valorTotal: z.number(),
       valorPrevisto: z.number().optional(),
       margemPrevista: z.number().optional(),
@@ -239,13 +240,13 @@ export const contratosRouter = router({
       if (!d) throw new Error("DB unavailable");
       // Usar SQL raw para evitar que o Drizzle inclua DEFAULT em colunas opcionais
       const [result] = await d.execute(sql`
-        INSERT INTO contratos (numero, objeto, tipo, status, clienteId, valorTotal,
+        INSERT INTO contratos (numero, objeto, tipo, status, clienteId, centroCustoId, valorTotal,
           valorPrevisto, margemPrevista, dataInicio, dataFim, descricao, observacoes,
           enderecoLogradouro, enderecoNumero, enderecoComplemento, enderecoBairro,
           enderecoCidade, enderecoEstado, enderecoCep, createdBy)
         VALUES (
           ${input.numero}, ${input.objeto}, ${input.tipo}, ${input.status ?? "proposta"},
-          ${input.clienteId ?? null}, ${input.valorTotal.toString()},
+          ${input.clienteId ?? null}, ${input.centroCustoId ?? null}, ${input.valorTotal.toString()},
           ${input.valorPrevisto?.toString() ?? null}, ${input.margemPrevista?.toString() ?? null},
           ${input.dataInicio ?? null}, ${input.dataFim ?? null},
           ${input.descricao ?? null}, ${input.observacoes ?? null},
@@ -266,6 +267,7 @@ export const contratosRouter = router({
       tipo: z.enum(["prestacao_servico", "fornecimento", "locacao", "misto"]),
       status: z.enum(["proposta", "em_negociacao", "ativo", "suspenso", "encerrado"]),
       clienteId: z.number().optional(),
+      centroCustoId: z.number().optional(),
       valorTotal: z.number(),
       valorPrevisto: z.number().optional(),
       margemPrevista: z.number().optional(),
@@ -292,6 +294,7 @@ export const contratosRouter = router({
           tipo = ${input.tipo},
           status = ${input.status},
           clienteId = ${input.clienteId ?? null},
+          centroCustoId = ${input.centroCustoId ?? null},
           valorTotal = ${input.valorTotal.toString()},
           valorPrevisto = ${input.valorPrevisto?.toString() ?? null},
           margemPrevista = ${input.margemPrevista?.toString() ?? null},

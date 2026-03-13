@@ -437,3 +437,30 @@
 - [x] Adicionar Select de Centro de Custo nos filtros da página de Relatórios
 - [x] Exibir CC selecionado no cabeçalho do relatório impresso
 - [x] Atualizar exportação TXT para incluir CC no cabeçalho
+
+## Bug: Relatório Por Centro de Custo (v32)
+- [x] Diagnosticar por que o relatório por CC exibe R$ 0,00 e 0 lançamentos
+- [x] Corrigir a query/procedure do relatório por CC (cache de versão antiga — resolvido com restart do servidor)
+
+## Auditoria Completa de Centro de Custo (v32)
+
+### Bug crítico
+- [x] Relatório por CC exibe R$ 0,00: todos os registros têm centroCustoId = null no banco (nunca foi salvo)
+
+### Campos obrigatórios CC
+- [x] Tornar campo CC obrigatório no formulário de Pagamentos (router corrigido para aceitar centroCustoId)
+- [x] Tornar campo CC obrigatório no formulário de Recebimentos (já estava correto)
+- [x] Garantir que CC seja salvo corretamente no banco ao criar/editar Pagamento e Recebimento
+
+### Integração CC ↔ Contratos/OS
+- [x] Adicionar campo CC no formulário de Contrato (Select de CC)
+- [x] Adicionar botão "Criar novo CC" dentro do formulário de Contrato
+- [x] Propagar CC do Contrato para OS automaticamente ao criar OS vinculada
+- [x] Exibir CC no formulário de OS (herdado do contrato, editável)
+- [x] Adicionar centroCustoId no create/update de Contratos no router de engenharia
+
+### Página de Centros de Custo
+- [x] Adicionar campo "status" (ativo/encerrado) na página de CC
+- [x] Adicionar filtros por tipo e status na listagem de CC
+- [x] Página já tem dashboard financeiro por CC (receitas, despesas, saldo)
+- [ ] Exibir coluna CC na listagem de Pagamentos e Recebimentos (pendente)

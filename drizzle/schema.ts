@@ -258,8 +258,17 @@ export const materiais = mysqlTable("materiais", {
   nome: varchar("nome", { length: 200 }).notNull(),
   descricao: text("descricao"),
   unidade: varchar("unidade", { length: 30 }), // ex: kg, m, un, caixa
+  // Mantém valorUnitario para compatibilidade com OS existentes
   valorUnitario: decimal("valorUnitario", { precision: 15, scale: 2 }),
+  // Preço de Custo: valor pago na aquisição do material
+  precoCusto: decimal("precoCusto", { precision: 15, scale: 2 }),
+  // Preço de Venda: valor cobrado ao cliente
+  precoVenda: decimal("precoVenda", { precision: 15, scale: 2 }),
   estoque: decimal("estoque", { precision: 15, scale: 3 }).default("0"),
+  // Finalidade do material: uso interno ou fornecimento ao cliente
+  finalidade: mysqlEnum("finalidade", ["uso", "fornecimento", "ambos"]).default("ambos").notNull(),
+  // Data de inserção do material no catálogo
+  dataInsercao: date("dataInsercao"),
   ativo: boolean("ativo").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

@@ -141,6 +141,13 @@
       "when": 1773359313358,
       "tag": "0019_exotic_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1773399707306,
+      "tag": "0020_thankful_garia",
+      "breakpoints": true
     }
   ]
 }

@@ -473,3 +473,10 @@
 - [x] Corrigir CTR: padrão CTR-AAAA-MM-NNN (já estava correto)
 - [x] Corrigir OS: padrão OS-AAAA-MM-NNN com sequencial global
 - [x] REC: padrão REC-AAAA-MM-NNN iniciando em 157 (ignora formatos antigos)
+
+## Ajustes no Módulo de Materiais
+- [x] Adicionar campos precoCusto, precoVenda, dataInsercao, finalidade no schema
+- [x] Criar função nextCodigoMaterial para gerar MAT-0001, MAT-0002...
+- [x] Atualizar router de materiais para aceitar novos campos
+- [x] Atualizar formulário de Material no frontend com novos campos (Preço de Custo, Preço de Venda, Finalidade, Data de Inserção)
+- [x] Exibir colunas Preço de Custo, Preço de Venda e Finalidade na listagem

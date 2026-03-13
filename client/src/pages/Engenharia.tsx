@@ -1457,8 +1457,26 @@ function MateriaisTab() {
   const [busca, setBusca] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const [form, setForm] = useState({ codigo: "", nome: "", descricao: "", unidade: "", valorUnitario: "", estoque: "" });
+  const [form, setForm] = useState({
+    codigo: "", nome: "", descricao: "", unidade: "",
+    precoCusto: "", precoVenda: "", estoque: "",
+    finalidade: "ambos" as "uso" | "fornecimento" | "ambos",
+    dataInsercao: new Date().toISOString().split('T')[0],
+  });
   const [impressaoMateriais, setImpressaoMateriais] = useState<MaterialParaImpressao[] | null>(null);
+
+  // Busca o próximo código automático MAT-NNNN
+  const { data: nextCodigo } = trpc.materiais.nextCodigo.useQuery(undefined, {
+    enabled: showForm && !editId,
+    staleTime: 0,
+  });
+
+  // Preenche o código automaticamente quando o valor chegar do servidor
+  useEffect(() => {
+    if (nextCodigo && showForm && !editId) {
+      setForm(p => ({ ...p, codigo: nextCodigo }));
+    }
+  }, [nextCodigo, showForm, editId]);
 
   const createMutation = trpc.materiais.create.useMutation({
     onSuccess: () => { utils.materiais.list.invalidate(); setShowForm(false); toast.success("Material criado!"); }
@@ -1474,14 +1492,43 @@ function MateriaisTab() {
     !busca || m.codigo.toLowerCase().includes(busca.toLowerCase()) || m.nome.toLowerCase().includes(busca.toLowerCase())
   );
 
-  function openNew() { setEditId(null); setForm({ codigo: "", nome: "", descricao: "", unidade: "", valorUnitario: "", estoque: "0" }); setShowForm(true); }
+  function openNew() {
+    setEditId(null);
+    setForm({
+      codigo: "", nome: "", descricao: "", unidade: "",
+      precoCusto: "", precoVenda: "", estoque: "0",
+      finalidade: "ambos",
+      dataInsercao: new Date().toISOString().split('T')[0],
+    });
+    setShowForm(true);
+  }
   function openEdit(m: typeof lista[0]) {
     setEditId(m.id);
-    setForm({ codigo: m.codigo, nome: m.nome, descricao: m.descricao ?? "", unidade: m.unidade ?? "", valorUnitario: m.valorUnitario ?? "", estoque: m.estoque ?? "0" });
+    setForm({
+      codigo: m.codigo,
+      nome: m.nome,
+      descricao: m.descricao ?? "",
+      unidade: m.unidade ?? "",
+      precoCusto: m.precoCusto ?? "",
+      precoVenda: m.precoVenda ?? "",
+      estoque: m.estoque ?? "0",
+      finalidade: (m.finalidade as "uso" | "fornecimento" | "ambos") ?? "ambos",
+      dataInsercao: m.dataInsercao instanceof Date ? m.dataInsercao.toISOString().split('T')[0] : (m.dataInsercao ?? new Date().toISOString().split('T')[0]),
+    });
     setShowForm(true);
   }
   function handleSubmit() {
-    const payload = { codigo: form.codigo, nome: form.nome, descricao: form.descricao || undefined, unidade: form.unidade || undefined, valorUnitario: form.valorUnitario ? parseFloat(form.valorUnitario) : undefined, estoque: form.estoque ? parseFloat(form.estoque) : 0 };
+    const payload = {
+      codigo: form.codigo,
+      nome: form.nome,
+      descricao: form.descricao || undefined,
+      unidade: form.unidade || undefined,
+      precoCusto: form.precoCusto ? parseFloat(form.precoCusto) : undefined,
+      precoVenda: form.precoVenda ? parseFloat(form.precoVenda) : undefined,
+      estoque: form.estoque ? parseFloat(form.estoque) : 0,
+      finalidade: form.finalidade,
+      dataInsercao: form.dataInsercao || undefined,
+    };
     if (editId) updateMutation.mutate({ id: editId, ...payload });
     else createMutation.mutate(payload);
   }
@@ -1509,7 +1556,10 @@ function MateriaisTab() {
                 <th className="text-left px-4 py-3 font-medium">Nome</th>
                 <th className="text-left px-4 py-3 font-medium">Unidade</th>
                 <th className="text-right px-4 py-3 font-medium">Estoque</th>
-                <th className="text-right px-4 py-3 font-medium">Valor Unit.</th>
+                <th className="text-right px-4 py-3 font-medium">Preço Custo</th>
+                <th className="text-right px-4 py-3 font-medium">Preço Venda</th>
+                <th className="text-left px-4 py-3 font-medium">Finalidade</th>
+                <th className="text-left px-4 py-3 font-medium">Inserção</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -1522,7 +1572,14 @@ function MateriaisTab() {
                   <td className="px-4 py-3">{m.nome}</td>
                   <td className="px-4 py-3 text-muted-foreground">{m.unidade ?? "—"}</td>
                   <td className="px-4 py-3 text-right">{m.estoque ?? "0"}</td>
-                  <td className="px-4 py-3 text-right">{m.valorUnitario ? fmt(m.valorUnitario) : "—"}</td>
+                  <td className="px-4 py-3 text-right text-red-600">{m.precoCusto ? fmt(m.precoCusto) : "—"}</td>
+                  <td className="px-4 py-3 text-right text-green-600">{m.precoVenda ? fmt(m.precoVenda) : "—"}</td>
+                  <td className="px-4 py-3">
+                    {m.finalidade === 'uso' && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">Uso Interno</span>}
+                    {m.finalidade === 'fornecimento' && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">Fornecimento</span>}
+                    {(m.finalidade === 'ambos' || !m.finalidade) && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">Uso e Fornec.</span>}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{m.dataInsercao ? (m.dataInsercao instanceof Date ? m.dataInsercao.toLocaleDateString('pt-BR') : new Date(m.dataInsercao).toLocaleDateString('pt-BR')) : "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 justify-end">
                       <Button size="icon" variant="ghost" title="Imprimir" onClick={() => setImpressaoMateriais([m])}><Printer className="h-3.5 w-3.5 text-green-600" /></Button>
@@ -1544,7 +1601,20 @@ function MateriaisTab() {
             <div className="space-y-1"><Label>Nome *</Label><Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} /></div>
             <div className="space-y-1"><Label>Unidade</Label><Input value={form.unidade} onChange={e => setForm(p => ({ ...p, unidade: e.target.value }))} placeholder="Ex: un, kg, m" /></div>
             <div className="space-y-1"><Label>Estoque Inicial</Label><Input type="number" min="0" step="0.01" value={form.estoque} onChange={e => setForm(p => ({ ...p, estoque: e.target.value }))} /></div>
-            <div className="space-y-1"><Label>Valor Unitário (R$)</Label><Input type="number" min="0" step="0.01" value={form.valorUnitario} onChange={e => setForm(p => ({ ...p, valorUnitario: e.target.value }))} /></div>
+            <div className="space-y-1"><Label>Preço de Custo (R$)</Label><Input type="number" min="0" step="0.01" value={form.precoCusto} onChange={e => setForm(p => ({ ...p, precoCusto: e.target.value }))} placeholder="Valor pago na compra" /></div>
+            <div className="space-y-1"><Label>Preço de Venda (R$)</Label><Input type="number" min="0" step="0.01" value={form.precoVenda} onChange={e => setForm(p => ({ ...p, precoVenda: e.target.value }))} placeholder="Valor cobrado ao cliente" /></div>
+            <div className="space-y-1">
+              <Label>Finalidade</Label>
+              <Select value={form.finalidade} onValueChange={v => setForm(p => ({ ...p, finalidade: v as "uso" | "fornecimento" | "ambos" }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="uso">Uso Interno</SelectItem>
+                  <SelectItem value="fornecimento">Fornecimento ao Cliente</SelectItem>
+                  <SelectItem value="ambos">Uso e Fornecimento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label>Data de Inserção</Label><Input type="date" value={form.dataInsercao} onChange={e => setForm(p => ({ ...p, dataInsercao: e.target.value }))} /></div>
             <div className="col-span-2 space-y-1"><Label>Descrição</Label><Textarea rows={2} value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} /></div>
           </div>
           <DialogFooter>

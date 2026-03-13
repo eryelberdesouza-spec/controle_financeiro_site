@@ -88,6 +88,25 @@ export const materiaisRouter = router({
       return d.select().from(materiais).where(cond).orderBy(materiais.codigo);
     }),
 
+  // Retorna o próximo código automático no formato MAT-NNNN
+  nextCodigo: protectedProcedure.query(async () => {
+    const d = await getDb();
+    if (!d) return 'MAT-0001';
+    const rows = await d.select({ codigo: materiais.codigo }).from(materiais);
+    let maxNum = 0;
+    for (const row of rows) {
+      if (!row.codigo) continue;
+      // Extrai o sequencial de qualquer formato (MAT-0001, MAT-001, MAT-1, etc.)
+      const match = row.codigo.match(/(\d+)\s*$/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    }
+    const next = maxNum + 1;
+    return `MAT-${String(next).padStart(4, '0')}`;
+  }),
+
   create: protectedProcedure
     .input(z.object({
       codigo: z.string().min(1).max(30),
@@ -95,15 +114,25 @@ export const materiaisRouter = router({
       descricao: z.string().optional(),
       unidade: z.string().optional(),
       valorUnitario: z.number().optional(),
+      precoCusto: z.number().optional(),
+      precoVenda: z.number().optional(),
       estoque: z.number().optional(),
+      finalidade: z.enum(['uso', 'fornecimento', 'ambos']).optional(),
+      dataInsercao: z.string().optional(), // formato YYYY-MM-DD
     }))
     .mutation(async ({ input, ctx }) => {
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
+      const { precoCusto, precoVenda, valorUnitario, estoque, ...rest } = input;
+      const dataIns = input.dataInsercao ? new Date(input.dataInsercao) : new Date();
       const [result] = await d.insert(materiais).values({
-        ...input,
-        valorUnitario: input.valorUnitario?.toString(),
-        estoque: input.estoque?.toString() ?? "0",
+        ...rest,
+        valorUnitario: (precoVenda ?? valorUnitario)?.toString(), // usa precoVenda como valorUnitario para compatibilidade com OS
+        precoCusto: precoCusto?.toString(),
+        precoVenda: precoVenda?.toString(),
+        estoque: estoque?.toString() ?? '0',
+        finalidade: input.finalidade ?? 'ambos',
+        dataInsercao: dataIns,
         createdBy: ctx.user.id,
       });
       return { id: result.insertId };
@@ -117,17 +146,26 @@ export const materiaisRouter = router({
       descricao: z.string().optional(),
       unidade: z.string().optional(),
       valorUnitario: z.number().optional(),
+      precoCusto: z.number().optional(),
+      precoVenda: z.number().optional(),
       estoque: z.number().optional(),
+      finalidade: z.enum(['uso', 'fornecimento', 'ambos']).optional(),
+      dataInsercao: z.string().optional(),
       ativo: z.boolean().optional(),
     }))
     .mutation(async ({ input }) => {
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
-      const { id, ...data } = input;
+      const { id, precoCusto, precoVenda, valorUnitario, estoque, ...rest } = input;
+      const dataIns = rest.dataInsercao ? new Date(rest.dataInsercao) : undefined;
+      const { dataInsercao: _di, ...restSemData } = rest;
       await d.update(materiais).set({
-        ...data,
-        valorUnitario: data.valorUnitario?.toString(),
-        estoque: data.estoque?.toString(),
+        ...restSemData,
+        valorUnitario: (precoVenda ?? valorUnitario)?.toString(),
+        precoCusto: precoCusto?.toString(),
+        precoVenda: precoVenda?.toString(),
+        estoque: estoque?.toString(),
+        dataInsercao: dataIns,
       }).where(eq(materiais.id, id));
     }),
 

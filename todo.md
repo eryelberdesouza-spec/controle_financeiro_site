@@ -498,3 +498,7 @@
 - [x] Frontend Recebimentos: adicionar coluna "Centro de Custo" na listagem
 - [x] Frontend Recebimentos: ferramenta de atribuição em lote de CC (checkboxes + select CC)
 - [x] Frontend Relatórios: exibir grupo "Sem Centro de Custo" na aba Por CC
+
+## Correção Edição de Recebimentos (v39)
+- [x] Corrigir formulário de edição: carregar parcelas existentes ao abrir registro (não exigir regeneração)
+- [x] Ao editar, exibir parcelas já cadastradas e permitir alterar status/valores sem recriar

@@ -281,10 +281,13 @@ export default function Pagamentos() {
   }, [nextNumeroControle, open, editId]);
 
   // Carrega parcelas existentes ao abrir edição de pagamento parcelado
-  const { data: parcelasExistentes } = trpc.pagamentoParcelas.list.useQuery(
+  const { data: parcelasExistentes, isLoading: parcelasLoading, isFetching: parcelasFetching } = trpc.pagamentoParcelas.list.useQuery(
     { pagamentoId: editId! },
-    { enabled: !!editId && open && form.parcelado }
+    { enabled: !!editId && open, staleTime: 0 }
   );
+
+  // Indica se as parcelas do registro em edição ainda estão sendo carregadas
+  const parcelasCarregando = !!editId && open && (parcelasLoading || parcelasFetching) && parcelas.length === 0;
 
   // Popula o estado local de parcelas quando os dados chegam do banco (modo edição)
   useEffect(() => {
@@ -402,7 +405,8 @@ export default function Pagamentos() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nomeCompleto || !form.valor) { toast.error("Preencha os campos obrigatórios"); return; }
-    if (form.parcelado && parcelas.length === 0) { toast.error("Gere as parcelas antes de salvar."); return; }
+    // Em modo de criação: exige gerar parcelas. Em modo de edição: as parcelas já existem no banco.
+    if (!editId && form.parcelado && parcelas.length === 0) { toast.error("Gere as parcelas antes de salvar."); return; }
     const payload = {
       ...form,
       dataPagamento: form.dataPagamento ? new Date(form.dataPagamento + "T12:00:00") : new Date(),
@@ -847,22 +851,43 @@ export default function Pagamentos() {
                       />
                     </div>
                     <div className="flex items-end">
-                      <Button type="button" variant="outline" className="w-full" onClick={handleGerarParcelas}>
-                        {form.quantidadeParcelas === 1 ? "Gerar Parcela" : "Gerar Parcelas"}
-                      </Button>
+                      {editId ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full text-amber-700 border-amber-300 hover:bg-amber-50"
+                          onClick={() => {
+                            if (window.confirm("Isso irá substituir todas as parcelas existentes. Deseja continuar?")) {
+                              handleGerarParcelas();
+                            }
+                          }}
+                        >
+                          Regenerar Parcelas
+                        </Button>
+                      ) : (
+                        <Button type="button" variant="outline" className="w-full" onClick={handleGerarParcelas}>
+                          {form.quantidadeParcelas === 1 ? "Gerar Parcela" : "Gerar Parcelas"}
+                        </Button>
+                      )}
                     </div>
                   </div>
 
-                  {editId && parcelas.length === 0 && (
-                    <p className="text-xs text-muted-foreground italic">
-                      Carregando parcelas existentes...
-                    </p>
+                  {/* Indicador de carregamento enquanto as parcelas existentes chegam do banco */}
+                  {parcelasCarregando && (
+                    <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      Carregando parcelas cadastradas...
+                    </div>
                   )}
-                  {parcelas.length > 0 && (
+
+                  {!parcelasCarregando && parcelas.length > 0 && (
                     <>
                       <p className="text-xs text-muted-foreground">
                         {editId
-                          ? `${parcelas.length} parcela(s) — edite individualmente o valor, vencimento, data de pagamento e status. Para regerar as parcelas, clique em "Gerar Parcelas".`
+                          ? `${parcelas.length} parcela(s) — edite individualmente o valor, vencimento, data de pagamento e status.`
                           : parcelas.length === 1
                             ? "1 parcela gerada — edite o valor e a data conforme necessário."
                             : `${parcelas.length} parcelas geradas — edite individualmente o valor, vencimento, data de pagamento e status.`}
@@ -873,6 +898,12 @@ export default function Pagamentos() {
                         onChange={setParcelas}
                       />
                     </>
+                  )}
+
+                  {!parcelasCarregando && editId && parcelas.length === 0 && (
+                    <p className="text-xs text-muted-foreground py-2">
+                      Nenhuma parcela cadastrada para este pagamento. Clique em "Regenerar Parcelas" para criar.
+                    </p>
                   )}
                 </div>
               )}

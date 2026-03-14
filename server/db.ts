@@ -1101,3 +1101,124 @@ export async function getUserWithPermissions(userId: number) {
   const permissions = await getUserPermissions(userId, user.role);
   return { user, permissions };
 }
+
+// ==================== ATRIBUIÇÃO EM LOTE DE CENTRO DE CUSTO ====================
+
+/**
+ * Atribui um Centro de Custo a múltiplos pagamentos de uma vez.
+ * Retorna o número de registros atualizados.
+ */
+export async function assignCentroCustoPagamentosLote(ids: number[], centroCustoId: number | null): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return 0;
+  // Atualizar cada ID individualmente para compatibilidade com TiDB
+  let count = 0;
+  for (const id of ids) {
+    await db.update(pagamentos).set({ centroCustoId }).where(eq(pagamentos.id, id));
+    count++;
+  }
+  return count;
+}
+
+/**
+ * Atribui um Centro de Custo a múltiplos recebimentos de uma vez.
+ * Retorna o número de registros atualizados.
+ */
+export async function assignCentroCustoRecebimentosLote(ids: number[], centroCustoId: number | null): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return 0;
+  let count = 0;
+  for (const id of ids) {
+    await db.update(recebimentos).set({ centroCustoId }).where(eq(recebimentos.id, id));
+    count++;
+  }
+  return count;
+}
+
+/**
+ * Retorna o resumo por Centro de Custo para o relatório consolidado.
+ * Inclui um grupo "Sem Centro de Custo" para registros sem CC vinculado.
+ */
+export async function getResumoPorCentroCusto(params: { dataInicio?: Date; dataFim?: Date }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { dataInicio, dataFim } = params;
+
+  // Filtros de data para pagamentos
+  const pagDateConds = [];
+  if (dataInicio) pagDateConds.push(gte(pagamentos.dataPagamento, dataInicio));
+  if (dataFim) pagDateConds.push(lte(pagamentos.dataPagamento, dataFim));
+  const pagDateWhere = pagDateConds.length > 0 ? and(...pagDateConds) : undefined;
+
+  // Filtros de data para recebimentos
+  const recDateConds = [];
+  if (dataInicio) recDateConds.push(gte(recebimentos.dataVencimento, dataInicio));
+  if (dataFim) recDateConds.push(lte(recebimentos.dataVencimento, dataFim));
+  const recDateWhere = recDateConds.length > 0 ? and(...recDateConds) : undefined;
+
+  // Totais de pagamentos agrupados por CC (incluindo NULL)
+  const pagPorCC = await db
+    .select({
+      centroCustoId: pagamentos.centroCustoId,
+      nomeCentro: centrosCusto.nome,
+      totalPag: sql<number>`COALESCE(SUM(${pagamentos.valor}), 0)`,
+      qtdPag: sql<number>`COUNT(*)`,
+    })
+    .from(pagamentos)
+    .leftJoin(centrosCusto, eq(pagamentos.centroCustoId, centrosCusto.id))
+    .where(pagDateWhere)
+    .groupBy(pagamentos.centroCustoId, centrosCusto.nome);
+
+  // Totais de recebimentos agrupados por CC (incluindo NULL)
+  const recPorCC = await db
+    .select({
+      centroCustoId: recebimentos.centroCustoId,
+      nomeCentro: centrosCusto.nome,
+      totalRec: sql<number>`COALESCE(SUM(${recebimentos.valorTotal}), 0)`,
+      qtdRec: sql<number>`COUNT(*)`,
+    })
+    .from(recebimentos)
+    .leftJoin(centrosCusto, eq(recebimentos.centroCustoId, centrosCusto.id))
+    .where(recDateWhere)
+    .groupBy(recebimentos.centroCustoId, centrosCusto.nome);
+
+  // Consolidar por CC
+  const mapaCC = new Map<string, {
+    centroCustoId: number | null;
+    nome: string;
+    totalPagamentos: number;
+    totalRecebimentos: number;
+    qtdPagamentos: number;
+    qtdRecebimentos: number;
+  }>();
+
+  for (const p of pagPorCC) {
+    const key = p.centroCustoId != null ? String(p.centroCustoId) : "__sem_cc__";
+    const nome = p.nomeCentro ?? "Sem Centro de Custo";
+    const entry = mapaCC.get(key) ?? { centroCustoId: p.centroCustoId ?? null, nome, totalPagamentos: 0, totalRecebimentos: 0, qtdPagamentos: 0, qtdRecebimentos: 0 };
+    entry.totalPagamentos += Number(p.totalPag);
+    entry.qtdPagamentos += Number(p.qtdPag);
+    mapaCC.set(key, entry);
+  }
+
+  for (const r of recPorCC) {
+    const key = r.centroCustoId != null ? String(r.centroCustoId) : "__sem_cc__";
+    const nome = r.nomeCentro ?? "Sem Centro de Custo";
+    const entry = mapaCC.get(key) ?? { centroCustoId: r.centroCustoId ?? null, nome, totalPagamentos: 0, totalRecebimentos: 0, qtdPagamentos: 0, qtdRecebimentos: 0 };
+    entry.totalRecebimentos += Number(r.totalRec);
+    entry.qtdRecebimentos += Number(r.qtdRec);
+    mapaCC.set(key, entry);
+  }
+
+  // Ordenar: CCs com nome primeiro (alfabético), "Sem CC" por último
+  return Array.from(mapaCC.values())
+    .map(e => ({ ...e, saldo: e.totalRecebimentos - e.totalPagamentos }))
+    .sort((a, b) => {
+      if (a.centroCustoId === null) return 1;
+      if (b.centroCustoId === null) return -1;
+      return a.nome.localeCompare(b.nome);
+    });
+}

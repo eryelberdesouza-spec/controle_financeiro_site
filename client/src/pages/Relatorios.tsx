@@ -616,6 +616,25 @@ function AbaCentroCusto() {
   const { data, isLoading } = trpc.relatorioCentroCusto.getRelatorio.useQuery(queryInput);
   const { data: empresa } = trpc.empresa.get.useQuery();
 
+  // Resumo por CC para exibir quando "Todos os CCs" está selecionado
+  const resumoInput = useMemo(() => {
+    if (filtroTipo === "mes") {
+      const inicio = new Date(anoSelecionado, mesSelecionado - 1, 1);
+      const fim = new Date(anoSelecionado, mesSelecionado, 0, 23, 59, 59);
+      return { dataInicio: inicio, dataFim: fim };
+    } else {
+      return {
+        dataInicio: dataInicio ? new Date(dataInicio) : undefined,
+        dataFim: dataFim ? new Date(dataFim + "T23:59:59") : undefined,
+      };
+    }
+  }, [filtroTipo, mesSelecionado, anoSelecionado, dataInicio, dataFim]);
+
+  const { data: resumoPorCC = [] } = trpc.relatorioCentroCusto.getResumoPorCC.useQuery(
+    resumoInput,
+    { enabled: centroCustoId === null }
+  );
+
   const todosCentros = data?.todosCentros ?? [];
   const totais = data?.totais ?? { totalPagamentos: 0, totalRecebimentos: 0, saldo: 0, qtdPagamentos: 0, qtdRecebimentos: 0 };
   const pagamentosList = data?.pagamentosList ?? [];
@@ -782,6 +801,86 @@ function AbaCentroCusto() {
         <div className="flex items-center justify-center h-40 text-muted-foreground">Carregando dados...</div>
       ) : (
         <>
+          {/* Painel de Resumo por CC — exibido quando "Todos os CCs" está selecionado */}
+          {centroCustoId === null && resumoPorCC.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-amber-600" />
+                  Resumo por Centro de Custo
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left p-3 font-medium text-muted-foreground">Centro de Custo</th>
+                        <th className="text-right p-3 font-medium text-muted-foreground">Pagamentos</th>
+                        <th className="text-right p-3 font-medium text-muted-foreground">Recebimentos</th>
+                        <th className="text-right p-3 font-medium text-muted-foreground">Saldo</th>
+                        <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">Lançamentos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resumoPorCC.map((cc, i) => (
+                        <tr
+                          key={cc.centroCustoId ?? "sem-cc"}
+                          className={`border-b hover:bg-muted/20 transition-colors cursor-pointer ${
+                            cc.centroCustoId === null ? "bg-amber-50/50" : ""
+                          }`}
+                          onClick={() => cc.centroCustoId !== null && setCentroCustoId(cc.centroCustoId)}
+                          title={cc.centroCustoId !== null ? `Clique para filtrar por ${cc.nome}` : ""}
+                        >
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                              {cc.centroCustoId === null ? (
+                                <span className="text-amber-700 font-medium flex items-center gap-1">
+                                  <span className="text-xs bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded">Sem CC</span>
+                                  {cc.nome}
+                                </span>
+                              ) : (
+                                <span className="font-medium hover:text-primary">{cc.nome}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-3 text-right text-red-600 font-semibold">{formatCurrency(cc.totalPagamentos)}</td>
+                          <td className="p-3 text-right text-green-600 font-semibold">{formatCurrency(cc.totalRecebimentos)}</td>
+                          <td className={`p-3 text-right font-bold ${cc.saldo >= 0 ? "text-green-600" : "text-red-600"}`}>
+                            {formatCurrency(cc.saldo)}
+                          </td>
+                          <td className="p-3 text-right text-muted-foreground hidden md:table-cell">
+                            {cc.qtdPagamentos + cc.qtdRecebimentos}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t bg-muted/30">
+                        <td className="p-3 font-semibold text-sm">Total Geral</td>
+                        <td className="p-3 text-right font-bold text-red-600">
+                          {formatCurrency(resumoPorCC.reduce((s, cc) => s + cc.totalPagamentos, 0))}
+                        </td>
+                        <td className="p-3 text-right font-bold text-green-600">
+                          {formatCurrency(resumoPorCC.reduce((s, cc) => s + cc.totalRecebimentos, 0))}
+                        </td>
+                        <td className={`p-3 text-right font-bold ${
+                          resumoPorCC.reduce((s, cc) => s + cc.saldo, 0) >= 0 ? "text-green-600" : "text-red-600"
+                        }`}>
+                          {formatCurrency(resumoPorCC.reduce((s, cc) => s + cc.saldo, 0))}
+                        </td>
+                        <td className="p-3 text-right font-semibold text-muted-foreground hidden md:table-cell">
+                          {resumoPorCC.reduce((s, cc) => s + cc.qtdPagamentos + cc.qtdRecebimentos, 0)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Cards de totais */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>

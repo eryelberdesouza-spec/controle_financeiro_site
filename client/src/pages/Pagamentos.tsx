@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer, Building2, CheckSquare } from "lucide-react";
 import { ComprovanteViewer, type ComprovantePagamento } from "@/components/ComprovanteViewer";
 import { ClienteSelect, CentroCustoSelect } from "@/components/ClienteCentroCustoSelect";
 import { useState, useEffect } from "react";
@@ -192,6 +192,8 @@ export default function Pagamentos() {
   const [selecionados, setSelecionados] = useState<Set<number>>(new Set());
   const [comprovanteOpen, setComprovanteOpen] = useState(false);
   const [comprovanteRegistros, setComprovanteRegistros] = useState<ComprovantePagamento[]>([]);
+  const [atribuirCCOpen, setAtribuirCCOpen] = useState(false);
+  const [atribuirCCId, setAtribuirCCId] = useState<number | null>(null);
   const utils = trpc.useUtils();
 
   const handleImprimirUnico = (p: any) => {
@@ -371,6 +373,22 @@ export default function Pagamentos() {
     onError: (e) => toast.error(e.message),
   });
 
+  const assignCCLoteMutation = trpc.pagamentos.assignCentroCustoLote.useMutation({
+    onSuccess: (count) => {
+      toast.success(`Centro de Custo atribuído a ${count} pagamento(s)!`);
+      utils.pagamentos.list.invalidate();
+      setSelecionados(new Set());
+      setAtribuirCCOpen(false);
+      setAtribuirCCId(null);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleAtribuirCCLote = () => {
+    if (selecionados.size === 0) { toast.error("Selecione ao menos um pagamento."); return; }
+    setAtribuirCCOpen(true);
+  };
+
   const handleGerarParcelas = () => {
     if (!form.valor || !form.dataPrimeiroVencimento || form.quantidadeParcelas < 1) {
       toast.error("Preencha o valor e a data de vencimento antes de gerar as parcelas.");
@@ -443,9 +461,14 @@ export default function Pagamentos() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {selecionados.size > 0 && (
-              <Button variant="outline" onClick={handleImprimirLote} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
-                <Printer className="h-4 w-4" /> Imprimir Selecionados ({selecionados.size})
-              </Button>
+              <>
+                <Button variant="outline" onClick={handleAtribuirCCLote} className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50">
+                  <Building2 className="h-4 w-4" /> Atribuir CC ({selecionados.size})
+                </Button>
+                <Button variant="outline" onClick={handleImprimirLote} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
+                  <Printer className="h-4 w-4" /> Imprimir Selecionados ({selecionados.size})
+                </Button>
+              </>
             )}
             <Button variant="outline" onClick={() => exportToCSV(filtered)} className="gap-2">
               <Download className="h-4 w-4" /> Exportar CSV
@@ -535,6 +558,7 @@ export default function Pagamentos() {
                       <th className="text-left p-3 font-medium text-muted-foreground hidden xl:table-cell">Cliente</th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Banco</th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Serviço</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground hidden xl:table-cell">Centro de Custo</th>
                       <th className="text-right p-3 font-medium text-muted-foreground">Valor</th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Data</th>
                       <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
@@ -574,6 +598,16 @@ export default function Pagamentos() {
                           </td>
                           <td className="p-3 text-muted-foreground hidden md:table-cell">{p.banco || "-"}</td>
                           <td className="p-3 text-muted-foreground hidden lg:table-cell">{p.tipoServico || "-"}</td>
+                          <td className="p-3 hidden xl:table-cell">
+                            {p.centroCustoNome ? (
+                              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                <Building2 className="h-3 w-3" />
+                                {p.centroCustoNome}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/50">Sem CC</span>
+                            )}
+                          </td>
                           <td className="p-3 text-right font-semibold">{formatCurrency(p.valor)}</td>
                           <td className="p-3 text-muted-foreground hidden md:table-cell">{formatDate(p.dataPagamento)}</td>
                           <td className="p-3">
@@ -870,6 +904,52 @@ export default function Pagamentos() {
         tipo="pagamento"
         registros={comprovanteRegistros}
       />
+
+      {/* Modal de Atribuição em Lote de Centro de Custo */}
+      <Dialog open={atribuirCCOpen} onOpenChange={setAtribuirCCOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-amber-600" />
+              Atribuir Centro de Custo em Lote
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Selecione o Centro de Custo para atribuir aos <strong>{selecionados.size}</strong> pagamento(s) selecionado(s).
+            </p>
+            <div className="space-y-2">
+              <Label>Centro de Custo</Label>
+              <Select
+                value={atribuirCCId != null ? String(atribuirCCId) : ""}
+                onValueChange={v => setAtribuirCCId(v === "" ? null : Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o Centro de Custo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {centrosCustoList.map(cc => (
+                    <SelectItem key={cc.id} value={String(cc.id)}>{cc.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => { setAtribuirCCOpen(false); setAtribuirCCId(null); }}>Cancelar</Button>
+              <Button
+                disabled={atribuirCCId === null || assignCCLoteMutation.isPending}
+                onClick={() => {
+                  if (atribuirCCId === null) return;
+                  assignCCLoteMutation.mutate({ ids: Array.from(selecionados), centroCustoId: atribuirCCId });
+                }}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                {assignCCLoteMutation.isPending ? "Atribuindo..." : "Atribuir CC"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

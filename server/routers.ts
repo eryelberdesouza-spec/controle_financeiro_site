@@ -64,6 +64,9 @@ import {
   resetUserPermissions,
   getModulos,
   checkDuplicateCliente,
+  assignCentroCustoPagamentosLote,
+  assignCentroCustoRecebimentosLote,
+  getResumoPorCentroCusto,
 } from "./db";
 
 // Procedure que exige role admin
@@ -229,6 +232,14 @@ const pagamentosRouter = router({
 
   // Retorna o próximo número de controle sugerido (ex: PAG-2026-042)
   nextNumeroControle: staffProcedure.query(() => getNextNumeroControlePagamento()),
+
+  // Atribuição em lote de Centro de Custo
+  assignCentroCustoLote: staffProcedure
+    .input(z.object({
+      ids: z.array(z.number()).min(1),
+      centroCustoId: z.number().nullable(),
+    }))
+    .mutation(({ input }) => assignCentroCustoPagamentosLote(input.ids, input.centroCustoId)),
 });
 
 const recebimentosRouter = router({
@@ -307,6 +318,14 @@ const recebimentosRouter = router({
 
   // Retorna o próximo número de controle sugerido (ex: REC-2026-157)
   nextNumeroControle: staffProcedure.query(() => getNextNumeroControleRecebimento()),
+
+  // Atribuição em lote de Centro de Custo
+  assignCentroCustoLote: staffProcedure
+    .input(z.object({
+      ids: z.array(z.number()).min(1),
+      centroCustoId: z.number().nullable(),
+    }))
+    .mutation(({ input }) => assignCentroCustoRecebimentosLote(input.ids, input.centroCustoId)),
 });
 
 const relatorioCCRouter = router({
@@ -318,6 +337,16 @@ const relatorioCCRouter = router({
     }).optional())
     .query(({ input }) => getRelatorioCentroCusto({
       centroCustoId: input?.centroCustoId,
+      dataInicio: input?.dataInicio,
+      dataFim: input?.dataFim,
+    })),
+  // Resumo consolidado por CC (inclui grupo Sem CC)
+  getResumoPorCC: staffProcedure
+    .input(z.object({
+      dataInicio: z.date().optional(),
+      dataFim: z.date().optional(),
+    }).optional())
+    .query(({ input }) => getResumoPorCentroCusto({
       dataInicio: input?.dataInicio,
       dataFim: input?.dataFim,
     })),

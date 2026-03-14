@@ -489,3 +489,12 @@
 - [ ] Validação de duplicidade por CPF e Nome em Prestadores de Serviço
 - [ ] Validação de duplicidade por CPF/CNPJ e Nome em Fornecedores
 - [ ] Validação de duplicidade nos demais cadastros (outros tipos de pessoa)
+
+## Melhorias v38 — CC em Lote, Coluna CC e Relatório
+- [x] Backend: procedure assignCentroCustoLote para atribuir CC em múltiplos pagamentos/recebimentos
+- [x] Backend: corrigir getRelatorioCentroCusto para incluir grupo "Sem Centro de Custo"
+- [x] Frontend Pagamentos: adicionar coluna "Centro de Custo" na listagem
+- [x] Frontend Pagamentos: ferramenta de atribuição em lote de CC (checkboxes + select CC)
+- [x] Frontend Recebimentos: adicionar coluna "Centro de Custo" na listagem
+- [x] Frontend Recebimentos: ferramenta de atribuição em lote de CC (checkboxes + select CC)
+- [x] Frontend Relatórios: exibir grupo "Sem Centro de Custo" na aba Por CC

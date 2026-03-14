@@ -1258,7 +1258,9 @@ function OrdensServicoTab() {
                           } else {
                             const m = materiais.find(m => m.id === Number(v));
                             updateItem(idx, "materialId", Number(v));
-                            if (m?.valorUnitario) updateItem(idx, "valorUnitario", parseFloat(m.valorUnitario));
+                            // Usa precoVenda como valor padrão; fallback para valorUnitario se não houver
+                            const valorPadrao = m?.precoVenda ?? m?.valorUnitario;
+                            if (valorPadrao) updateItem(idx, "valorUnitario", parseFloat(String(valorPadrao)));
                           }
                         }}
                       >
@@ -1455,6 +1457,7 @@ function MateriaisTab() {
   const utils = trpc.useUtils();
   const { data: lista = [], isLoading } = trpc.materiais.list.useQuery();
   const [busca, setBusca] = useState("");
+  const [filtroFinalidade, setFiltroFinalidade] = useState<"todos" | "uso" | "fornecimento" | "ambos">("todos");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({
@@ -1488,9 +1491,17 @@ function MateriaisTab() {
     onSuccess: () => { utils.materiais.list.invalidate(); toast.success("Material removido."); }
   });
 
-  const filtered = lista.filter(m =>
-    !busca || m.codigo.toLowerCase().includes(busca.toLowerCase()) || m.nome.toLowerCase().includes(busca.toLowerCase())
-  );
+  const filtered = lista.filter(m => {
+    const matchBusca = !busca || m.codigo.toLowerCase().includes(busca.toLowerCase()) || m.nome.toLowerCase().includes(busca.toLowerCase());
+    const matchFinalidade = filtroFinalidade === "todos" || m.finalidade === filtroFinalidade || (filtroFinalidade === "ambos" && (!m.finalidade || m.finalidade === "ambos"));
+    return matchBusca && matchFinalidade;
+  });
+
+  // Calcula margem de lucro: (precoVenda - precoCusto) / precoCusto * 100
+  const calcMargem = (m: typeof lista[0]) => {
+    if (!m.precoCusto || !m.precoVenda || Number(m.precoCusto) === 0) return null;
+    return ((Number(m.precoVenda) - Number(m.precoCusto)) / Number(m.precoCusto) * 100);
+  };
 
   function openNew() {
     setEditId(null);
@@ -1536,9 +1547,22 @@ function MateriaisTab() {
   return (
     <div className="space-y-4">
       <div className="flex gap-3 items-center justify-between">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar material..." className="pl-9" value={busca} onChange={e => setBusca(e.target.value)} />
+        <div className="flex gap-2 flex-1">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Buscar material..." className="pl-9" value={busca} onChange={e => setBusca(e.target.value)} />
+          </div>
+          <Select value={filtroFinalidade} onValueChange={(v) => setFiltroFinalidade(v as any)}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Finalidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todas as finalidades</SelectItem>
+              <SelectItem value="uso">Uso Interno</SelectItem>
+              <SelectItem value="fornecimento">Fornecimento</SelectItem>
+              <SelectItem value="ambos">Uso e Fornecimento</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setImpressaoMateriais(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
@@ -1559,6 +1583,7 @@ function MateriaisTab() {
                 <th className="text-right px-4 py-3 font-medium">Preço Custo</th>
                 <th className="text-right px-4 py-3 font-medium">Preço Venda</th>
                 <th className="text-left px-4 py-3 font-medium">Finalidade</th>
+                <th className="text-right px-4 py-3 font-medium text-amber-600">Margem (%)</th>
                 <th className="text-left px-4 py-3 font-medium">Inserção</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -1578,6 +1603,9 @@ function MateriaisTab() {
                     {m.finalidade === 'uso' && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">Uso Interno</span>}
                     {m.finalidade === 'fornecimento' && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">Fornecimento</span>}
                     {(m.finalidade === 'ambos' || !m.finalidade) && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">Uso e Fornec.</span>}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {(() => { const mg = calcMargem(m); return mg !== null ? <span className={`font-semibold text-xs ${mg >= 0 ? 'text-amber-600' : 'text-red-600'}`}>{mg.toFixed(1)}%</span> : <span className="text-muted-foreground">—</span>; })()}
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{m.dataInsercao ? (m.dataInsercao instanceof Date ? m.dataInsercao.toLocaleDateString('pt-BR') : new Date(m.dataInsercao).toLocaleDateString('pt-BR')) : "—"}</td>
                   <td className="px-4 py-3">

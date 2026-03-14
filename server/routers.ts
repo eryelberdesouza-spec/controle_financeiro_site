@@ -63,6 +63,7 @@ import {
   setAllUserPermissions,
   resetUserPermissions,
   getModulos,
+  checkDuplicateCliente,
 } from "./db";
 
 // Procedure que exige role admin
@@ -417,6 +418,13 @@ const clientesRouter = router({
   extrato: staffProcedure
     .input(z.object({ clienteId: z.number() }))
     .query(({ input }) => getExtratoCliente(input.clienteId)),
+  checkDuplicate: staffProcedure
+    .input(z.object({
+      nome: z.string().optional(),
+      cpfCnpj: z.string().optional(),
+      excludeId: z.number().optional(),
+    }))
+    .query(({ input }) => checkDuplicateCliente(input)),
 });
 
 // ─── Centros de Custo ─────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { centrosCusto, clientes, Convite, convites, dashboardConfig, DEFAULT_PERMISSIONS, EmpresaConfig, empresaConfig, InsertCentroCusto, InsertCliente, InsertEmpresaConfig, InsertPagamento, InsertPagamentoParcela, InsertRecebimento, InsertRecebimentoParcela, InsertUser, MODULOS, pagamentoParcelas, pagamentos, recebimentoParcelas, recebimentos, userPermissions, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -629,6 +629,32 @@ export async function deleteCliente(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.delete(clientes).where(eq(clientes.id, id));
+}
+
+/**
+ * Verifica duplicidade de cliente por CPF/CNPJ ou Nome.
+ * Retorna os registros encontrados (excluindo o próprio id em caso de edição).
+ */
+export async function checkDuplicateCliente(params: { nome?: string; cpfCnpj?: string; excludeId?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (params.cpfCnpj && params.cpfCnpj.trim() !== "") {
+    conditions.push(eq(clientes.cpfCnpj, params.cpfCnpj.trim()));
+  }
+  if (params.nome && params.nome.trim() !== "") {
+    conditions.push(like(clientes.nome, params.nome.trim()));
+  }
+  if (conditions.length === 0) return [];
+  const whereClause = conditions.length === 1 ? conditions[0] : or(...conditions);
+  const result = await db.select({
+    id: clientes.id,
+    nome: clientes.nome,
+    tipo: clientes.tipo,
+    cpfCnpj: clientes.cpfCnpj,
+  }).from(clientes).where(whereClause);
+  // Excluir o próprio registro em caso de edição
+  return params.excludeId ? result.filter(r => r.id !== params.excludeId) : result;
 }
 
 // ==================== CENTROS DE CUSTO ====================

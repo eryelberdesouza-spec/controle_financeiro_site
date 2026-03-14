@@ -480,3 +480,12 @@
 - [x] Atualizar router de materiais para aceitar novos campos
 - [x] Atualizar formulário de Material no frontend com novos campos (Preço de Custo, Preço de Venda, Finalidade, Data de Inserção)
 - [x] Exibir colunas Preço de Custo, Preço de Venda e Finalidade na listagem
+
+## Melhorias Materiais e Prevenção de Duplicidade
+- [ ] Filtro por Finalidade na listagem de Materiais
+- [ ] Coluna Margem de Lucro (%) na listagem de Materiais
+- [ ] Vincular materiais à OS com Preço de Venda como padrão
+- [ ] Validação de duplicidade por CPF e Nome em Clientes
+- [ ] Validação de duplicidade por CPF e Nome em Prestadores de Serviço
+- [ ] Validação de duplicidade por CPF/CNPJ e Nome em Fornecedores
+- [ ] Validação de duplicidade nos demais cadastros (outros tipos de pessoa)

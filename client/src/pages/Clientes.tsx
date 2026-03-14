@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Search, Pencil, Trash2, Users, Building2, Wrench, Hotel, Handshake, MoreHorizontal } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Building2, Wrench, Hotel, Handshake, MoreHorizontal, AlertTriangle } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import AnexosPanel from "@/components/AnexosPanel";
 
@@ -80,6 +80,9 @@ export default function Clientes() {
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  // Estado para controle de duplicidade
+  const [duplicados, setDuplicados] = useState<Array<{ id: number; nome: string; tipo: string; cpfCnpj: string | null }>>([]);
+  const [confirmandoDuplicidade, setConfirmandoDuplicidade] = useState(false);
 
   const { data: clientes = [], refetch } = trpc.clientes.list.useQuery();
   const utils = trpc.useUtils();
@@ -99,7 +102,12 @@ export default function Clientes() {
     onError: (e) => toast.error(e.message),
   });
 
-  const fecharDialog = () => { setDialogAberto(false); setEditandoId(null); setForm(emptyForm); };
+  const checkDuplicate = trpc.clientes.checkDuplicate.useQuery(
+    { nome: form.nome.trim() || undefined, cpfCnpj: form.cpfCnpj.trim() || undefined, excludeId: editandoId ?? undefined },
+    { enabled: false }
+  );
+
+  const fecharDialog = () => { setDialogAberto(false); setEditandoId(null); setForm(emptyForm); setDuplicados([]); setConfirmandoDuplicidade(false); };
 
   const abrirNovo = () => { setForm(emptyForm); setEditandoId(null); setDialogAberto(true); };
 
@@ -131,27 +139,45 @@ export default function Clientes() {
     setDialogAberto(true);
   };
 
-  const handleSubmit = () => {
-    if (!form.nome.trim()) { toast.error("Nome é obrigatório."); return; }
-    const payload = {
-      ...form,
-      tipoPix: form.tipoPix || undefined,
-      chavePix: form.chavePix || undefined,
-      banco: form.banco || undefined,
-      agencia: form.agencia || undefined,
-      conta: form.conta || undefined,
-      tipoConta: form.tipoConta || undefined,
-      segmento: form.segmento || undefined,
-      inscricaoEstadual: form.inscricaoEstadual || undefined,
-      inscricaoMunicipal: form.inscricaoMunicipal || undefined,
-      celular: form.celular || undefined,
-      nomeContato: form.nomeContato || undefined,
-    };
+  const buildPayload = () => ({
+    ...form,
+    tipoPix: form.tipoPix || undefined,
+    chavePix: form.chavePix || undefined,
+    banco: form.banco || undefined,
+    agencia: form.agencia || undefined,
+    conta: form.conta || undefined,
+    tipoConta: form.tipoConta || undefined,
+    segmento: form.segmento || undefined,
+    inscricaoEstadual: form.inscricaoEstadual || undefined,
+    inscricaoMunicipal: form.inscricaoMunicipal || undefined,
+    celular: form.celular || undefined,
+    nomeContato: form.nomeContato || undefined,
+  });
+
+  const executarSalvar = () => {
+    const payload = buildPayload();
     if (editandoId) {
       updateMutation.mutate({ id: editandoId, ...payload });
     } else {
       createMutation.mutate(payload);
     }
+  };
+
+  const handleSubmit = async () => {
+    if (!form.nome.trim()) { toast.error("Nome é obrigatório."); return; }
+    // Verificar duplicidade antes de salvar
+    try {
+      const resultado = await checkDuplicate.refetch();
+      const encontrados = resultado.data ?? [];
+      if (encontrados.length > 0) {
+        setDuplicados(encontrados);
+        setConfirmandoDuplicidade(true);
+        return;
+      }
+    } catch {
+      // Se falhar a verificação, prosseguir com o salvamento
+    }
+    executarSalvar();
   };
 
   const clientesFiltrados = clientes.filter(c =>
@@ -512,6 +538,50 @@ export default function Clientes() {
               disabled={createMutation.isPending || updateMutation.isPending}
             >
               {editandoId ? "Salvar Alterações" : "Cadastrar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de confirmidade - alerta de possível duplicidade */}
+      <Dialog open={confirmandoDuplicidade} onOpenChange={(o) => { if (!o) { setConfirmandoDuplicidade(false); setDuplicados([]); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertTriangle className="h-5 w-5" />
+              Possível Duplicidade Detectada
+            </DialogTitle>
+            <DialogDescription>
+              Foram encontrados cadastros com o mesmo nome ou CPF/CNPJ:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {duplicados.map(d => (
+              <div key={d.id} className="flex items-center gap-3 p-3 rounded-lg border bg-amber-50 border-amber-200">
+                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{d.nome}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {d.tipo}{d.cpfCnpj ? ` · ${d.cpfCnpj}` : ""}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Deseja prosseguir mesmo assim e criar um novo cadastro?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setConfirmandoDuplicidade(false); setDuplicados([]); }}>
+              Cancelar
+            </Button>
+            <Button
+              variant="default"
+              className="bg-amber-600 hover:bg-amber-700"
+              onClick={() => { setConfirmandoDuplicidade(false); setDuplicados([]); executarSalvar(); }}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
+              Prosseguir mesmo assim
             </Button>
           </DialogFooter>
         </DialogContent>

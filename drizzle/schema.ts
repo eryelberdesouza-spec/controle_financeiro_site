@@ -101,6 +101,7 @@ export const pagamentos = mysqlTable("pagamentos", {
   // Vínculos com novas tabelas (opcionais para manter compatibilidade com registros antigos)
   clienteId: int("clienteId").references(() => clientes.id),
   centroCustoId: int("centroCustoId").references(() => centrosCusto.id),
+  contratoId: int("contratoId").references(() => contratos.id),
   valor: decimal("valor", { precision: 15, scale: 2 }).notNull(),
   valorEquipamento: decimal("valorEquipamento", { precision: 15, scale: 2 }).default("0"),
   valorServico: decimal("valorServico", { precision: 15, scale: 2 }).default("0"),
@@ -130,6 +131,7 @@ export const recebimentos = mysqlTable("recebimentos", {
   // Vínculos com novas tabelas (opcionais para manter compatibilidade com registros antigos)
   clienteId: int("clienteId").references(() => clientes.id),
   centroCustoId: int("centroCustoId").references(() => centrosCusto.id),
+  contratoId: int("contratoId").references(() => contratos.id),
   valorTotal: decimal("valorTotal", { precision: 15, scale: 2 }).notNull(),
   valorEquipamento: decimal("valorEquipamento", { precision: 15, scale: 2 }).default("0"),
   valorServico: decimal("valorServico", { precision: 15, scale: 2 }).default("0"),
@@ -205,6 +207,7 @@ export const convites = mysqlTable("convites", {
   email: varchar("email", { length: 320 }).notNull(),
   nome: varchar("nome", { length: 255 }),
   role: mysqlEnum("role", ["admin", "operador", "user"]).default("operador").notNull(),
+  perfilAcesso: varchar("perfilAcesso", { length: 50 }), // perfil pre-definido: administrativo, financeiro, engenharia, operacional
   token: varchar("token", { length: 128 }).notNull().unique(),
   status: mysqlEnum("status", ["pendente", "aceito", "expirado"]).default("pendente").notNull(),
   expiresAt: timestamp("expiresAt").notNull(),

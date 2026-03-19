@@ -48,6 +48,7 @@ type FormData = {
   tipoRecebimento: TipoRecebimento;
   clienteId: number | null;
   centroCustoId: number | null;
+  contratoId: number | null;
   valorTotal: string;
   valorEquipamento: string;
   valorServico: string;
@@ -65,7 +66,7 @@ type FormData = {
 
 const defaultForm: FormData = {
   numeroControle: "", numeroContrato: "", nomeRazaoSocial: "", descricao: "",
-  tipoRecebimento: "Pix", clienteId: null, centroCustoId: null, valorTotal: "", valorEquipamento: "",
+  tipoRecebimento: "Pix", clienteId: null, centroCustoId: null, contratoId: null, valorTotal: "", valorEquipamento: "",
   valorServico: "", juros: "0", desconto: "0",
   quantidadeParcelas: 1, parcelaAtual: 1,
   dataVencimento: "", dataRecebimento: "", status: "Pendente", observacao: "",
@@ -460,7 +461,7 @@ export default function Recebimentos() {
       numeroControle: r.numeroControle ?? "", numeroContrato: r.numeroContrato ?? "",
       nomeRazaoSocial: r.nomeRazaoSocial ?? "", descricao: r.descricao ?? "",
       tipoRecebimento: r.tipoRecebimento ?? "Pix",
-      clienteId: r.clienteId ?? null, centroCustoId: r.centroCustoId ?? null,
+      clienteId: r.clienteId ?? null, centroCustoId: r.centroCustoId ?? null, contratoId: r.contratoId ?? null,
       valorTotal: String(r.valorTotal ?? ""), valorEquipamento: String(r.valorEquipamento ?? ""),
       valorServico: String(r.valorServico ?? ""), juros: String(r.juros ?? "0"),
       desconto: String(r.desconto ?? "0"),
@@ -752,10 +753,11 @@ export default function Recebimentos() {
                 <Label>Contrato Vinculado</Label>
                 <ContratoSelect
                   value={form.numeroContrato}
-                  onChange={(numero: string, centroCustoId?: number | null) => {
+                  onChange={(numero: string, centroCustoId?: number | null, contratoId?: number | null) => {
                     setForm(f => ({
                       ...f,
                       numeroContrato: numero,
+                      contratoId: contratoId ?? null,
                       // Preenche CC automaticamente se o contrato tiver CC
                       centroCustoId: centroCustoId ?? f.centroCustoId,
                     }));

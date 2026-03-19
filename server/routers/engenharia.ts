@@ -15,7 +15,7 @@ import {
   tiposServico, materiais, contratos, ordensServico, osItens, clientes,
   pagamentos, recebimentos, pagamentoParcelas, recebimentoParcelas, centrosCusto
 } from "../../drizzle/schema";
-import { eq, like, desc, and, sql, inArray } from "drizzle-orm";
+import { eq, like, desc, and, sql, inArray, or } from "drizzle-orm";
 
 // === Tipos de Serviço ===
 export const tiposServicoRouter = router({
@@ -757,7 +757,7 @@ export const relatorioContratoRouter = router({
         .where(eq(ordensServico.contratoId, input.contratoId))
         .orderBy(ordensServico.dataAbertura);
 
-      // Recebimentos vinculados (por numeroContrato ou clienteId do contrato)
+      // Recebimentos vinculados (por contratoId direto ou numeroContrato para compatibilidade)
       const recs = await d
         .select({
           id: recebimentos.id,
@@ -771,7 +771,7 @@ export const relatorioContratoRouter = router({
           quantidadeParcelas: recebimentos.quantidadeParcelas,
         })
         .from(recebimentos)
-        .where(eq(recebimentos.numeroContrato, contrato.numero))
+        .where(or(eq(recebimentos.contratoId, input.contratoId), eq(recebimentos.numeroContrato, contrato.numero)))
         .orderBy(recebimentos.dataVencimento);
 
       // Parcelas dos recebimentos
@@ -784,7 +784,7 @@ export const relatorioContratoRouter = router({
             .orderBy(recebimentoParcelas.numeroParcela)
         : [];
 
-      // Pagamentos vinculados (por tipoServico contendo o número do contrato)
+      // Pagamentos vinculados (por contratoId direto ou tipoServico para compatibilidade)
       const pags = await d
         .select({
           id: pagamentos.id,
@@ -797,7 +797,7 @@ export const relatorioContratoRouter = router({
           tipoServico: pagamentos.tipoServico,
         })
         .from(pagamentos)
-        .where(sql`${pagamentos.tipoServico} LIKE ${`%${contrato.numero}%`}`)
+        .where(or(eq(pagamentos.contratoId, input.contratoId), sql`${pagamentos.tipoServico} LIKE ${`%${contrato.numero}%`}`))
         .orderBy(pagamentos.dataPagamento);
 
       // Calcular totais

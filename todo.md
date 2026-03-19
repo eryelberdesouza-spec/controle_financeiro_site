@@ -524,3 +524,13 @@
 - [x] Frontend: cards do Dashboard filtrados por permissão (sem acesso a pagamentos → não vê total de pagamentos)
 - [x] Frontend: página de Usuários com matriz de permissões granular (podeVer/podeCriar/podeEditar/podeExcluir por módulo)
 - [x] Frontend: aplicar perfis pré-definidos com um clique e permitir personalização individual
+
+## Melhorias v41 — Vinculação a Contratos, Painel Financeiro e Convites
+
+- [x] Backend: verificar/adicionar campo contratoId em pagamentos e recebimentos no schema
+- [x] Backend: procedure getRelatorioContrato (receitas, custos, materiais, lucro líquido por contrato)
+- [x] Frontend Pagamentos: campo "Contrato" no formulário (select de contratos cadastrados)
+- [x] Frontend Recebimentos: campo "Contrato" no formulário (select de contratos cadastrados)
+- [x] Frontend Contratos: painel de gestão financeira por contrato (receitas, custos, lucro, gráfico)
+- [x] Frontend Usuários: convite por e-mail com perfil pré-definido selecionável
+- [x] Backend: procedure de convite com perfil (enviar e-mail + salvar convite com perfil)

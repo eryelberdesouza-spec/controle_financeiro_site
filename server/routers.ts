@@ -67,6 +67,8 @@ import {
   assignCentroCustoPagamentosLote,
   assignCentroCustoRecebimentosLote,
   getResumoPorCentroCusto,
+  applyPerfilAcesso,
+  getUserByOpenId,
 } from "./db";
 
 // Procedure que exige role admin
@@ -192,6 +194,7 @@ const pagamentosRouter = router({
       centroCusto: z.string().optional(),
       clienteId: z.number().nullable().optional(),
       centroCustoId: z.number().nullable().optional(),
+      contratoId: z.number().nullable().optional(),
       valor: z.string().min(1),
       valorEquipamento: z.string().optional().default("0"),
       valorServico: z.string().optional().default("0"),
@@ -218,6 +221,7 @@ const pagamentosRouter = router({
       centroCusto: z.string().optional(),
       clienteId: z.number().nullable().optional(),
       centroCustoId: z.number().nullable().optional(),
+      contratoId: z.number().nullable().optional(),
       valor: z.string().optional(),
       valorEquipamento: z.string().optional(),
       valorServico: z.string().optional(),
@@ -279,6 +283,7 @@ const recebimentosRouter = router({
       tipoRecebimento: z.enum(TIPOS_RECEBIMENTO).default("Pix"),
       clienteId: z.number().nullable().optional(),
       centroCustoId: z.number().nullable().optional(),
+      contratoId: z.number().nullable().optional(),
       valorTotal: z.string().min(1),
       valorEquipamento: z.string().optional().default("0"),
       valorServico: z.string().optional().default("0"),
@@ -303,6 +308,7 @@ const recebimentosRouter = router({
       tipoRecebimento: z.enum(TIPOS_RECEBIMENTO).optional(),
       clienteId: z.number().nullable().optional(),
       centroCustoId: z.number().nullable().optional(),
+      contratoId: z.number().nullable().optional(),
       valorTotal: z.string().optional(),
       valorEquipamento: z.string().optional(),
       valorServico: z.string().optional(),
@@ -535,6 +541,7 @@ const convitesRouter = router({
       email: z.string().email(),
       nome: z.string().optional(),
       role: z.enum(["admin", "operador", "user"]),
+      perfilAcesso: z.string().optional(), // perfil pre-definido: administrativo, financeiro, engenharia, operacional
     }))
     .mutation(async ({ input, ctx }) => {
       const { nanoid } = await import("nanoid");
@@ -544,6 +551,7 @@ const convitesRouter = router({
         email: input.email,
         nome: input.nome,
         role: input.role,
+        perfilAcesso: input.perfilAcesso,
         token,
         expiresAt,
         createdBy: ctx.user.id,
@@ -565,13 +573,20 @@ const convitesRouter = router({
       return { email: convite.email, nome: convite.nome, role: convite.role, token: convite.token };
     }),
   confirmar: publicProcedure
-    .input(z.object({ token: z.string() }))
+    .input(z.object({ token: z.string(), openId: z.string().optional() }))
     .mutation(async ({ input }) => {
       const convite = await getConviteByToken(input.token);
       if (!convite || convite.status !== "pendente") throw new TRPCError({ code: "BAD_REQUEST", message: "Convite inválido." });
       if (new Date() > convite.expiresAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Convite expirado." });
       await markConviteAceito(input.token);
-      return { success: true, email: convite.email, role: convite.role };
+      // Se o usuario ja esta logado e o convite tem perfil, aplica o perfil automaticamente
+      if (input.openId && convite.perfilAcesso) {
+        const user = await getUserByOpenId(input.openId);
+        if (user) {
+          await applyPerfilAcesso(user.id, convite.perfilAcesso);
+        }
+      }
+      return { success: true, email: convite.email, role: convite.role, perfilAcesso: convite.perfilAcesso };
     }),
 });
 

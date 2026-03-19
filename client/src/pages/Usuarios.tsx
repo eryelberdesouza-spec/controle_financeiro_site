@@ -95,6 +95,7 @@ export default function Usuarios() {
   const [conviteEmail, setConviteEmail] = useState("");
   const [conviteNome, setConviteNome] = useState("");
   const [conviteRole, setConviteRole] = useState<"admin" | "operador" | "operacional" | "user">("operacional");
+  const [convitePerfilAcesso, setConvitePerfilAcesso] = useState<string>("operacional");
   const [conviteLink, setConviteLink] = useState<string | null>(null);
 
   // Estado para o modal de permissões
@@ -235,7 +236,7 @@ export default function Usuarios() {
   const handleCriarConvite = () => {
     if (!conviteEmail) return toast.error("Informe o e-mail do convidado.");
     setConviteLink(null);
-    criarConvite.mutate({ email: conviteEmail, nome: conviteNome || undefined, role: conviteRole as any });
+    criarConvite.mutate({ email: conviteEmail, nome: conviteNome || undefined, role: conviteRole as any, perfilAcesso: convitePerfilAcesso || undefined });
   };
 
   const handleCopyLink = (link: string) => {
@@ -248,6 +249,7 @@ export default function Usuarios() {
     setConviteEmail("");
     setConviteNome("");
     setConviteRole("operacional");
+    setConvitePerfilAcesso("operacional");
     setConviteLink(null);
   };
 
@@ -735,6 +737,24 @@ export default function Usuarios() {
                     <SelectItem value="user">Usuário — sem acesso (customizável)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="convite-perfil">Perfil de Permissões</Label>
+                <Select
+                  value={convitePerfilAcesso}
+                  onValueChange={setConvitePerfilAcesso}
+                >
+                  <SelectTrigger id="convite-perfil">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="administrativo">Administrativo — acesso completo a todos os módulos</SelectItem>
+                    <SelectItem value="financeiro">Financeiro — pagamentos, recebimentos e relatórios</SelectItem>
+                    <SelectItem value="engenharia">Engenharia — OS, contratos e materiais</SelectItem>
+                    <SelectItem value="operacional">Operacional — OS e clientes (sem financeiro)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">O perfil define quais módulos o usuário poderá acessar. Pode ser personalizado depois.</p>
               </div>
               <p className="text-xs text-gray-500">
                 Um link de convite será gerado com validade de <strong>7 dias</strong>. Compartilhe

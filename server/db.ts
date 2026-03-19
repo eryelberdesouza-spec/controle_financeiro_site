@@ -752,13 +752,14 @@ export async function listConvites() {
   return db.select().from(convites).orderBy(convites.createdAt);
 }
 
-export async function createConvite(data: { email: string; nome?: string; role: "admin" | "operador" | "user"; token: string; expiresAt: Date; createdBy?: number }) {
+export async function createConvite(data: { email: string; nome?: string; role: "admin" | "operador" | "user"; perfilAcesso?: string; token: string; expiresAt: Date; createdBy?: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.insert(convites).values({
     email: data.email,
     nome: data.nome,
     role: data.role,
+    perfilAcesso: data.perfilAcesso,
     token: data.token,
     expiresAt: data.expiresAt,
     createdBy: data.createdBy,

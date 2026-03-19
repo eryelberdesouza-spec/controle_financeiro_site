@@ -256,7 +256,7 @@ export function CentroCustoSelect({ value, onChange, placeholder = "Selecionar c
 // === ContratoSelect — busca e vincula contrato ao recebimento ===
 interface ContratoSelectProps {
   value: string; // numero do contrato
-  onChange: (numero: string, centroCustoId?: number | null) => void;
+  onChange: (numero: string, centroCustoId?: number | null, contratoId?: number | null) => void;
   placeholder?: string;
 }
 
@@ -298,14 +298,13 @@ export function ContratoSelect({ value, onChange, placeholder = "Buscar contrato
   }
 
   function handleSelect(c: typeof contratos[0]) {
-    onChange(c.numero, c.centroCustoId ?? null);
+    onChange(c.numero, c.centroCustoId ?? null, c.id);
     setAberto(false);
     setBusca("");
   }
-
   function handleClear(e: React.MouseEvent) {
     e.stopPropagation();
-    onChange("", null);
+    onChange("", null, null);
     setAberto(false);
     setBusca("");
   }
@@ -378,7 +377,7 @@ export function ContratoSelect({ value, onChange, placeholder = "Buscar contrato
         <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg overflow-hidden">
           <button
             type="button"
-            onClick={() => { onChange("", null); setAberto(false); setBusca(""); }}
+            onClick={() => { onChange("", null, null); setAberto(false); setBusca(""); }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors border-b"
           >
             <X className="h-3.5 w-3.5" />

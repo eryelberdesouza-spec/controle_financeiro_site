@@ -1,0 +1,1 @@
+ALTER TABLE `convites` ADD `perfilAcesso` varchar(50);

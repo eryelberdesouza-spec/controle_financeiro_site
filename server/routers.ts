@@ -148,6 +148,18 @@ const permissoesRouter = router({
       await resetUserPermissions(input.userId);
       return { success: true };
     }),
+  // Retorna os perfis pré-definidos de acesso
+  getPerfis: adminProcedure.query(async () => {
+    const db = await import("./db");
+    return db.getPerfisAcesso();
+  }),
+  // Admin: aplicar um perfil pré-definido a um usuário
+  applyPerfil: adminProcedure
+    .input(z.object({ userId: z.number(), perfilId: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = await import("./db");
+      return db.applyPerfilAcesso(input.userId, input.perfilId);
+    }),
 });
 
 const TIPOS_RECEBIMENTO = ["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"] as const;
@@ -382,7 +394,7 @@ const dashboardRouter = router({
     .mutation(({ input, ctx }) => saveDashboardConfig(ctx.user.id, input.widgets, input.tema)),
 });
 
-// ─── Clientes ─────────────────────────────────────────────────────────────────
+// === Clientes ===
 const clientesRouter = router({
   list: staffProcedure.query(() => listClientes()),
   create: staffProcedure
@@ -456,7 +468,7 @@ const clientesRouter = router({
     .query(({ input }) => checkDuplicateCliente(input)),
 });
 
-// ─── Centros de Custo ─────────────────────────────────────────────────────────
+// === Centros de Custo ===
 const centrosCustoRouter = router({
   list: staffProcedure.query(() => listCentrosCusto()),
   create: staffProcedure
@@ -663,7 +675,7 @@ const recebimentoParcelasRouter = router({
     .mutation(({ input }) => deleteRecebimentoParcelas(input.recebimentoId)),
 });
 
-// ─── Anexos ───────────────────────────────────────────────────────────────────
+// === Anexos ===
 const MODULOS_ANEXO = ["pagamento", "recebimento", "contrato", "os", "cliente"] as const;
 
 const anexosRouter = router({

@@ -16,7 +16,7 @@ import { filterXSS } from "xss";
 
 const isProd = process.env.NODE_ENV === "production";
 
-// ─── Helmet: Headers de Segurança HTTP ───────────────────────────────────────
+// === Helmet: Headers de Segurança HTTP ===
 export function applyHelmet(app: Express) {
   app.use(
     helmet({
@@ -66,7 +66,7 @@ export function applyHelmet(app: Express) {
   );
 }
 
-// ─── Rate Limiting ────────────────────────────────────────────────────────────
+// === Rate Limiting ===
 
 /**
  * Rate limit geral: 200 req/min por IP para todas as rotas
@@ -103,7 +103,7 @@ export const apiRateLimit = rateLimit({
   // Usa o IP padrão do express-rate-limit (já trata IPv6 corretamente)
 });
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
+// === CORS ===
 export function applyCors(app: Express) {
   app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
@@ -149,7 +149,7 @@ export function applyCors(app: Express) {
   });
 }
 
-// ─── Log de Acessos Negados ───────────────────────────────────────────────────
+// === Log de Acessos Negados ===
 export function applySecurityLogger(app: Express) {
   app.use((req: Request, res: Response, next: NextFunction) => {
     const originalSend = res.json.bind(res);
@@ -168,7 +168,7 @@ export function applySecurityLogger(app: Express) {
   });
 }
 
-// ─── Sanitização XSS ─────────────────────────────────────────────────────────
+// === Sanitização XSS ===
 
 /**
  * Sanitiza uma string removendo tags HTML e scripts maliciosos.
@@ -199,7 +199,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
   return result;
 }
 
-// ─── Aplicar tudo de uma vez ──────────────────────────────────────────────────
+// === Aplicar tudo de uma vez ===
 export function applySecurityMiddleware(app: Express) {
   applyHelmet(app);
   applyCors(app);

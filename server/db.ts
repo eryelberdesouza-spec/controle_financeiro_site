@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { centrosCusto, clientes, Convite, convites, dashboardConfig, DEFAULT_PERMISSIONS, EmpresaConfig, empresaConfig, InsertCentroCusto, InsertCliente, InsertEmpresaConfig, InsertPagamento, InsertPagamentoParcela, InsertRecebimento, InsertRecebimentoParcela, InsertUser, MODULOS, pagamentoParcelas, pagamentos, recebimentoParcelas, recebimentos, userPermissions, users } from "../drizzle/schema";
+import { centrosCusto, clientes, Convite, convites, dashboardConfig, DEFAULT_PERMISSIONS, PERFIS_ACESSO, EmpresaConfig, empresaConfig, InsertCentroCusto, InsertCliente, InsertEmpresaConfig, InsertPagamento, InsertPagamentoParcela, InsertRecebimento, InsertRecebimentoParcela, InsertUser, MODULOS, pagamentoParcelas, pagamentos, recebimentoParcelas, recebimentos, userPermissions, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -744,7 +744,7 @@ export async function deleteRecebimentoParcelas(recebimentoId: number) {
   return db.delete(recebimentoParcelas).where(eq(recebimentoParcelas.recebimentoId, recebimentoId));
 }
 
-// ─── Convites ─────────────────────────────────────────────────────────────────
+// === Convites ===
 
 export async function listConvites() {
   const db = await getDb();
@@ -785,7 +785,7 @@ export async function deleteConvite(id: number) {
   return db.delete(convites).where(eq(convites.id, id));
 }
 
-// ─── Extrato por Cliente ───────────────────────────────────────────────────────
+// === Extrato por Cliente ===
 export async function getExtratoCliente(clienteId: number) {
   const db = await getDb();
   if (!db) return { cliente: null, pagamentos: [], recebimentos: [] };
@@ -808,7 +808,7 @@ export async function getExtratoCliente(clienteId: number) {
   return { cliente, pagamentos: pags, recebimentos: rebs };
 }
 
-// ─── Relatório por Centro de Custo ────────────────────────────────────────────
+// === Relatório por Centro de Custo ===
 export async function getRelatorioCentroCusto(params: {
   centroCustoId?: number | null;
   dataInicio?: Date;
@@ -1077,6 +1077,32 @@ export async function resetUserPermissions(userId: number) {
  */
 export function getModulos() {
   return MODULOS;
+}
+
+/**
+ * Retorna os perfis de acesso pré-definidos.
+ */
+export function getPerfisAcesso() {
+  return Object.entries(PERFIS_ACESSO).map(([id, perfil]) => ({
+    id,
+    label: perfil.label,
+    descricao: perfil.descricao,
+  }));
+}
+
+/**
+ * Aplica um perfil pré-definido a um usuário.
+ * Substitui todas as permissões customizadas pelo perfil selecionado.
+ */
+export async function applyPerfilAcesso(userId: number, perfilId: string) {
+  const perfil = PERFIS_ACESSO[perfilId];
+  if (!perfil) throw new Error(`Perfil "${perfilId}" não encontrado.`);
+  const permissions = Object.entries(perfil.permissoes).map(([modulo, perms]) => ({
+    modulo,
+    ...perms,
+  }));
+  await setAllUserPermissions(userId, permissions);
+  return { success: true, perfilLabel: perfil.label };
 }
 
 /**

@@ -17,7 +17,7 @@ import {
 } from "../../drizzle/schema";
 import { eq, like, desc, and, sql, inArray } from "drizzle-orm";
 
-// ─── Tipos de Serviço ─────────────────────────────────────────────────────────
+// === Tipos de Serviço ===
 export const tiposServicoRouter = router({
   list: protectedProcedure
     .input(z.object({ busca: z.string().optional() }).optional())
@@ -77,7 +77,7 @@ export const tiposServicoRouter = router({
     }),
 });
 
-// ─── Materiais ────────────────────────────────────────────────────────────────
+// === Materiais ===
 export const materiaisRouter = router({
   list: protectedProcedure
     .input(z.object({ busca: z.string().optional() }).optional())
@@ -179,7 +179,7 @@ export const materiaisRouter = router({
     }),
 });
 
-// ─── Contratos ────────────────────────────────────────────────────────────────
+// === Contratos ===
 export const contratosRouter = router({
   list: protectedProcedure
     .input(z.object({
@@ -383,7 +383,7 @@ export const contratosRouter = router({
   }),
 });
 
-// ─── Ordens de Serviço ────────────────────────────────────────────────────────
+// === Ordens de Serviço ===
 export const ordensServicoRouter = router({
   list: protectedProcedure
     .input(z.object({
@@ -706,7 +706,7 @@ export const ordensServicoRouter = router({
     }),
 });
 
-// ─── Relatório por Contrato ───────────────────────────────────────────────────
+// === Relatório por Contrato ===
 export const relatorioContratoRouter = router({
   getRelatorio: protectedProcedure
     .input(z.object({ contratoId: z.number() }))

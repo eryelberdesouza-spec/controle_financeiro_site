@@ -161,6 +161,17 @@ export default function Usuarios() {
     onError: (e) => toast.error(e.message),
   });
 
+  const { data: perfisDisponiveis = [] } = trpc.permissoes.getPerfis.useQuery();
+
+  const applyPerfil = trpc.permissoes.applyPerfil.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Perfil "${data.perfilLabel}" aplicado! Salve para confirmar.`);
+      // Recarrega as permissões do usuário após aplicar o perfil
+      utils.permissoes.getByUser.invalidate({ userId: permModalUser?.id ?? 0 });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   // Query de permissões do usuário selecionado (lazy)
   const { data: userPerms, isLoading: loadingPerms } = trpc.permissoes.getByUser.useQuery(
     { userId: permModalUser?.id ?? 0 },
@@ -817,6 +828,30 @@ export default function Usuarios() {
             </div>
 
             <Separator />
+
+            {/* Seletor de Perfil Pré-definido */}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs font-semibold text-blue-800 mb-2">Aplicar Perfil Pré-definido</p>
+              <p className="text-xs text-blue-700 mb-3">Selecione um perfil para preencher as permissões automaticamente. Você ainda pode ajustar individualmente antes de salvar.</p>
+              <div className="flex flex-wrap gap-2">
+                {perfisDisponiveis.map(perfil => (
+                  <button
+                    key={perfil.id}
+                    type="button"
+                    onClick={() => {
+                      if (permModalUser) {
+                        applyPerfil.mutate({ userId: permModalUser.id, perfilId: perfil.id });
+                      }
+                    }}
+                    disabled={applyPerfil.isPending}
+                    title={perfil.descricao}
+                    className="px-3 py-1.5 rounded-full text-xs border border-blue-300 bg-white hover:bg-blue-100 text-blue-700 font-medium transition-colors disabled:opacity-50"
+                  >
+                    {perfil.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {loadingPerms ? (
               <p className="text-center text-gray-500 py-4">Carregando permissões...</p>

@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   ArrowDownCircle, ArrowUpCircle, TrendingUp, Wallet,
   AlertTriangle, CheckCircle2, Clock, CalendarDays, Bell, BellRing,
@@ -16,7 +17,7 @@ import {
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell,
 } from "recharts";
 
-// ─── Temas de cor disponíveis ────────────────────────────────────────────────
+// === Temas de cor disponíveis ===
 const TEMAS = [
   { id: "azul",    label: "Azul",    primary: "#2563eb", accent: "#3b82f6" },
   { id: "verde",   label: "Verde",   primary: "#16a34a", accent: "#22c55e" },
@@ -26,7 +27,7 @@ const TEMAS = [
   { id: "rosa",    label: "Rosa",    primary: "#be185d", accent: "#ec4899" },
 ];
 
-// ─── Widgets disponíveis no dashboard ────────────────────────────────────────
+// === Widgets disponíveis no dashboard ===
 const WIDGETS_DEFAULT = [
   { id: "kpis",         label: "Cards KPI (Totais)",              visivel: true },
   { id: "alertas",      label: "Alertas Rápidos (Status)",        visivel: true },
@@ -72,8 +73,11 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const { can } = usePermissions();
+  const podePagamentos = can.ver("pagamentos");
+  const podeRecebimentos = can.ver("recebimentos");
 
-  // ─── Configuração de widgets e tema ────────────────────────────────────────────────
+  // === Configuração de widgets e tema ===
   const [showConfig, setShowConfig] = useState(false);
   const [widgets, setWidgets] = useState(WIDGETS_DEFAULT);
   const [tema, setTema] = useState("azul");
@@ -320,66 +324,85 @@ export default function Home() {
         {/* KPI Cards */}
         {isVisible("kpis") && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard
-            icon={<ArrowDownCircle className="h-5 w-5 text-green-500" />}
-            label="Total Recebimentos"
-            value={formatCurrency(stats?.recebimentos?.totalGeral)}
-            sub={`${stats?.recebimentos?.count ?? 0} registros`}
-            accent="border-l-green-500"
-            valueColor="text-green-600"
-            loading={isLoading}
-          />
-          <KpiCard
-            icon={<ArrowUpCircle className="h-5 w-5 text-red-500" />}
-            label="Total Pagamentos"
-            value={formatCurrency(stats?.pagamentos?.totalGeral)}
-            sub={`${stats?.pagamentos?.count ?? 0} registros`}
-            accent="border-l-red-500"
-            valueColor="text-red-600"
-            loading={isLoading}
-          />
-          <KpiCard
-            icon={<TrendingUp className="h-5 w-5 text-blue-500" />}
-            label="Fluxo de Caixa"
-            value={formatCurrency(fluxoCaixa)}
-            sub="Recebimentos − Pagamentos"
-            accent={fluxoCaixa >= 0 ? "border-l-blue-500" : "border-l-orange-500"}
-            valueColor={fluxoCaixa >= 0 ? "text-blue-600" : "text-orange-600"}
-            loading={isLoading}
-          />
-          <KpiCard
-            icon={<Wallet className="h-5 w-5 text-purple-500" />}
-            label="A Receber (Pendente)"
-            value={formatCurrency(stats?.recebimentos?.totalPendente)}
-            sub="Aguardando recebimento"
-            accent="border-l-purple-500"
-            valueColor="text-purple-600"
-            loading={isLoading}
-          />
+          {podeRecebimentos && (
+            <KpiCard
+              icon={<ArrowDownCircle className="h-5 w-5 text-green-500" />}
+              label="Total Recebimentos"
+              value={formatCurrency(stats?.recebimentos?.totalGeral)}
+              sub={`${stats?.recebimentos?.count ?? 0} registros`}
+              accent="border-l-green-500"
+              valueColor="text-green-600"
+              loading={isLoading}
+            />
+          )}
+          {podePagamentos && (
+            <KpiCard
+              icon={<ArrowUpCircle className="h-5 w-5 text-red-500" />}
+              label="Total Compras e Pagamentos"
+              value={formatCurrency(stats?.pagamentos?.totalGeral)}
+              sub={`${stats?.pagamentos?.count ?? 0} registros`}
+              accent="border-l-red-500"
+              valueColor="text-red-600"
+              loading={isLoading}
+            />
+          )}
+          {(podePagamentos || podeRecebimentos) && (
+            <KpiCard
+              icon={<TrendingUp className="h-5 w-5 text-blue-500" />}
+              label="Fluxo de Caixa"
+              value={formatCurrency(fluxoCaixa)}
+              sub="Recebimentos − Pagamentos"
+              accent={fluxoCaixa >= 0 ? "border-l-blue-500" : "border-l-orange-500"}
+              valueColor={fluxoCaixa >= 0 ? "text-blue-600" : "text-orange-600"}
+              loading={isLoading}
+            />
+          )}
+          {podeRecebimentos && (
+            <KpiCard
+              icon={<Wallet className="h-5 w-5 text-purple-500" />}
+              label="A Receber (Pendente)"
+              value={formatCurrency(stats?.recebimentos?.totalPendente)}
+              sub="Aguardando recebimento"
+              accent="border-l-purple-500"
+              valueColor="text-purple-600"
+              loading={isLoading}
+            />
+          )}
+          {!podePagamentos && !podeRecebimentos && (
+            <div className="col-span-4 text-center py-8 text-muted-foreground text-sm">
+              Você não tem permissão para visualizar dados financeiros neste painel.
+            </div>
+          )}
         </div>
         )}
 
         {/* Alertas rápidos */}
-        {isVisible("alertas") && !isLoading && (
+        {isVisible("alertas") && !isLoading && (podePagamentos || podeRecebimentos) && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <AlertCard
-              icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
-              label="Recebimentos Atrasados"
-              value={formatCurrency(stats?.recebimentos?.totalAtrasado)}
-              bg="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
-            />
-            <AlertCard
-              icon={<Clock className="h-4 w-4 text-yellow-500" />}
-              label="Pagamentos Pendentes"
-              value={formatCurrency(stats?.pagamentos?.totalPendente)}
-              bg="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
-            />
-            <AlertCard
-              icon={<CheckCircle2 className="h-4 w-4 text-green-500" />}
-              label="Recebimentos Confirmados"
-              value={formatCurrency(stats?.recebimentos?.totalRecebido)}
-              bg="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-            />
+            {podeRecebimentos && (
+              <AlertCard
+                icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
+                label="Recebimentos Atrasados"
+                value={formatCurrency(stats?.recebimentos?.totalAtrasado)}
+                bg="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+              />
+            )}
+            {podePagamentos && (
+              <AlertCard
+                icon={<Clock className="h-4 w-4 text-yellow-500" />}
+                label="Compras e Pagamentos Pendentes"
+                value={formatCurrency(stats?.pagamentos?.totalPendente)}
+                bg="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+              />
+            )}
+            {podeRecebimentos && (
+              <AlertCard
+                icon={<CheckCircle2 className="h-4 w-4 text-green-500" />}
+                label="Recebimentos Confirmados"
+                value={formatCurrency(stats?.recebimentos?.totalRecebido)}
+                bg="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+              />
+            )}
           </div>
         )}
 

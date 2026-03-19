@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { Printer, X } from "lucide-react";
 import { useState } from "react";
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+// === Tipos ===
 
 export type ContratoParaImpressao = {
   id: number;
@@ -99,7 +99,7 @@ type Props = {
   dados: ContratoParaImpressao[] | OSParaImpressao[] | MaterialParaImpressao[] | TipoServicoParaImpressao[];
 };
 
-// ─── Utilitários ──────────────────────────────────────────────────────────────
+// === Utilitários ===
 
 function fmtCurrency(value: any) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -186,7 +186,7 @@ function buildEndereco(item: EnderecoItem): string {
   return partes.join(" | ");
 }
 
-// ─── CSS de impressão ─────────────────────────────────────────────────────────
+// === CSS de impressão ===
 
 const PRINT_CSS = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -373,7 +373,7 @@ td.center, th.center { text-align: center; }
 @media print { body { padding: 0; } html, body { height: auto; } }
 `;
 
-// ─── Builders de HTML para impressão ─────────────────────────────────────────
+// === Builders de HTML para impressão ===
 
 function buildHeaderHTML(empresa: any) {
   const now = new Date();
@@ -780,7 +780,7 @@ function buildTiposServicoHTML(tipos: TipoServicoParaImpressao[], empresa: any) 
   `;
 }
 
-// ─── Preview Cards (exibição completa no modal antes de imprimir) ─────────────
+// === Preview Cards (exibição completa no modal antes de imprimir) ===
 
 function PreviewContratoCard({ c, empresa }: { c: ContratoParaImpressao; empresa: any }) {
   const endereco = buildEndereco(c);
@@ -1121,7 +1121,7 @@ function PreviewOSCard({ o, empresa }: { o: OSParaImpressao; empresa: any }) {
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
+// === Componente principal ===
 
 export function EngenhariaImpressao({ open, onClose, tipo, dados }: Props) {
   const { data: empresa } = trpc.empresa.get.useQuery();

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// ─── Testes: Geração de Número de Controle ────────────────────────────────────
+// === Testes: Geração de Número de Controle ===
 
 describe("getNextNumeroControleRecebimento", () => {
   it("deve gerar REC-2026-157 quando o último número for REC-2026-156", () => {
@@ -34,7 +34,7 @@ describe("getNextNumeroControleRecebimento", () => {
   });
 });
 
-// ─── Testes: Padrão de Número de Contrato ────────────────────────────────────
+// === Testes: Padrão de Número de Contrato ===
 
 describe("Padrão de número de contrato CTR-AAAA-MM-NNN", () => {
   it("deve seguir o padrão CTR-AAAA-MM-NNN", () => {
@@ -67,7 +67,7 @@ describe("Padrão de número de contrato CTR-AAAA-MM-NNN", () => {
   });
 });
 
-// ─── Testes: Filtro por Centro de Custo ──────────────────────────────────────
+// === Testes: Filtro por Centro de Custo ===
 
 describe("Filtro por Centro de Custo", () => {
   const pagamentos = [
@@ -118,7 +118,7 @@ describe("Filtro por Centro de Custo", () => {
   });
 });
 
-// ─── Testes: Filtro CC em Relatórios ─────────────────────────────────────────
+// === Testes: Filtro CC em Relatórios ===
 
 describe("Filtro por CC nos Relatórios", () => {
   const centrosCusto = [
@@ -183,7 +183,7 @@ describe("Filtro por CC nos Relatórios", () => {
   });
 });
 
-// ─── Testes: Schema de Anexos ─────────────────────────────────────────────────
+// === Testes: Schema de Anexos ===
 
 describe("Módulos suportados para anexos", () => {
   const modulosSuportados = ["pagamento", "recebimento", "contrato", "os", "cliente"];

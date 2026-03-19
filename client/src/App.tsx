@@ -17,6 +17,7 @@ import Clientes from "./pages/Clientes";
 import CentrosCusto from "./pages/CentrosCusto";
 import ExtratoCliente from "./pages/ExtratoCliente";
 import Engenharia from "./pages/Engenharia";
+import Contratos from "./pages/Contratos";
 import RelatorioCentroCusto from "./pages/RelatorioCentroCusto";
 
 function Router() {
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/configuracoes" component={Configuracoes} />
       <Route path="/guia" component={Guia} />
       <Route path="/faq" component={Faq} />
+      <Route path="/contratos" component={Contratos} />
       <Route path="/engenharia" component={Engenharia} />
       <Route path="/relatorio-centro-custo" component={RelatorioCentroCusto} />
       <Route path="/404" component={NotFound} />

@@ -447,7 +447,8 @@ export default function Pagamentos() {
       (p.cpf ?? "").includes(search) ||
       (p.numeroControle ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "todos" || p.status === filterStatus;
-    const matchCC = filterCC === "todos" || String(p.centroCustoId ?? "") === filterCC;
+      const matchCC = filterCC === "todos" || 
+        (filterCC === "sem_cc" ? !p.centroCustoId : String(p.centroCustoId ?? "") === filterCC);
     const matchDataInicio = !filterDataInicio || new Date(p.dataPagamento) >= new Date(filterDataInicio);
     const matchDataFim = !filterDataFim || new Date(p.dataPagamento) <= new Date(filterDataFim + "T23:59:59");
     return matchSearch && matchStatus && matchCC && matchDataInicio && matchDataFim;
@@ -460,8 +461,8 @@ export default function Pagamentos() {
       <div className="space-y-6 p-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Pagamentos</h1>
-            <p className="text-muted-foreground text-sm mt-1">Controle e autorização de pagamentos via Pix</p>
+            <h1 className="text-2xl font-bold text-foreground">Compras e Pagamentos</h1>
+            <p className="text-muted-foreground text-sm mt-1">Controle de compras, contratações e pagamentos via Pix</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             {selecionados.size > 0 && (
@@ -504,6 +505,7 @@ export default function Pagamentos() {
             <SelectTrigger className="w-[190px]"><SelectValue placeholder="Centro de Custo" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os CC</SelectItem>
+              <SelectItem value="sem_cc">Sem Centro de Custo</SelectItem>
               {centrosCustoList.map(cc => (
                 <SelectItem key={cc.id} value={String(cc.id)}>{cc.nome}</SelectItem>
               ))}

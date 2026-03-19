@@ -17,7 +17,7 @@ import {
   ResponsiveContainer, LineChart, Line, PieChart as RechartsPie, Pie, Cell,
 } from "recharts";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// === Helpers ===
 function formatCurrency(value: any) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(parseFloat(value ?? 0));
 }
@@ -52,7 +52,7 @@ const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Ag
 const ANOS = [2023, 2024, 2025, 2026, 2027];
 const PIE_COLORS = ["#3b82f6","#ef4444","#22c55e","#f59e0b","#8b5cf6","#ec4899","#14b8a6","#f97316"];
 
-// ─── Aba Geral ─────────────────────────────────────────────────────────────────
+// === Aba Geral ===
 function AbaGeral() {
   const { data: stats } = trpc.dashboard.stats.useQuery();
   const { data: pagStats } = trpc.pagamentos.stats.useQuery();
@@ -588,7 +588,7 @@ function AbaGeral() {
   );
 }
 
-// ─── Aba Por Centro de Custo ───────────────────────────────────────────────────
+// === Aba Por Centro de Custo ===
 function AbaCentroCusto() {
   const hoje = new Date();
   const [centroCustoId, setCentroCustoId] = useState<number | null>(null);
@@ -1116,7 +1116,7 @@ function AbaCentroCusto() {
   );
 }
 
-// ─── Página principal ──────────────────────────────────────────────────────────
+// === Página principal ===
 export default function Relatorios() {
   const [abaAtiva, setAbaAtiva] = useState<"geral" | "centroCusto">("geral");
 

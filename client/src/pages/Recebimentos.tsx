@@ -484,7 +484,8 @@ export default function Recebimentos() {
       (r.numeroContrato ?? "").includes(search) ||
       (r.numeroControle ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "todos" || r.status === filterStatus;
-    const matchCC = filterCC === "todos" || String(r.centroCustoId ?? "") === filterCC;
+    const matchCC = filterCC === "todos" ||
+      (filterCC === "sem_cc" ? !r.centroCustoId : String(r.centroCustoId ?? "") === filterCC);
     const dataRef = r.dataVencimento ?? r.dataRecebimento;
     const matchDataInicio = !filterDataInicio || !dataRef || new Date(dataRef) >= new Date(filterDataInicio);
     const matchDataFim = !filterDataFim || !dataRef || new Date(dataRef) <= new Date(filterDataFim + "T23:59:59");
@@ -549,6 +550,7 @@ export default function Recebimentos() {
             <SelectTrigger className="w-[190px]"><SelectValue placeholder="Centro de Custo" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os CC</SelectItem>
+              <SelectItem value="sem_cc">Sem Centro de Custo</SelectItem>
               {centrosCustoList.map(cc => (
                 <SelectItem key={cc.id} value={String(cc.id)}>{cc.nome}</SelectItem>
               ))}

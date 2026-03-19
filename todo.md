@@ -502,3 +502,25 @@
 ## Correção Edição de Recebimentos (v39)
 - [x] Corrigir formulário de edição: carregar parcelas existentes ao abrir registro (não exigir regeneração)
 - [x] Ao editar, exibir parcelas já cadastradas e permitir alterar status/valores sem recriar
+
+## Melhorias v40 — Compras, Contratos e Gestão Financeira
+
+- [x] Renomear "Pagamentos" para "Compras e Pagamentos" no menu lateral e títulos
+- [x] Ativar parcelamento no formulário de Pagamentos (Switch parcelado já existe, funcional)
+- [x] Criar aba "Contratos" separada no menu lateral (rota /contratos com ContratosTab)
+- [x] Backend: adicionar campo contratoId em pagamentos e recebimentos no schema
+- [x] Backend: procedure getRelatorioContrato (custos, receitas, materiais, lucro por contrato)
+- [x] Frontend: painel de gestão financeira por contrato (vincular pagamentos/recebimentos/materiais)
+- [x] Frontend: relatório de lucro por contrato (receitas - custos = lucro)
+- [x] Edição inline de status de parcelas diretamente na listagem
+- [x] Filtro "Sem Centro de Custo" nas listagens de Pagamentos e Recebimentos
+- [x] Exportação PDF do relatório por Centro de Custo
+
+## Melhorias v40 — Permissões Aprimoradas
+
+- [x] Backend: adicionar módulos "contratos" e "extrato_cliente" na lista de MODULOS
+- [x] Backend: criar perfis pré-definidos (Administrativo, Financeiro, Engenharia, Operacional)
+- [x] Backend: Dashboard retorna apenas dados dos módulos que o usuário tem acesso
+- [x] Frontend: cards do Dashboard filtrados por permissão (sem acesso a pagamentos → não vê total de pagamentos)
+- [x] Frontend: página de Usuários com matriz de permissões granular (podeVer/podeCriar/podeEditar/podeExcluir por módulo)
+- [x] Frontend: aplicar perfis pré-definidos com um clique e permitir personalização individual

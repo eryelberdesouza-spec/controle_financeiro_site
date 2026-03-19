@@ -382,33 +382,91 @@ export type InsertUserPermission = typeof userPermissions.$inferInsert;
 
 // Módulos disponíveis no sistema
 export const MODULOS = [
-  { id: "pagamentos", label: "Pagamentos" },
-  { id: "recebimentos", label: "Recebimentos" },
-  { id: "clientes", label: "Clientes / Fornecedores" },
-  { id: "centros_custo", label: "Centros de Custo" },
-  { id: "engenharia_os", label: "Engenharia — Ordens de Serviço" },
-  { id: "engenharia_contratos", label: "Engenharia — Contratos" },
-  { id: "engenharia_materiais", label: "Engenharia — Materiais e Tipos de Serviço" },
-  { id: "relatorios", label: "Relatórios" },
-  { id: "dashboard", label: "Dashboard" },
+  { id: "dashboard", label: "Dashboard", grupo: "Geral" },
+  { id: "pagamentos", label: "Compras e Pagamentos", grupo: "Financeiro" },
+  { id: "recebimentos", label: "Recebimentos", grupo: "Financeiro" },
+  { id: "clientes", label: "Clientes / Fornecedores", grupo: "Cadastros" },
+  { id: "centros_custo", label: "Centros de Custo", grupo: "Financeiro" },
+  { id: "relatorios", label: "Relatórios", grupo: "Financeiro" },
+  { id: "engenharia_contratos", label: "Contratos", grupo: "Engenharia" },
+  { id: "engenharia_os", label: "Ordens de Serviço", grupo: "Engenharia" },
+  { id: "engenharia_materiais", label: "Materiais e Tipos de Serviço", grupo: "Engenharia" },
+  { id: "extrato_cliente", label: "Extrato por Cliente", grupo: "Financeiro" },
 ] as const;
 export type ModuloId = typeof MODULOS[number]["id"];
 
-// Permissões padrão por role
+// Perfis pré-definidos de acesso
+export const PERFIS_ACESSO: Record<string, { label: string; descricao: string; permissoes: Record<string, { podeVer: boolean; podeCriar: boolean; podeEditar: boolean; podeExcluir: boolean }> }> = {
+  administrativo: {
+    label: "Administrativo",
+    descricao: "Acesso completo a todos os módulos financeiros e administrativos (sem exclusão — apenas admin pode excluir)",
+    permissoes: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false }])),
+  },
+  financeiro: {
+    label: "Financeiro",
+    descricao: "Acesso a pagamentos, recebimentos, relatórios e centros de custo. Sem acesso a engenharia.",
+    permissoes: {
+      dashboard: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+      pagamentos: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+      recebimentos: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+      clientes: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+      centros_custo: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+      relatorios: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+      engenharia_contratos: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      engenharia_os: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      engenharia_materiais: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      extrato_cliente: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+    },
+  },
+  engenharia: {
+    label: "Engenharia",
+    descricao: "Acesso a contratos, ordens de serviço e materiais. Sem acesso a financeiro.",
+    permissoes: {
+      dashboard: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+      pagamentos: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      recebimentos: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      clientes: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+      centros_custo: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      relatorios: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      engenharia_contratos: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+      engenharia_os: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+      engenharia_materiais: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+      extrato_cliente: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+    },
+  },
+  operacional: {
+    label: "Operacional",
+    descricao: "Acesso somente a ordens de serviço e clientes. Sem acesso financeiro.",
+    permissoes: {
+      dashboard: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+      pagamentos: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      recebimentos: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      clientes: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+      centros_custo: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      relatorios: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      engenharia_contratos: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+      engenharia_os: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
+      engenharia_materiais: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+      extrato_cliente: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+    },
+  },
+  somente_leitura: {
+    label: "Somente Leitura",
+    descricao: "Pode visualizar tudo, mas não pode criar, editar ou excluir.",
+    permissoes: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false }])),
+  },
+  sem_acesso: {
+    label: "Sem Acesso",
+    descricao: "Nenhum acesso ao sistema (usuário bloqueado).",
+    permissoes: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false }])),
+  },
+};
+
+// Permissões padrão por role (compatível com sistema legado)
 export const DEFAULT_PERMISSIONS: Record<string, Record<string, { podeVer: boolean; podeCriar: boolean; podeEditar: boolean; podeExcluir: boolean }>> = {
   admin: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: true }])),
-  operador: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false }])),
-  operacional: {
-    pagamentos: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
-    recebimentos: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
-    clientes: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
-    centros_custo: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
-    engenharia_os: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
-    engenharia_contratos: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
-    engenharia_materiais: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
-    relatorios: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
-    dashboard: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
-  },
+  operador: PERFIS_ACESSO.administrativo.permissoes,
+  operacional: PERFIS_ACESSO.operacional.permissoes,
   user: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false }])),
 };
 

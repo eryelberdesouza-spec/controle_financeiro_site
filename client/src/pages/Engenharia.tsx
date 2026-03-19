@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import AnexosPanel from "@/components/AnexosPanel";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// === Helpers ===
 const fmt = (v: string | number | null | undefined) =>
   v == null ? "—" : Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -47,8 +47,8 @@ const PRIORIDADE: Record<string, { label: string; color: string }> = {
   urgente: { label: "Urgente", color: "bg-red-100 text-red-800" },
 };
 
-// ─── Contratos ────────────────────────────────────────────────────────────────
-function ContratosTab() {
+// === Contratos ===
+export function ContratosTab() {
   const { can } = usePermissions();
   const podeCriar = can.criar("engenharia_contratos");
   const podeEditar = can.editar("engenharia_contratos");
@@ -746,7 +746,7 @@ function ContratosTab() {
   );
 }
 
-// ─── Ordens de Serviço ────────────────────────────────────────────────────────
+// === Ordens de Serviço ===
 function OrdensServicoTab() {
   const { can } = usePermissions();
   const podeCriar = can.criar("engenharia_os");
@@ -1331,7 +1331,7 @@ function OrdensServicoTab() {
   );
 }
 
-// ─── Tipos de Serviço ─────────────────────────────────────────────────────────
+// === Tipos de Serviço ===
 function TiposServicoTab() {
   const { can } = usePermissions();
   const podeCriar = can.criar("engenharia_materiais");
@@ -1448,7 +1448,7 @@ function TiposServicoTab() {
   );
 }
 
-// ─── Materiais ────────────────────────────────────────────────────────────────
+// === Materiais ===
 function MateriaisTab() {
   const { can } = usePermissions();
   const podeCriar = can.criar("engenharia_materiais");
@@ -1664,7 +1664,7 @@ function MateriaisTab() {
   );
 }
 
-// ─── Página Principal ─────────────────────────────────────────────────────────
+// === Página Principal ===
 export default function Engenharia() {
   const { data: contratos = [] } = trpc.contratos.list.useQuery();
   const { data: ordens = [] } = trpc.ordensServico.list.useQuery();

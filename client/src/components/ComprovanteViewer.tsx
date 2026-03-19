@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { Printer, X } from "lucide-react";
 import { useRef, useState } from "react";
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+// === Tipos ===
 
 export type ComprovantePagamento = {
   id: number;
@@ -61,7 +61,7 @@ type Props = {
   registros: ComprovantePagamento[] | ComprovanteRecebimento[];
 };
 
-// ─── Utilitários ──────────────────────────────────────────────────────────────
+// === Utilitários ===
 
 function formatCurrency(value: any) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -98,7 +98,7 @@ function Field({
   );
 }
 
-// ─── CSS de impressão ─────────────────────────────────────────────────────────
+// === CSS de impressão ===
 
 const PRINT_CSS = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -192,7 +192,7 @@ td.center, th.center { text-align: center; }
 @media print { body { padding: 0; } html, body { height: auto; } }
 `;
 
-// ─── Builders de HTML para impressão ─────────────────────────────────────────
+// === Builders de HTML para impressão ===
 
 function buildHeaderHTML(empresa: any) {
   return `
@@ -471,7 +471,7 @@ function buildRecebimentoHTML(r: ComprovanteRecebimento, empresa: any, parcelas:
   `;
 }
 
-// ─── Componentes de preview (cada um tem seus próprios hooks) ─────────────────
+// === Componentes de preview (cada um tem seus próprios hooks) ===
 
 function PreviewPagamentoCard({
   registro,
@@ -732,7 +732,7 @@ function PreviewRecebimentoCard({
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
+// === Componente principal ===
 
 export function ComprovanteViewer({ open, onClose, tipo, registros }: Props) {
   const { data: empresa } = trpc.empresa.get.useQuery();

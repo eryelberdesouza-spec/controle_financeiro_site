@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, X, Users, Wrench, Building2, Hotel, Handshake, MoreHorizontal, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ─── Ícones e cores por tipo ───────────────────────────────────────────────
+// === Ícones e cores por tipo ===
 const tipoIcons: Record<string, React.ReactNode> = {
   "Cliente": <Users className="h-3 w-3" />,
   "Prestador de Serviço": <Wrench className="h-3 w-3" />,
@@ -23,7 +23,7 @@ const tipoColors: Record<string, string> = {
   "Outro": "bg-gray-50 text-gray-700 border-gray-200",
 };
 
-// ─── ClienteSelect com busca/autocomplete ─────────────────────────────────
+// === ClienteSelect com busca/autocomplete ===
 type ClienteItem = {
   id: number;
   nome: string;
@@ -223,7 +223,7 @@ export function ClienteSelect({
   );
 }
 
-// ─── CentroCustoSelect (Select simples — lista geralmente pequena) ─────────
+// === CentroCustoSelect (Select simples — lista geralmente pequena) ===
 interface CentroCustoSelectProps {
   value: number | null;
   onChange: (id: number | null) => void;
@@ -253,7 +253,7 @@ export function CentroCustoSelect({ value, onChange, placeholder = "Selecionar c
   );
 }
 
-// ─── ContratoSelect — busca e vincula contrato ao recebimento ─────────────
+// === ContratoSelect — busca e vincula contrato ao recebimento ===
 interface ContratoSelectProps {
   value: string; // numero do contrato
   onChange: (numero: string, centroCustoId?: number | null) => void;

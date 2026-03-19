@@ -6,7 +6,7 @@ type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
 function createCtx(role: "admin" | "operador" | "user" = "admin"): TrpcContext {
   const user: AuthenticatedUser = {
-    id: 1,
+    id: 99999, // ID inexistente no banco para garantir permissões padrão do perfil
     openId: "test-user",
     email: "test@example.com",
     name: "Test User",

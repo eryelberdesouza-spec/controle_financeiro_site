@@ -841,7 +841,16 @@ export default function Pagamentos() {
                 </div>
                 <Switch
                   checked={form.parcelado}
-                  onCheckedChange={v => { setForm(f => ({ ...f, parcelado: v, quantidadeParcelas: 1 })); if (!v) setParcelas([]); }}
+                  onCheckedChange={v => {
+                    setForm(f => ({
+                      ...f,
+                      parcelado: v,
+                      quantidadeParcelas: v ? (f.quantidadeParcelas < 2 ? 2 : f.quantidadeParcelas) : 1,
+                      // Pré-preenche a data do 1º vencimento com a data de pagamento existente
+                      dataPrimeiroVencimento: v && !f.dataPrimeiroVencimento ? f.dataPagamento : f.dataPrimeiroVencimento,
+                    }));
+                    if (!v) setParcelas([]);
+                  }}
                 />
               </div>
 

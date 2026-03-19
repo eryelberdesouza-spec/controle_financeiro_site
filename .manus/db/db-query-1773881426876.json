@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, numeroControle, parcelado, quantidadeParcelas, status FROM pagamentos WHERE numeroControle = 'PAG-2026-03-782' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute SELECT id, numeroControle, parcelado, quantidadeParcelas, status FROM pagamentos WHERE numeroControle = 'PAG-2026-03-782' LIMIT 1;",
+  "rows": [
+    {
+      "id": "510001",
+      "numeroControle": "PAG-2026-03-782",
+      "parcelado": "0",
+      "quantidadeParcelas": "1",
+      "status": "Pendente"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnumeroControle\tparcelado\tquantidadeParcelas\tstatus\n510001\tPAG-2026-03-782\t0\t1\tPendente\n",
+  "stderr": "",
+  "execution_time_ms": 823
+}

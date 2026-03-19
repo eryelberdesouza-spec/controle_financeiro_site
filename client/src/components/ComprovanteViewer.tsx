@@ -482,10 +482,11 @@ function PreviewPagamentoCard({
   empresa: any;
   onGetParcelas: (id: number, parcelas: any[]) => void;
 }) {
-  const temParcelas = (registro.quantidadeParcelas ?? 1) > 1;
+  // Busca parcelas sempre que o pagamento estiver marcado como parcelado OU tiver quantidadeParcelas > 1
+  const temParcelas = registro.parcelado === true || (registro.quantidadeParcelas ?? 1) > 1;
   const { data: parcelas = [] } = trpc.pagamentoParcelas.list.useQuery(
     { pagamentoId: registro.id },
-    { enabled: temParcelas }
+    { enabled: !!registro.id && temParcelas }
   );
 
   // Notifica o pai sempre que as parcelas chegarem
@@ -747,9 +748,26 @@ export function ComprovanteViewer({ open, onClose, tipo, registros }: Props) {
   const handlePrint = async () => {
     setPrinting(true);
     try {
-      // Para recebimentos, garante que todas as parcelas foram carregadas
-      // buscando via fetch direto para os registros que ainda não têm parcelas no mapa
-      if (tipo === "recebimento") {
+      // Garante que todas as parcelas foram carregadas antes de imprimir
+      if (tipo === "pagamento") {
+        const pendentes = (registros as ComprovantePagamento[]).filter(
+          r => (r.parcelado === true || (r.quantidadeParcelas ?? 1) > 1) && !parcelasMapRef.current.has(r.id)
+        );
+        if (pendentes.length > 0) {
+          await Promise.all(
+            pendentes.map(async (r) => {
+              try {
+                const res = await fetch(`/api/trpc/pagamentoParcelas.list?input=${encodeURIComponent(JSON.stringify({ json: { pagamentoId: r.id } }))}`, {
+                  credentials: "include",
+                });
+                const json = await res.json();
+                const parcelas = json?.result?.data?.json ?? [];
+                if (parcelas.length > 0) parcelasMapRef.current.set(r.id, parcelas);
+              } catch {}
+            })
+          );
+        }
+      } else if (tipo === "recebimento") {
         const pendentes = (registros as ComprovanteRecebimento[]).filter(
           r => !parcelasMapRef.current.has(r.id)
         );

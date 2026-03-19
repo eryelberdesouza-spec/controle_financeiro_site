@@ -665,11 +665,11 @@ export default function Pagamentos() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>{editId ? "Editar Pagamento" : "Novo Pagamento"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5 w-full min-w-0">
             {/* Busca de cliente — preenche Nome e CPF automaticamente */}
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1.5">
               <Label className="text-xs font-semibold text-primary uppercase tracking-wide">Buscar Cliente Cadastrado</Label>
@@ -834,8 +834,8 @@ export default function Pagamentos() {
 
             {/* Seção de Parcelamento */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">Pagamento Parcelado</p>
                   <p className="text-xs text-muted-foreground">Defina a quantidade de parcelas e gere automaticamente com datas e valores individuais</p>
                 </div>

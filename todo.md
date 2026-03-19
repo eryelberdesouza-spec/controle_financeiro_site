@@ -534,3 +534,7 @@
 - [x] Frontend Contratos: painel de gestão financeira por contrato (receitas, custos, lucro, gráfico)
 - [x] Frontend Usuários: convite por e-mail com perfil pré-definido selecionável
 - [x] Backend: procedure de convite com perfil (enviar e-mail + salvar convite com perfil)
+
+## Bug Crítico — Switch Parcelamento Pagamentos (v42)
+- [x] Corrigir: switch "Pagamento Parcelado" não aparece no formulário de edição de pagamentos
+- [x] Garantir que a seção de parcelamento aparece tanto na criação quanto na edição

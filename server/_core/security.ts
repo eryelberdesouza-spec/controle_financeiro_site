@@ -73,11 +73,11 @@ export function applyHelmet(app: Express) {
  */
 export const globalRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
-  max: 200,
+  max: isProd ? 300 : 2000, // mais permissivo em dev
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Muitas requisições. Aguarde um momento e tente novamente." },
-  skip: (req) => req.path.startsWith("/__manus__"), // não limitar ferramentas internas
+  skip: (req) => req.path.startsWith("/__manus__") || !isProd, // não limitar em dev
 });
 
 /**
@@ -96,11 +96,11 @@ export const authRateLimit = rateLimit({
  */
 export const apiRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
-  max: 300,
+  max: isProd ? 500 : 5000, // mais permissivo em dev
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Limite de requisições da API atingido. Aguarde um momento." },
-  // Usa o IP padrão do express-rate-limit (já trata IPv6 corretamente)
+  skip: () => !isProd, // não limitar em dev
 });
 
 // === CORS ===

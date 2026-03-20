@@ -37,8 +37,8 @@ async function startServer() {
   const server = createServer(app);
 
   // 1. Trust proxy: necessário para rate limit funcionar atrás de proxy/load balancer
-  // 'loopback' = confia apenas em proxies locais (127.0.0.1, ::1)
-  app.set("trust proxy", "loopback");
+  // Em produção (Manus), a aplicação fica atrás de um proxy reverso
+  app.set("trust proxy", 1);
 
   // 2. Segurança: Helmet + CORS + Rate Limit global
   applySecurityMiddleware(app);

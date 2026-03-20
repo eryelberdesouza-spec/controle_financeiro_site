@@ -57,6 +57,7 @@ export function ContratosTab() {
   const { data: contratos = [], isLoading } = trpc.contratos.list.useQuery();
   const { data: clientes = [] } = trpc.clientes.list.useQuery();
   const { data: centrosCustoList = [] } = trpc.centrosCusto.list.useQuery();
+  const { data: listaProjetos = [] } = trpc.projetos.list.useQuery();
   const { data: nextNumero } = trpc.contratos.nextNumero.useQuery();
 
   const [busca, setBusca] = useState("");
@@ -81,6 +82,7 @@ export function ContratosTab() {
     numero: "", objeto: "", tipo: "prestacao_servico" as const,
     status: "proposta" as const, clienteId: "" as string | number,
     centroCustoId: null as number | null,
+    projetoId: null as number | null,
     valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "",
     enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "",
     enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "",
@@ -139,7 +141,7 @@ export function ContratosTab() {
 
   function openNew() {
     setEditId(null);
-    setForm({ numero: nextNumero ?? "", objeto: "", tipo: "prestacao_servico", status: "proposta", clienteId: "", centroCustoId: null, valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
+    setForm({ numero: nextNumero ?? "", objeto: "", tipo: "prestacao_servico", status: "proposta", clienteId: "", centroCustoId: null, projetoId: null, valorTotal: "", dataInicio: "", dataFim: "", descricao: "", observacoes: "", enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
     setShowForm(true);
   }
 
@@ -149,6 +151,7 @@ export function ContratosTab() {
       numero: c.numero, objeto: c.objeto, tipo: c.tipo as any,
       status: c.status as any, clienteId: c.clienteId ?? "",
       centroCustoId: (c as any).centroCustoId ?? null,
+      projetoId: (c as any).projetoId ?? null,
       valorTotal: c.valorTotal ?? "", dataInicio: c.dataInicio ? new Date(c.dataInicio).toISOString().split("T")[0] : "",
       dataFim: c.dataFim ? new Date(c.dataFim).toISOString().split("T")[0] : "",
       descricao: c.descricao ?? "", observacoes: c.observacoes ?? "",
@@ -164,6 +167,7 @@ export function ContratosTab() {
       numero: form.numero, objeto: form.objeto, tipo: form.tipo, status: form.status,
       clienteId: form.clienteId ? Number(form.clienteId) : undefined,
       centroCustoId: form.centroCustoId ?? undefined,
+      projetoId: form.projetoId ?? undefined,
       valorTotal: parseFloat(String(form.valorTotal).replace(",", ".")) || 0,
       valorPrevisto: (form as any).valorPrevisto ? parseFloat(String((form as any).valorPrevisto).replace(",", ".")) : undefined,
       margemPrevista: (form as any).margemPrevista ? parseFloat(String((form as any).margemPrevista).replace(",", ".")) : undefined,
@@ -653,6 +657,23 @@ export function ContratosTab() {
               </Select>
             </div>
             <div className="space-y-1">
+              <Label>Projeto Vinculado</Label>
+              <Select
+                value={form.projetoId ? String(form.projetoId) : "none"}
+                onValueChange={v => setForm(p => ({ ...p, projetoId: v === "none" ? null : Number(v) }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecionar projeto (opcional)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Nenhum —</SelectItem>
+                  {listaProjetos.map((proj: any) => (
+                    <SelectItem key={proj.id} value={String(proj.id)}>
+                      {proj.numero ? `${proj.numero} — ` : ""}{proj.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <Label>Valor Total (R$) *</Label>
               <Input type="number" min="0" step="0.01" value={form.valorTotal} onChange={e => setForm(p => ({ ...p, valorTotal: e.target.value }))} />
             </div>
@@ -760,6 +781,7 @@ function OrdensServicoTab() {
   const { data: tiposServico = [] } = trpc.tiposServico.list.useQuery();
   const { data: materiais = [] } = trpc.materiais.list.useQuery();
   const { data: centrosCustoList = [] } = trpc.centrosCusto.list.useQuery();
+  const { data: listaProjetos = [] } = trpc.projetos.list.useQuery();
   const { data: nextNumero } = trpc.ordensServico.nextNumero.useQuery();
 
   const [busca, setBusca] = useState("");
@@ -776,6 +798,7 @@ function OrdensServicoTab() {
     dataPrevisao: "", valorEstimado: "", observacoes: "",
     contratoId: "" as string | number, clienteId: "" as string | number,
     centroCustoId: null as number | null,
+    projetoId: null as number | null,
     enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "",
     enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "",
   });
@@ -853,7 +876,7 @@ function OrdensServicoTab() {
   function openNew() {
     setEditId(null);
     setItens([]);
-    setForm({ numero: nextNumero ?? "", titulo: "", descricao: "", status: "planejada", prioridade: "media", responsavel: "", dataAbertura: new Date().toISOString().split("T")[0], dataPrevisao: "", valorEstimado: "", observacoes: "", contratoId: "", clienteId: "", centroCustoId: null, enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
+    setForm({ numero: nextNumero ?? "", titulo: "", descricao: "", status: "planejada", prioridade: "media", responsavel: "", dataAbertura: new Date().toISOString().split("T")[0], dataPrevisao: "", valorEstimado: "", observacoes: "", contratoId: "", clienteId: "", centroCustoId: null, projetoId: null, enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
     setShowForm(true);
   }
 
@@ -869,6 +892,7 @@ function OrdensServicoTab() {
       valorEstimado: o.valorEstimado ?? "",
       contratoId: o.contratoId ?? "", clienteId: o.clienteId ?? "",
       centroCustoId: (o as any).centroCustoId ?? null,
+      projetoId: (o as any).projetoId ?? null,
       enderecoLogradouro: o.enderecoLogradouro ?? "", enderecoNumero: o.enderecoNumero ?? "",
       enderecoComplemento: o.enderecoComplemento ?? "", enderecoBairro: o.enderecoBairro ?? "",
       enderecoCidade: o.enderecoCidade ?? "", enderecoEstado: o.enderecoEstado ?? "", enderecoCep: o.enderecoCep ?? "",
@@ -903,6 +927,7 @@ function OrdensServicoTab() {
       contratoId: form.contratoId ? Number(form.contratoId) : undefined,
       clienteId: form.clienteId ? Number(form.clienteId) : undefined,
       centroCustoId: form.centroCustoId ?? undefined,
+      projetoId: form.projetoId ?? undefined,
       enderecoLogradouro: form.enderecoLogradouro || undefined,
       enderecoNumero: form.enderecoNumero || undefined,
       enderecoComplemento: form.enderecoComplemento || undefined,
@@ -1138,12 +1163,31 @@ function OrdensServicoTab() {
                   clienteId: contratoSelecionado?.clienteId ? String(contratoSelecionado.clienteId) : p.clienteId,
                   // Herda CC do contrato automaticamente
                   centroCustoId: contratoSelecionado ? ((contratoSelecionado as any).centroCustoId ?? p.centroCustoId) : p.centroCustoId,
+                  // Herda projeto do contrato automaticamente se tiver
+                  projetoId: contratoSelecionado ? ((contratoSelecionado as any).projetoId ?? p.projetoId) : p.projetoId,
                 }));
               }}>
                 <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">— Nenhum —</SelectItem>
                   {contratos.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.numero} — {c.objeto?.substring(0, 50)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Projeto Vinculado</Label>
+              <Select
+                value={form.projetoId ? String(form.projetoId) : "none"}
+                onValueChange={v => setForm(p => ({ ...p, projetoId: v === "none" ? null : Number(v) }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecionar projeto (opcional)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Nenhum —</SelectItem>
+                  {listaProjetos.map((proj: any) => (
+                    <SelectItem key={proj.id} value={String(proj.id)}>
+                      {proj.numero ? `${proj.numero} — ` : ""}{proj.nome}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { tiposServicoRouter, materiaisRouter, contratosRouter, ordensServicoRouter, relatorioContratoRouter } from "./routers/engenharia";
+import { projetosRouter, onPrimeiraOSIniciada } from "./routers/projetos";
 import { listAnexos, createAnexo, deleteAnexo, type AnexoModulo } from "./db.anexos";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
@@ -195,6 +196,7 @@ const pagamentosRouter = router({
       clienteId: z.number().nullable().optional(),
       centroCustoId: z.number().nullable().optional(),
       contratoId: z.number().nullable().optional(),
+      projetoId: z.number().nullable().optional(),
       valor: z.string().min(1),
       valorEquipamento: z.string().optional().default("0"),
       valorServico: z.string().optional().default("0"),
@@ -222,6 +224,7 @@ const pagamentosRouter = router({
       clienteId: z.number().nullable().optional(),
       centroCustoId: z.number().nullable().optional(),
       contratoId: z.number().nullable().optional(),
+      projetoId: z.number().nullable().optional(),
       valor: z.string().optional(),
       valorEquipamento: z.string().optional(),
       valorServico: z.string().optional(),
@@ -284,6 +287,7 @@ const recebimentosRouter = router({
       clienteId: z.number().nullable().optional(),
       centroCustoId: z.number().nullable().optional(),
       contratoId: z.number().nullable().optional(),
+      projetoId: z.number().nullable().optional(),
       valorTotal: z.string().min(1),
       valorEquipamento: z.string().optional().default("0"),
       valorServico: z.string().optional().default("0"),
@@ -309,6 +313,7 @@ const recebimentosRouter = router({
       clienteId: z.number().nullable().optional(),
       centroCustoId: z.number().nullable().optional(),
       contratoId: z.number().nullable().optional(),
+      projetoId: z.number().nullable().optional(),
       valorTotal: z.string().optional(),
       valorEquipamento: z.string().optional(),
       valorServico: z.string().optional(),
@@ -482,9 +487,11 @@ const centrosCustoRouter = router({
       nome: z.string().min(1, "Nome é obrigatório"),
       descricao: z.string().optional(),
       tipo: z.enum(["operacional", "administrativo", "contrato", "projeto", "investimento", "outro"]).optional(),
+      classificacao: z.enum(["ESTRATEGICO", "OPERACIONAL", "PROJETO", "ADMINISTRATIVO", "INVESTIMENTO"]).optional(),
       responsavel: z.string().optional(),
       observacoes: z.string().optional(),
       contratoId: z.number().optional(),
+      projetoId: z.number().nullable().optional(),
     }))
     .mutation(({ input, ctx }) => createCentroCusto({ ...input, createdBy: ctx.user.id })),
   update: staffProcedure
@@ -493,9 +500,11 @@ const centrosCustoRouter = router({
       nome: z.string().min(1).optional(),
       descricao: z.string().optional(),
       tipo: z.enum(["operacional", "administrativo", "contrato", "projeto", "investimento", "outro"]).optional(),
+      classificacao: z.enum(["ESTRATEGICO", "OPERACIONAL", "PROJETO", "ADMINISTRATIVO", "INVESTIMENTO"]).optional(),
       responsavel: z.string().optional(),
       observacoes: z.string().optional(),
       ativo: z.boolean().optional(),
+      projetoId: z.number().nullable().optional(),
     }))
     .mutation(({ input }) => { const { id, ...data } = input; return updateCentroCusto(id, data); }),
   delete: staffProcedure
@@ -759,6 +768,7 @@ export const appRouter = router({
   relatorioCentroCusto: relatorioCCRouter,
   permissoes: permissoesRouter,
   anexos: anexosRouter,
+  projetos: projetosRouter,
 });
 
 export type AppRouter = typeof appRouter;

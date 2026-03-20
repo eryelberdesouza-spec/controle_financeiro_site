@@ -49,6 +49,7 @@ type FormData = {
   clienteId: number | null;
   centroCustoId: number | null;
   contratoId: number | null;
+  projetoId: number | null;
   valorTotal: string;
   valorEquipamento: string;
   valorServico: string;
@@ -66,7 +67,7 @@ type FormData = {
 
 const defaultForm: FormData = {
   numeroControle: "", numeroContrato: "", nomeRazaoSocial: "", descricao: "",
-  tipoRecebimento: "Pix", clienteId: null, centroCustoId: null, contratoId: null, valorTotal: "", valorEquipamento: "",
+  tipoRecebimento: "Pix", clienteId: null, centroCustoId: null, contratoId: null, projetoId: null, valorTotal: "", valorEquipamento: "",
   valorServico: "", juros: "0", desconto: "0",
   quantidadeParcelas: 1, parcelaAtual: 1,
   dataVencimento: "", dataRecebimento: "", status: "Pendente", observacao: "",
@@ -461,7 +462,7 @@ export default function Recebimentos() {
       numeroControle: r.numeroControle ?? "", numeroContrato: r.numeroContrato ?? "",
       nomeRazaoSocial: r.nomeRazaoSocial ?? "", descricao: r.descricao ?? "",
       tipoRecebimento: r.tipoRecebimento ?? "Pix",
-      clienteId: r.clienteId ?? null, centroCustoId: r.centroCustoId ?? null, contratoId: r.contratoId ?? null,
+      clienteId: r.clienteId ?? null, centroCustoId: r.centroCustoId ?? null, contratoId: r.contratoId ?? null, projetoId: r.projetoId ?? null,
       valorTotal: String(r.valorTotal ?? ""), valorEquipamento: String(r.valorEquipamento ?? ""),
       valorServico: String(r.valorServico ?? ""), juros: String(r.juros ?? "0"),
       desconto: String(r.desconto ?? "0"),
@@ -478,6 +479,7 @@ export default function Recebimentos() {
 
   // Busca lista de centros de custo para o filtro
   const { data: centrosCustoList = [] } = trpc.centrosCusto.list.useQuery();
+  const { data: listaProjetos = [] } = trpc.projetos.list.useQuery();
 
   const filtered = recebimentos.filter(r => {
     const matchSearch = !search ||
@@ -763,6 +765,23 @@ export default function Recebimentos() {
                     }));
                   }}
                 />
+              </div>
+              <div>
+                <Label>Projeto Vinculado</Label>
+                <Select
+                  value={form.projetoId ? String(form.projetoId) : "nenhum"}
+                  onValueChange={v => setForm(f => ({ ...f, projetoId: v === "nenhum" ? null : Number(v) }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Selecionar projeto (opcional)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nenhum">Nenhum</SelectItem>
+                    {listaProjetos.map(p => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.numero ? `${p.numero} — ` : ""}{p.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="md:col-span-2">
                 <Label>Nome / Razão Social *</Label>

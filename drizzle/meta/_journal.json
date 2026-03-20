@@ -162,6 +162,13 @@
       "when": 1773880208616,
       "tag": "0022_medical_kitty_pryde",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1774042806978,
+      "tag": "0023_talented_cloak",
+      "breakpoints": true
     }
   ]
 }

@@ -57,6 +57,7 @@ type FormData = {
   clienteId: number | null;
   centroCustoId: number | null;
   contratoId: number | null;
+  projetoId: number | null;
   valor: string;
   valorEquipamento: string;
   valorServico: string;
@@ -72,7 +73,7 @@ type FormData = {
 
 const defaultForm: FormData = {
   numeroControle: "", nomeCompleto: "", cpf: "", banco: "", tipoPix: "CPF",
-  chavePix: "", tipoServico: "", centroCusto: "", clienteId: null, centroCustoId: null, contratoId: null, valor: "",
+  chavePix: "", tipoServico: "", centroCusto: "", clienteId: null, centroCustoId: null, contratoId: null, projetoId: null, valor: "",
   valorEquipamento: "", valorServico: "",
   dataPagamento: "", status: "Pendente", descricao: "", observacao: "", autorizadoPor: "",
   parcelado: false, quantidadeParcelas: 2, dataPrimeiroVencimento: "",
@@ -197,6 +198,7 @@ export default function Pagamentos() {
   const [atribuirCCId, setAtribuirCCId] = useState<number | null>(null);
   const utils = trpc.useUtils();
   const { data: listaContratos = [] } = trpc.contratos.list.useQuery();
+  const { data: listaProjetos = [] } = trpc.projetos.list.useQuery();
 
   const handleImprimirUnico = (p: any) => {
     setComprovanteRegistros([{
@@ -427,7 +429,7 @@ export default function Pagamentos() {
       numeroControle: p.numeroControle ?? "", nomeCompleto: p.nomeCompleto ?? "",
       cpf: p.cpf ?? "", banco: p.banco ?? "", tipoPix: p.tipoPix ?? "CPF",
       chavePix: p.chavePix ?? "", tipoServico: p.tipoServico ?? "",
-      centroCusto: p.centroCusto ?? "", clienteId: p.clienteId ?? null, centroCustoId: p.centroCustoId ?? null, contratoId: p.contratoId ?? null, valor: String(p.valor ?? ""),
+      centroCusto: p.centroCusto ?? "", clienteId: p.clienteId ?? null, centroCustoId: p.centroCustoId ?? null, contratoId: p.contratoId ?? null, projetoId: p.projetoId ?? null, valor: String(p.valor ?? ""),
       valorEquipamento: String(p.valorEquipamento ?? ""),
       valorServico: String(p.valorServico ?? ""),
       dataPagamento: p.dataPagamento ? new Date(p.dataPagamento).toISOString().split("T")[0] : "",
@@ -753,6 +755,23 @@ export default function Pagamentos() {
                     {listaContratos.map(c => (
                       <SelectItem key={c.id} value={String(c.id)}>
                         {c.numero} — {c.objeto?.substring(0, 40) ?? ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Projeto Vinculado</Label>
+                <Select
+                  value={form.projetoId ? String(form.projetoId) : "nenhum"}
+                  onValueChange={v => setForm(f => ({ ...f, projetoId: v === "nenhum" ? null : Number(v) }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Selecionar projeto (opcional)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nenhum">Nenhum</SelectItem>
+                    {listaProjetos.map(p => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.numero ? `${p.numero} — ` : ""}{p.nome}
                       </SelectItem>
                     ))}
                   </SelectContent>

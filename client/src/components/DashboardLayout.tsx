@@ -23,7 +23,7 @@ import {
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { usePermissions } from "@/hooks/usePermissions";
-import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -36,6 +36,7 @@ const menuItems = [
   { icon: UserCircle2, label: "Clientes", path: "/clientes", modulo: "clientes" as const },
   { icon: FileSearch, label: "Extrato por Cliente", path: "/extrato-cliente", modulo: "clientes" as const },
   { icon: Building2, label: "Centros de Custo", path: "/centros-custo", modulo: "centros_custo" as const },
+  { icon: FolderOpen, label: "Projetos", path: "/projetos", modulo: "projetos" as const },
   { icon: FileText, label: "Contratos", path: "/contratos", modulo: "engenharia_contratos" as const },
   { icon: HardHat, label: "Engenharia", path: "/engenharia", modulo: "engenharia_os" as const },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios", modulo: "relatorios" as const },

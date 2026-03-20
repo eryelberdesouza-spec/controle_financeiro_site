@@ -16,6 +16,52 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+// ─── Projetos ────────────────────────────────────────────────────────────────
+export const projetos = mysqlTable("projetos", {
+  id: int("id").autoincrement().primaryKey(),
+  numero: varchar("numero", { length: 50 }).notNull().unique(),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  clienteId: int("clienteId").references(() => clientes.id),
+  // Contrato principal vinculado ao projeto (opcional)
+  contratoPrincipalId: int("contratoPrincipalId"),
+  tipoProjeto: mysqlEnum("tipoProjeto", [
+    "INSTALACAO",
+    "MANUTENCAO",
+    "SERVICO_PONTUAL",
+    "OBRA",
+    "RECORRENTE",
+    "CONSULTORIA",
+    "PARCERIA",
+    "OUTROS",
+  ]).default("SERVICO_PONTUAL").notNull(),
+  statusOperacional: mysqlEnum("statusOperacional", [
+    "PLANEJAMENTO",
+    "AGUARDANDO_CONTRATO",
+    "AGUARDANDO_MOBILIZACAO",
+    "EM_EXECUCAO",
+    "PAUSADO",
+    "CONCLUIDO_TECNICAMENTE",
+    "ENCERRADO_FINANCEIRAMENTE",
+    "CANCELADO",
+  ]).default("PLANEJAMENTO").notNull(),
+  responsavelUserId: int("responsavelUserId").references(() => users.id),
+  dataInicioPrevista: date("dataInicioPrevista"),
+  dataFimPrevista: date("dataFimPrevista"),
+  dataInicioReal: date("dataInicioReal"),
+  dataFimReal: date("dataFimReal"),
+  // Centro de custo principal do projeto
+  centroCustoId: int("centroCustoId"),
+  valorContratado: decimal("valorContratado", { precision: 15, scale: 2 }).default("0"),
+  localExecucao: varchar("localExecucao", { length: 255 }),
+  descricao: text("descricao"),
+  observacoes: text("observacoes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+export type Projeto = typeof projetos.$inferSelect;
+export type InsertProjeto = typeof projetos.$inferInsert;
+
 // ─── Centros de Custo ────────────────────────────────────────────────────────
 export const centrosCusto = mysqlTable("centros_custo", {
   id: int("id").autoincrement().primaryKey(),
@@ -24,6 +70,10 @@ export const centrosCusto = mysqlTable("centros_custo", {
   // Vínculo com contrato (criado automaticamente ao ativar contrato)
   contratoId: int("contratoId"),
   tipo: mysqlEnum("tipo", ["operacional", "administrativo", "contrato", "projeto", "investimento", "outro"]).default("operacional").notNull(),
+  // Classificação estratégica do centro de custo
+  classificacao: mysqlEnum("classificacao", ["ESTRATEGICO", "OPERACIONAL", "PROJETO", "ADMINISTRATIVO", "INVESTIMENTO"]).default("OPERACIONAL"),
+  // Vínculo direto com projeto (quando classificacao = PROJETO)
+  projetoId: int("projetoId"),
   // Responsável pelo centro de custo
   responsavel: varchar("responsavel", { length: 150 }),
   // Observações livres
@@ -102,6 +152,8 @@ export const pagamentos = mysqlTable("pagamentos", {
   clienteId: int("clienteId").references(() => clientes.id),
   centroCustoId: int("centroCustoId").references(() => centrosCusto.id),
   contratoId: int("contratoId").references(() => contratos.id),
+  // Vínculo com projeto (opcional, compatibilidade retroativa)
+  projetoId: int("projetoId").references(() => projetos.id),
   valor: decimal("valor", { precision: 15, scale: 2 }).notNull(),
   valorEquipamento: decimal("valorEquipamento", { precision: 15, scale: 2 }).default("0"),
   valorServico: decimal("valorServico", { precision: 15, scale: 2 }).default("0"),
@@ -132,6 +184,8 @@ export const recebimentos = mysqlTable("recebimentos", {
   clienteId: int("clienteId").references(() => clientes.id),
   centroCustoId: int("centroCustoId").references(() => centrosCusto.id),
   contratoId: int("contratoId").references(() => contratos.id),
+  // Vínculo com projeto (opcional, compatibilidade retroativa)
+  projetoId: int("projetoId").references(() => projetos.id),
   valorTotal: decimal("valorTotal", { precision: 15, scale: 2 }).notNull(),
   valorEquipamento: decimal("valorEquipamento", { precision: 15, scale: 2 }).default("0"),
   valorServico: decimal("valorServico", { precision: 15, scale: 2 }).default("0"),
@@ -273,6 +327,8 @@ export const materiais = mysqlTable("materiais", {
   // Data de inserção do material no catálogo
   dataInsercao: date("dataInsercao"),
   ativo: boolean("ativo").default(true).notNull(),
+  // Vínculo com projeto (opcional, compatibilidade retroativa)
+  projetoId: int("projetoId").references(() => projetos.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -291,6 +347,8 @@ export const contratos = mysqlTable("contratos", {
   clienteId: int("clienteId").references(() => clientes.id),
   // Centro de Custo criado automaticamente ao ativar o contrato
   centroCustoId: int("centroCustoId"),
+  // Vínculo com projeto (opcional, compatibilidade retroativa)
+  projetoId: int("projetoId").references(() => projetos.id),
   valorTotal: decimal("valorTotal", { precision: 15, scale: 2 }).notNull(),
   valorPrevisto: decimal("valorPrevisto", { precision: 15, scale: 2 }),
   margemPrevista: decimal("margemPrevista", { precision: 5, scale: 2 }),
@@ -323,7 +381,8 @@ export const ordensServico = mysqlTable("ordens_servico", {
   titulo: varchar("titulo", { length: 200 }).notNull(),
   descricao: text("descricao"),
   // Status alinhado com fluxo ERP: planejada → autorizada → em_execucao → concluida
-  status: mysqlEnum("status", ["planejada", "autorizada", "em_execucao", "concluida", "cancelada"]).default("planejada").notNull(),
+  // Status expandido conforme requisito: PLANEJADA, AGENDADA, EM_DESLOCAMENTO, EM_EXECUCAO, PAUSADA, CONCLUIDA, AGUARDANDO_VALIDACAO, CANCELADA
+  status: mysqlEnum("status", ["planejada", "agendada", "em_deslocamento", "autorizada", "em_execucao", "pausada", "concluida", "aguardando_validacao", "cancelada"]).default("planejada").notNull(),
   prioridade: mysqlEnum("prioridade", ["baixa", "media", "alta", "urgente"]).default("media").notNull(),
   responsavel: varchar("responsavel", { length: 150 }),
   dataAbertura: date("dataAbertura"),
@@ -342,6 +401,13 @@ export const ordensServico = mysqlTable("ordens_servico", {
   enderecoCep: varchar("enderecoCep", { length: 10 }),
   // Centro de Custo vinculado (herdado do contrato ou definido manualmente)
   centroCustoId: int("centroCustoId").references(() => centrosCusto.id),
+  // Vínculo com projeto (obrigatório conforme requisito, mas opcional para compatibilidade retroativa)
+  projetoId: int("projetoId").references(() => projetos.id),
+  // Equipe responsável pela OS (JSON array de nomes/IDs)
+  equipe: text("equipe"),
+  // Datas reais de início e fim da OS
+  dataInicioReal: date("dataInicioReal"),
+  dataFimReal: date("dataFimReal"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -384,6 +450,7 @@ export type UserPermission = typeof userPermissions.$inferSelect;
 export type InsertUserPermission = typeof userPermissions.$inferInsert;
 
 // Módulos disponíveis no sistema
+// Módulo projetos adicionado ao sistema de permissões
 export const MODULOS = [
   { id: "dashboard", label: "Dashboard", grupo: "Geral" },
   { id: "pagamentos", label: "Compras e Pagamentos", grupo: "Financeiro" },
@@ -395,6 +462,7 @@ export const MODULOS = [
   { id: "engenharia_os", label: "Ordens de Serviço", grupo: "Engenharia" },
   { id: "engenharia_materiais", label: "Materiais e Tipos de Serviço", grupo: "Engenharia" },
   { id: "extrato_cliente", label: "Extrato por Cliente", grupo: "Financeiro" },
+  { id: "projetos", label: "Projetos", grupo: "Engenharia" },
 ] as const;
 export type ModuloId = typeof MODULOS[number]["id"];
 
@@ -405,6 +473,7 @@ export const PERFIS_ACESSO: Record<string, { label: string; descricao: string; p
     descricao: "Acesso completo a todos os módulos financeiros e administrativos (sem exclusão — apenas admin pode excluir)",
     permissoes: Object.fromEntries(MODULOS.map(m => [m.id, { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false }])),
   },
+
   financeiro: {
     label: "Financeiro",
     descricao: "Acesso a pagamentos, recebimentos, relatórios e centros de custo. Sem acesso a engenharia.",
@@ -419,6 +488,7 @@ export const PERFIS_ACESSO: Record<string, { label: string; descricao: string; p
       engenharia_os: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
       engenharia_materiais: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
       extrato_cliente: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
+      projetos: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
     },
   },
   engenharia: {
@@ -435,6 +505,7 @@ export const PERFIS_ACESSO: Record<string, { label: string; descricao: string; p
       engenharia_os: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
       engenharia_materiais: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
       extrato_cliente: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      projetos: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
     },
   },
   operacional: {
@@ -451,6 +522,7 @@ export const PERFIS_ACESSO: Record<string, { label: string; descricao: string; p
       engenharia_os: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
       engenharia_materiais: { podeVer: true, podeCriar: false, podeEditar: false, podeExcluir: false },
       extrato_cliente: { podeVer: false, podeCriar: false, podeEditar: false, podeExcluir: false },
+      projetos: { podeVer: true, podeCriar: true, podeEditar: true, podeExcluir: false },
     },
   },
   somente_leitura: {

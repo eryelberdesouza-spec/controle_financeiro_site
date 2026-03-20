@@ -10,7 +10,9 @@ export type ModuloId =
   | "engenharia_contratos"
   | "engenharia_materiais"
   | "relatorios"
-  | "dashboard";
+  | "dashboard"
+  | "extrato_cliente"
+  | "projetos";
 
 export interface ModuloPermissions {
   podeVer: boolean;

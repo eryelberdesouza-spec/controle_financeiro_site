@@ -26,21 +26,35 @@ const TIPOS_CC = [
 
 type TipoCC = typeof TIPOS_CC[number]["value"];
 
+type ClassificacaoCC = "ESTRATEGICO" | "OPERACIONAL" | "PROJETO" | "ADMINISTRATIVO" | "INVESTIMENTO";
+
 type FormData = {
   nome: string;
   descricao: string;
   tipo: TipoCC;
+  classificacao: ClassificacaoCC;
   responsavel: string;
   observacoes: string;
+  projetoId: number | null;
 };
 
 const emptyForm: FormData = {
   nome: "",
   descricao: "",
   tipo: "operacional",
+  classificacao: "OPERACIONAL",
   responsavel: "",
   observacoes: "",
+  projetoId: null,
 };
+
+const CLASSIFICACOES_CC = [
+  { value: "ESTRATEGICO", label: "Estratégico" },
+  { value: "OPERACIONAL", label: "Operacional" },
+  { value: "PROJETO", label: "Projeto" },
+  { value: "ADMINISTRATIVO", label: "Administrativo" },
+  { value: "INVESTIMENTO", label: "Investimento" },
+] as const;
 
 const tipoBadgeColor: Record<TipoCC, string> = {
   operacional: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
@@ -67,6 +81,7 @@ export default function CentrosCusto() {
   const [expandidoId, setExpandidoId] = useState<number | null>(null);
 
   const { data: centros = [] } = trpc.centrosCusto.list.useQuery();
+  const { data: listaProjetos = [] } = trpc.projetos.list.useQuery();
   const { data: relatorio } = trpc.centrosCusto.relatorio.useQuery(
     { centroCustoId: ccRelatorio ?? undefined },
     { enabled: ccRelatorio !== null }
@@ -117,8 +132,10 @@ export default function CentrosCusto() {
       nome: c.nome,
       descricao: c.descricao ?? "",
       tipo: (c.tipo as TipoCC) ?? "operacional",
+      classificacao: ((c as any).classificacao as ClassificacaoCC) ?? "OPERACIONAL",
       responsavel: (c as any).responsavel ?? "",
       observacoes: (c as any).observacoes ?? "",
+      projetoId: (c as any).projetoId ?? null,
     });
     setEditandoId(c.id);
     setDialogAberto(true);
@@ -130,8 +147,10 @@ export default function CentrosCusto() {
       nome: form.nome.trim(),
       descricao: form.descricao || undefined,
       tipo: form.tipo,
+      classificacao: form.classificacao,
       responsavel: form.responsavel || undefined,
       observacoes: form.observacoes || undefined,
+      projetoId: form.projetoId,
     };
     if (editandoId) {
       updateMutation.mutate({ id: editandoId, ...payload });
@@ -431,6 +450,20 @@ export default function CentrosCusto() {
                 </div>
 
                 <div className="space-y-1.5">
+                  <Label>Classificação</Label>
+                  <Select value={form.classificacao} onValueChange={(v) => setForm(f => ({ ...f, classificacao: v as ClassificacaoCC }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CLASSIFICACOES_CC.map(c => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
                   <Label>Tipo</Label>
                   <Select value={form.tipo} onValueChange={(v) => setForm(f => ({ ...f, tipo: v as TipoCC }))}>
                     <SelectTrigger>
@@ -439,6 +472,24 @@ export default function CentrosCusto() {
                     <SelectContent>
                       {TIPOS_CC.map(t => (
                         <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Projeto Vinculado <span className="text-xs text-muted-foreground">(quando classificação = Projeto)</span></Label>
+                  <Select
+                    value={form.projetoId ? String(form.projetoId) : "none"}
+                    onValueChange={v => setForm(f => ({ ...f, projetoId: v === "none" ? null : Number(v) }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecionar projeto..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Nenhum —</SelectItem>
+                      {listaProjetos.map((proj: any) => (
+                        <SelectItem key={proj.id} value={String(proj.id)}>
+                          {proj.numero ? `${proj.numero} — ` : ""}{proj.nome}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

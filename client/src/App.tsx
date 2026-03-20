@@ -19,6 +19,7 @@ import ExtratoCliente from "./pages/ExtratoCliente";
 import Engenharia from "./pages/Engenharia";
 import Contratos from "./pages/Contratos";
 import RelatorioCentroCusto from "./pages/RelatorioCentroCusto";
+import Projetos from "./pages/Projetos";
 
 function Router() {
   return (
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/contratos" component={Contratos} />
       <Route path="/engenharia" component={Engenharia} />
       <Route path="/relatorio-centro-custo" component={RelatorioCentroCusto} />
+      <Route path="/projetos" component={Projetos} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

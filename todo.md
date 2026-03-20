@@ -538,3 +538,50 @@
 ## Bug Crítico — Switch Parcelamento Pagamentos (v42)
 - [x] Corrigir: switch "Pagamento Parcelado" não aparece no formulário de edição de pagamentos
 - [x] Garantir que a seção de parcelamento aparece tanto na criação quanto na edição
+
+## Arquitetura Orientada a PROJETOS (v44)
+
+### Schema e Banco de Dados
+- [x] Criar tabela `projetos` com todos os campos obrigatórios e opcionais
+- [x] Adicionar enum `tipo_projeto`: INSTALACAO, MANUTENCAO, SERVICO_PONTUAL, OBRA, RECORRENTE, CONSULTORIA, PARCERIA, OUTROS
+- [x] Adicionar enum `status_projeto`: PLANEJAMENTO, AGUARDANDO_CONTRATO, AGUARDANDO_MOBILIZACAO, EM_EXECUCAO, PAUSADO, CONCLUIDO_TECNICAMENTE, ENCERRADO_FINANCEIRAMENTE, CANCELADO
+- [x] Adicionar campo `projetoId` (opcional) na tabela `contratos`
+- [x] Adicionar campo `projetoId` (opcional) na tabela `ordens_servico`
+- [x] Adicionar campo `projetoId` (opcional) na tabela `recebimentos`
+- [x] Adicionar campo `projetoId` (opcional) na tabela `pagamentos`
+- [x] Adicionar campo `projetoId` (opcional) na tabela `materiais`
+- [x] Adicionar campo `classificacao` na tabela `centros_custo` (ESTRATEGICO, OPERACIONAL, PROJETO, ADMINISTRATIVO, INVESTIMENTO)
+- [x] Adicionar campos `equipe`, `dataInicioReal`, `dataFimReal` na tabela `ordens_servico`
+- [x] Atualizar enum status_os com novos valores: PLANEJADA, AGENDADA, EM_DESLOCAMENTO, EM_EXECUCAO, PAUSADA, CONCLUIDA, AGUARDANDO_VALIDACAO, CANCELADA
+- [x] Rodar migração do banco (pnpm db:push)
+
+### Backend — Helpers e Procedures
+- [x] Criar helpers de DB: `listProjetos`, `getProjeto`, `createProjeto`, `updateProjeto`, `deleteProjeto`
+- [x] Criar helper `getPainelProjeto` (dados consolidados: financeiro, execução, relacionamentos)
+- [x] Criar procedures tRPC: `projetos.list`, `projetos.get`, `projetos.create`, `projetos.update`, `projetos.delete`
+- [x] Criar procedure `projetos.painel` (retorna dados consolidados do painel)
+- [x] Criar procedure `projetos.nextNumero` (PRJ-AAAA-MM-NNN)
+- [x] Fluxo automático: ao vincular contrato a projeto → atualizar `valor_contratado`, CC e status
+- [x] Fluxo automático: 1ª OS iniciada → status do projeto → EM_EXECUCAO + `data_inicio_real`
+- [x] Fluxo automático: OS concluída → atualizar progresso do projeto
+- [x] Fluxo automático: recebimento confirmado → atualizar receita realizada do projeto
+- [x] Automatização de receitas previstas: se contrato tem valor, gerar recebimentos previstos vinculados ao projeto
+- [x] Permissão: usuários operacionais veem apenas projetos/OS atribuídos a eles
+
+### Frontend — Página de Projetos
+- [x] Criar página `Projetos.tsx` com listagem, filtros (status, tipo, cliente) e cards de resumo
+- [x] Criar formulário de criação/edição de projeto (todos os campos)
+- [x] Criar painel do projeto (modal ou página dedicada) com: identificação, financeiro, execução, relacionamentos
+- [x] Adicionar item "Projetos" no menu lateral (DashboardLayout)
+- [x] Rota `/projetos` registrada no App.tsx
+
+### Integração nos Formulários Existentes
+- [x] Formulário de Contratos: campo `projetoId` para vincular a projeto existente
+- [x] Formulário de OS: campo `projetoId` adicionado (herda do contrato automaticamente)
+- [x] Formulário de Pagamentos: campo `projetoId` adicionado (select de projetos, opcional)
+- [x] Formulário de Recebimentos: campo `projetoId` adicionado (select de projetos, opcional)
+- [x] Formulário de Centros de Custo: campos `classificacao` e `projetoId` adicionados
+
+
+### Testes
+- [x] Verificar que todos os testes existentes continuam passando (53 testes passando)

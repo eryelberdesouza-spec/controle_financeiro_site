@@ -172,16 +172,32 @@ function PainelProjeto({ projetoId, onClose }: { projetoId: number; onClose: () 
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
             <DollarSign className="w-4 h-4" /> Financeiro
+            {/* Status financeiro badge */}
+            {(() => {
+              const sf = (financeiro as any).statusFinanceiro as string | undefined;
+              const sfCfg: Record<string, { label: string; color: string }> = {
+                SEM_RECEITA: { label: "Sem Receita", color: "bg-gray-100 text-gray-600" },
+                EM_RECEBIMENTO: { label: "Em Recebimento", color: "bg-blue-100 text-blue-700" },
+                RECEITA_PARCIAL: { label: "Receita Parcial", color: "bg-yellow-100 text-yellow-700" },
+                RECEITA_COMPLETA: { label: "Receita Completa", color: "bg-green-100 text-green-700" },
+                INADIMPLENTE: { label: "Inadimplente", color: "bg-red-100 text-red-700" },
+              };
+              const cfg = sf ? sfCfg[sf] : null;
+              return cfg ? (
+                <span className={`ml-auto px-2 py-0.5 rounded text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
+              ) : null;
+            })()}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {[
               { label: "Valor Contratado", value: financeiro.valorContratado, color: "text-blue-600" },
               { label: "Receita Prevista", value: financeiro.receitaPrevista, color: "text-green-600" },
               { label: "Receita Realizada", value: financeiro.receitaRealizada, color: "text-emerald-600" },
               { label: "Custos Registrados", value: financeiro.custosRegistrados, color: "text-red-600" },
               { label: "Saldo a Receber", value: financeiro.saldoAReceber, color: financeiro.saldoAReceber >= 0 ? "text-green-600" : "text-red-600" },
+              { label: "Resultado Estimado", value: (financeiro as any).resultadoEstimado ?? (financeiro.receitaRealizada - financeiro.custosRegistrados), color: ((financeiro as any).resultadoEstimado ?? (financeiro.receitaRealizada - financeiro.custosRegistrados)) >= 0 ? "text-emerald-600" : "text-red-600" },
             ].map((item) => (
               <div key={item.label} className="text-center p-3 bg-muted/40 rounded-lg">
                 <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
@@ -189,6 +205,39 @@ function PainelProjeto({ projetoId, onClose }: { projetoId: number; onClose: () 
               </div>
             ))}
           </div>
+          {/* Barra de progresso financeiro */}
+          {(() => {
+            const pct = (financeiro as any).percentualRecebido as number | undefined;
+            const pctVal = pct ?? (financeiro.receitaPrevista > 0 ? Math.min(100, Math.round((financeiro.receitaRealizada / financeiro.receitaPrevista) * 100)) : 0);
+            return (
+              <div>
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Progresso de Recebimento</span>
+                  <span className="font-semibold">{pctVal}%</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all ${pctVal >= 100 ? 'bg-emerald-500' : pctVal >= 50 ? 'bg-blue-500' : 'bg-yellow-500'}`}
+                    style={{ width: `${Math.min(100, pctVal)}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })()}
+          {/* Indicador de encerramento */}
+          {(financeiro as any).prontoParaEncerramento && (
+            <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="text-sm text-emerald-700 font-medium">Pronto para Encerramento — todas as OS concluídas</span>
+            </div>
+          )}
+          {/* Alerta de inadimplência */}
+          {(financeiro as any).statusFinanceiro === "INADIMPLENTE" && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+              <span className="text-sm text-red-700 font-medium">Atenção: há recebimentos vencidos vinculados a este projeto</span>
+            </div>
+          )}
         </CardContent>
       </Card>
 

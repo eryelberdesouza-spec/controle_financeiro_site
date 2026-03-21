@@ -8,8 +8,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { eq } from "drizzle-orm";
-import { recebimentoParcelas, recebimentos } from "../drizzle/schema";
+import { eq, and, isNull } from "drizzle-orm";
+import { recebimentoParcelas, recebimentos, contratos, centrosCusto, pagamentos, projetos } from "../drizzle/schema";
 import {
   createCentroCusto,
   createCliente,
@@ -208,7 +208,33 @@ const pagamentosRouter = router({
       parcelado: z.boolean().optional(),
       quantidadeParcelas: z.number().optional(),
     }))
-    .mutation(({ input, ctx }) => createPagamento({ ...input, createdBy: ctx.user.id })),
+    .mutation(async ({ input, ctx }) => {
+      // Vínculo automático: se CC é do tipo PROJETO, vincular ao projeto do CC
+      let projetoId = input.projetoId ?? null;
+      if (!projetoId && input.centroCustoId) {
+        const db = await getDb();
+        if (db) {
+          // Buscar o CC para ver se é do tipo PROJETO
+          const ccRows = await db
+            .select({ classificacao: centrosCusto.classificacao })
+            .from(centrosCusto)
+            .where(eq(centrosCusto.id, input.centroCustoId))
+            .limit(1);
+          if (ccRows.length > 0 && ccRows[0].classificacao === "PROJETO") {
+            // Buscar o projeto vinculado a este CC
+            const projRows = await db
+              .select({ id: projetos.id })
+              .from(projetos)
+              .where(eq(projetos.centroCustoId, input.centroCustoId))
+              .limit(1);
+            if (projRows.length > 0) {
+              projetoId = projRows[0].id;
+            }
+          }
+        }
+      }
+      return createPagamento({ ...input, projetoId, createdBy: ctx.user.id });
+    }),
 
   update: staffProcedure
     .input(z.object({
@@ -300,7 +326,24 @@ const recebimentosRouter = router({
       status: z.enum(["Pendente", "Recebido", "Atrasado", "Cancelado"]).default("Pendente"),
       observacao: z.string().optional(),
     }))
-    .mutation(({ input, ctx }) => createRecebimento({ ...input, createdBy: ctx.user.id })),
+    .mutation(async ({ input, ctx }) => {
+      // Vínculo automático: se contrato tem projeto, vincular ao projeto
+      let projetoId = input.projetoId ?? null;
+      if (!projetoId && input.contratoId) {
+        const db = await getDb();
+        if (db) {
+          const ctRows = await db
+            .select({ projetoId: contratos.projetoId })
+            .from(contratos)
+            .where(eq(contratos.id, input.contratoId))
+            .limit(1);
+          if (ctRows.length > 0 && ctRows[0].projetoId) {
+            projetoId = ctRows[0].projetoId;
+          }
+        }
+      }
+      return createRecebimento({ ...input, projetoId, createdBy: ctx.user.id });
+    }),
 
   update: staffProcedure
     .input(z.object({

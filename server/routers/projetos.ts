@@ -118,7 +118,7 @@ export async function getPainelProjeto(id: number) {
   if (projetoRows.length === 0) return null;
   const projeto = projetoRows[0];
 
-  // Recebimentos vinculados ao projeto
+  // Recebimentos vinculados diretamente ao projeto
   const recRows = await db
     .select({
       id: recebimentos.id,
@@ -131,7 +131,7 @@ export async function getPainelProjeto(id: number) {
     .from(recebimentos)
     .where(eq(recebimentos.projetoId, id));
 
-  // Pagamentos vinculados ao projeto
+  // Pagamentos vinculados diretamente ao projeto
   const pagRows = await db
     .select({
       id: pagamentos.id,
@@ -140,9 +140,45 @@ export async function getPainelProjeto(id: number) {
       valor: pagamentos.valor,
       status: pagamentos.status,
       dataPagamento: pagamentos.dataPagamento,
+      centroCustoId: pagamentos.centroCustoId,
     })
     .from(pagamentos)
     .where(eq(pagamentos.projetoId, id));
+
+  // Pagamentos via CC do tipo PROJETO (se o projeto tem CC vinculado)
+  let pagViaCcRows: typeof pagRows = [];
+  if (projeto.centroCustoId) {
+    const ccRows = await db
+      .select({ classificacao: centrosCusto.classificacao })
+      .from(centrosCusto)
+      .where(eq(centrosCusto.id, projeto.centroCustoId))
+      .limit(1);
+    if (ccRows.length > 0 && ccRows[0].classificacao === "PROJETO") {
+      pagViaCcRows = await db
+        .select({
+          id: pagamentos.id,
+          numeroControle: pagamentos.numeroControle,
+          nomeCompleto: pagamentos.nomeCompleto,
+          valor: pagamentos.valor,
+          status: pagamentos.status,
+          dataPagamento: pagamentos.dataPagamento,
+          centroCustoId: pagamentos.centroCustoId,
+        })
+        .from(pagamentos)
+        .where(
+          and(
+            eq(pagamentos.centroCustoId, projeto.centroCustoId),
+            isNull(pagamentos.projetoId) // evitar duplicatas
+          )
+        );
+    }
+  }
+
+  // Unir pagamentos diretos + via CC (sem duplicatas)
+  const todosOsPagamentos = [
+    ...pagRows,
+    ...pagViaCcRows.filter(p => !pagRows.some(pr => pr.id === p.id)),
+  ];
 
   // OS vinculadas ao projeto
   const osRows = await db
@@ -170,13 +206,50 @@ export async function getPainelProjeto(id: number) {
     .from(contratos)
     .where(eq(contratos.projetoId, id));
 
-  // Cálculos financeiros
+  // ─── Cálculos Financeiros ────────────────────────────────────────────────────
+  const agora = new Date();
+
+  // Receita prevista = soma de todos os recebimentos vinculados (independente do status)
   const receitaPrevista = recRows.reduce((s, r) => s + parseFloat(String(r.valorTotal ?? 0)), 0);
+
+  // Receita realizada = recebimentos com status "Recebido"
   const receitaRealizada = recRows
     .filter((r) => r.status === "Recebido")
     .reduce((s, r) => s + parseFloat(String(r.valorTotal ?? 0)), 0);
-  const custosRegistrados = pagRows.reduce((s, p) => s + parseFloat(String(p.valor ?? 0)), 0);
+
+  // Custos totais = todos os pagamentos vinculados
+  const custosRegistrados = todosOsPagamentos.reduce((s, p) => s + parseFloat(String(p.valor ?? 0)), 0);
+
   const saldoAReceber = receitaPrevista - receitaRealizada;
+  const resultadoEstimado = receitaRealizada - custosRegistrados;
+  const percentualRecebido = receitaPrevista > 0 ? (receitaRealizada / receitaPrevista) * 100 : 0;
+
+  // ─── Status Financeiro Derivado ──────────────────────────────────────────────
+  // Verificar inadimplência: recebimentos vencidos e não recebidos
+  const temInadimplencia = recRows.some((r) => {
+    if (r.status === "Recebido") return false;
+    if (!r.dataVencimento) return false;
+    return new Date(r.dataVencimento) < agora;
+  });
+
+  let statusFinanceiro: string;
+  if (temInadimplencia) {
+    statusFinanceiro = "INADIMPLENTE";
+  } else if (receitaPrevista === 0) {
+    statusFinanceiro = "SEM_RECEITA";
+  } else if (receitaRealizada >= receitaPrevista) {
+    statusFinanceiro = "RECEITA_COMPLETA";
+  } else if (receitaRealizada > 0) {
+    statusFinanceiro = percentualRecebido >= 50 ? "RECEITA_PARCIAL" : "EM_RECEBIMENTO";
+  } else {
+    statusFinanceiro = "EM_RECEBIMENTO";
+  }
+
+  // ─── Indicador de Encerramento ───────────────────────────────────────────────
+  const todasOsConcluidas =
+    osRows.length > 0 &&
+    osRows.every((o) => ["concluida", "cancelada"].includes(o.status));
+  const prontoParaEncerramento = todasOsConcluidas && saldoAReceber <= 0;
 
   const osAbertas = osRows.filter((o) => !["concluida", "cancelada"].includes(o.status)).length;
   const osConcluidas = osRows.filter((o) => o.status === "concluida").length;
@@ -189,6 +262,11 @@ export async function getPainelProjeto(id: number) {
       receitaRealizada,
       custosRegistrados,
       saldoAReceber,
+      resultadoEstimado,
+      percentualRecebido: Math.round(percentualRecebido * 100) / 100,
+      statusFinanceiro,
+      temInadimplencia,
+      prontoParaEncerramento,
     },
     execucao: {
       totalOS: osRows.length,
@@ -198,7 +276,7 @@ export async function getPainelProjeto(id: number) {
     relacionamentos: {
       contratos: ctRows,
       recebimentos: recRows,
-      pagamentos: pagRows,
+      pagamentos: todosOsPagamentos,
       ordensServico: osRows,
     },
   };

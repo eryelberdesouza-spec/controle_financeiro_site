@@ -620,3 +620,30 @@
 - [x] OS sem `projeto_id` não pode ser criada (bloqueia com toast)
 - [x] Histórico de status preservado em `os_status_historico`
 - [x] Compatibilidade retroativa: OS antigas sem `projeto_id` continuam visíveis (campo opcional para dados antigos)
+
+## Automação Financeira de Projetos (v47+) — CONCLUÍDO
+
+### Backend — Cálculos Financeiros
+- [x] Procedure `projetos.painel` expandida: calcular `receita_prevista_total`, `receita_realizada_total`, `saldo_a_receber` (baseado em recebimentos vinculados ao projeto)
+- [x] Calcular `custos_totais_registrados` (pagamentos vinculados ao projeto ou ao CC do projeto)
+- [x] Calcular `resultado_estimado = receita_realizada_total − custos_totais_registrados`
+- [x] Calcular `percentual_recebido = receita_realizada_total / receita_prevista_total`
+- [x] Derivar `status_financeiro`: SEM_RECEITA, EM_RECEBIMENTO, RECEITA_PARCIAL, RECEITA_COMPLETA, INADIMPLENTE
+- [x] Alerta de inadimplência: recebimentos vencidos → status INADIMPLENTE
+- [x] Indicador "PRONTO PARA ENCERRAMENTO" se todas as OS do projeto estiverem CONCLUIDAS
+
+### Backend — Vínculos Automáticos
+- [x] Ao criar recebimento com contrato que tem projeto → vincular automaticamente ao projeto
+- [x] Ao criar pagamento com CC do tipo PROJETO → vincular ao projeto correspondente do CC
+
+### Frontend — Painel Financeiro do Projeto
+- [x] Exibir cards: Receita Prevista, Receita Realizada, Saldo a Receber, Custos, Resultado Estimado (grid 2x3)
+- [x] Exibir barra de progresso: percentual recebido com cor dinâmica (amarelo/azul/verde)
+- [x] Exibir badge de status financeiro (SEM_RECEITA, EM_RECEBIMENTO, RECEITA_PARCIAL, RECEITA_COMPLETA, INADIMPLENTE)
+- [x] Exibir indicador "PRONTO PARA ENCERRAMENTO" quando todas as OS estiverem concluídas
+- [x] Exibir alerta de inadimplência com ícone de aviso
+- [x] Listar recebimentos e pagamentos vinculados ao projeto no painel (abas)
+
+### Validações
+- [x] Compatibilidade retroativa: projetos sem recebimentos/pagamentos vinculados mostram R$ 0,00
+- [x] Não modificar lógica financeira existente (pagamentos/recebimentos independentes continuam funcionando)

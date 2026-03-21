@@ -383,15 +383,28 @@ export const ordensServico = mysqlTable("ordens_servico", {
   // Status alinhado com fluxo ERP: planejada → autorizada → em_execucao → concluida
   // Status expandido conforme requisito: PLANEJADA, AGENDADA, EM_DESLOCAMENTO, EM_EXECUCAO, PAUSADA, CONCLUIDA, AGUARDANDO_VALIDACAO, CANCELADA
   status: mysqlEnum("status", ["planejada", "agendada", "em_deslocamento", "autorizada", "em_execucao", "pausada", "concluida", "aguardando_validacao", "cancelada"]).default("planejada").notNull(),
-  prioridade: mysqlEnum("prioridade", ["baixa", "media", "alta", "urgente"]).default("media").notNull(),
+  prioridade: mysqlEnum("prioridade", ["baixa", "normal", "alta", "critica"]).default("normal").notNull(),
+  // Tipo e categoria do serviço
+  tipoServico: varchar("tipoServico", { length: 100 }),
+  categoriaServico: varchar("categoriaServico", { length: 100 }),
+  // Responsável (nome legado) e responsável por ID (usuário do sistema)
   responsavel: varchar("responsavel", { length: 150 }),
+  responsavelUsuarioId: int("responsavelUsuarioId").references(() => users.id),
+  // Equipe (JSON array de IDs de usuários)
+  equipeIds: text("equipeIds"),
+  // Datas de agendamento e previsão
+  dataAgendamento: date("dataAgendamento"),
+  dataInicioPrevista: date("dataInicioPrevista"),
+  dataFimPrevista: date("dataFimPrevista"),
   dataAbertura: date("dataAbertura"),
   dataPrevisao: date("dataPrevisao"),
   dataConclusao: date("dataConclusao"),
   valorEstimado: decimal("valorEstimado", { precision: 15, scale: 2 }),
   valorRealizado: decimal("valorRealizado", { precision: 15, scale: 2 }),
   observacoes: text("observacoes"),
-  // Endereço do local de execução da OS
+  // Local de execução (campo único para simplicidade operacional)
+  localExecucao: varchar("localExecucao", { length: 500 }),
+  // Endereço detalhado do local de execução da OS (mantido para compatibilidade)
   enderecoLogradouro: varchar("enderecoLogradouro", { length: 255 }),
   enderecoNumero: varchar("enderecoNumero", { length: 20 }),
   enderecoComplemento: varchar("enderecoComplemento", { length: 100 }),
@@ -403,8 +416,12 @@ export const ordensServico = mysqlTable("ordens_servico", {
   centroCustoId: int("centroCustoId").references(() => centrosCusto.id),
   // Vínculo com projeto (obrigatório conforme requisito, mas opcional para compatibilidade retroativa)
   projetoId: int("projetoId").references(() => projetos.id),
-  // Equipe responsável pela OS (JSON array de nomes/IDs)
+  // Equipe responsável pela OS (JSON array de nomes/IDs - legado)
   equipe: text("equipe"),
+  // Checklist operacional (JSON array de itens)
+  checklistJson: text("checklistJson"),
+  // Evidências de execução (JSON array de URLs)
+  evidenciasUrls: text("evidenciasUrls"),
   // Datas reais de início e fim da OS
   dataInicioReal: date("dataInicioReal"),
   dataFimReal: date("dataFimReal"),
@@ -414,6 +431,19 @@ export const ordensServico = mysqlTable("ordens_servico", {
 });
 export type OrdemServico = typeof ordensServico.$inferSelect;
 export type InsertOrdemServico = typeof ordensServico.$inferInsert;
+
+// Histórico de mudanças de status da OS
+export const osStatusHistorico = mysqlTable("os_status_historico", {
+  id: int("id").autoincrement().primaryKey(),
+  osId: int("osId").notNull().references(() => ordensServico.id, { onDelete: "cascade" }),
+  statusAnterior: varchar("statusAnterior", { length: 50 }),
+  statusNovo: varchar("statusNovo", { length: 50 }).notNull(),
+  usuarioId: int("usuarioId").references(() => users.id),
+  observacao: text("observacao"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type OsStatusHistorico = typeof osStatusHistorico.$inferSelect;
+export type InsertOsStatusHistorico = typeof osStatusHistorico.$inferInsert;
 
 // Itens da Ordem de Serviço (serviços e materiais)
 export const osItens = mysqlTable("os_itens", {

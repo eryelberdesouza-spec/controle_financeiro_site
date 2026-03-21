@@ -13,9 +13,10 @@ async function requirePerm(userId: number, userRole: string, modulo: string, aca
 }
 import {
   tiposServico, materiais, contratos, ordensServico, osItens, clientes,
-  pagamentos, recebimentos, pagamentoParcelas, recebimentoParcelas, centrosCusto
+  pagamentos, recebimentos, pagamentoParcelas, recebimentoParcelas, centrosCusto,
+  osStatusHistorico, projetos, users
 } from "../../drizzle/schema";
-import { eq, like, desc, and, sql, inArray, or } from "drizzle-orm";
+import { eq, like, desc, and, sql, inArray, or, gte, lte, ne, isNotNull } from "drizzle-orm";
 
 // === Tipos de Serviço ===
 export const tiposServicoRouter = router({
@@ -393,16 +394,27 @@ export const ordensServicoRouter = router({
       contratoId: z.number().optional(),
       centroCustoId: z.number().optional(),
       clienteId: z.number().optional(),
+      projetoId: z.number().optional(),
       status: z.string().optional(),
     }).optional())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const d = await getDb();
       if (!d) return [];
       const conditions = [];
       if (input?.contratoId) conditions.push(eq(ordensServico.contratoId, input.contratoId));
       if (input?.centroCustoId) conditions.push(eq(ordensServico.centroCustoId, input.centroCustoId));
       if (input?.clienteId) conditions.push(eq(ordensServico.clienteId, input.clienteId));
+      if (input?.projetoId) conditions.push(eq(ordensServico.projetoId, input.projetoId));
       if (input?.status) conditions.push(eq(ordensServico.status, input.status as any));
+      // Usuários operacionais veem apenas OS atribuídas a eles
+      if (ctx.user.role === "operacional") {
+        conditions.push(
+          or(
+            eq(ordensServico.responsavelUsuarioId, ctx.user.id),
+            sql`JSON_CONTAINS(COALESCE(${ordensServico.equipeIds}, '[]'), CAST(${ctx.user.id} AS JSON))`
+          ) as any
+        );
+      }
       return d
         .select({
           id: ordensServico.id,
@@ -410,21 +422,35 @@ export const ordensServicoRouter = router({
           contratoId: ordensServico.contratoId,
           centroCustoId: ordensServico.centroCustoId,
           clienteId: ordensServico.clienteId,
+          projetoId: ordensServico.projetoId,
           titulo: ordensServico.titulo,
           descricao: ordensServico.descricao,
           status: ordensServico.status,
           prioridade: ordensServico.prioridade,
+          tipoServico: ordensServico.tipoServico,
+          categoriaServico: ordensServico.categoriaServico,
           responsavel: ordensServico.responsavel,
+          responsavelUsuarioId: ordensServico.responsavelUsuarioId,
+          equipeIds: ordensServico.equipeIds,
+          localExecucao: ordensServico.localExecucao,
+          dataAgendamento: ordensServico.dataAgendamento,
+          dataInicioPrevista: ordensServico.dataInicioPrevista,
+          dataFimPrevista: ordensServico.dataFimPrevista,
           dataAbertura: ordensServico.dataAbertura,
           dataPrevisao: ordensServico.dataPrevisao,
           dataConclusao: ordensServico.dataConclusao,
+          dataInicioReal: ordensServico.dataInicioReal,
+          dataFimReal: ordensServico.dataFimReal,
           valorEstimado: ordensServico.valorEstimado,
           valorRealizado: ordensServico.valorRealizado,
           observacoes: ordensServico.observacoes,
+          checklistJson: ordensServico.checklistJson,
+          evidenciasUrls: ordensServico.evidenciasUrls,
           createdAt: ordensServico.createdAt,
           clienteNome: clientes.nome,
           contratoNumero: contratos.numero,
           centroCustoNome: centrosCusto.nome,
+          projetoNome: projetos.nome,
           enderecoLogradouro: ordensServico.enderecoLogradouro,
           enderecoNumero: ordensServico.enderecoNumero,
           enderecoComplemento: ordensServico.enderecoComplemento,
@@ -437,8 +463,115 @@ export const ordensServicoRouter = router({
         .leftJoin(clientes, eq(ordensServico.clienteId, clientes.id))
         .leftJoin(contratos, eq(ordensServico.contratoId, contratos.id))
         .leftJoin(centrosCusto, eq(ordensServico.centroCustoId, centrosCusto.id))
+        .leftJoin(projetos, eq(ordensServico.projetoId, projetos.id))
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(desc(ordensServico.createdAt));
+    }),
+
+  // Agenda operacional: OS não concluídas/canceladas com datas de agendamento ou previsão
+  agenda: protectedProcedure
+    .input(z.object({
+      dataInicio: z.string().optional(),
+      dataFim: z.string().optional(),
+    }).optional())
+    .query(async ({ ctx }) => {
+      const d = await getDb();
+      if (!d) return [];
+      const conditions = [
+        sql`${ordensServico.status} NOT IN ('concluida', 'cancelada')`,
+        sql`(${ordensServico.dataAgendamento} IS NOT NULL OR ${ordensServico.dataInicioPrevista} IS NOT NULL)`,
+      ];
+      if (ctx.user.role === "operacional") {
+        conditions.push(
+          or(
+            eq(ordensServico.responsavelUsuarioId, ctx.user.id),
+            sql`JSON_CONTAINS(COALESCE(${ordensServico.equipeIds}, '[]'), CAST(${ctx.user.id} AS JSON))`
+          ) as any
+        );
+      }
+      return d
+        .select({
+          id: ordensServico.id,
+          numero: ordensServico.numero,
+          titulo: ordensServico.titulo,
+          status: ordensServico.status,
+          prioridade: ordensServico.prioridade,
+          clienteId: ordensServico.clienteId,
+          projetoId: ordensServico.projetoId,
+          dataAgendamento: ordensServico.dataAgendamento,
+          dataInicioPrevista: ordensServico.dataInicioPrevista,
+          dataFimPrevista: ordensServico.dataFimPrevista,
+          localExecucao: ordensServico.localExecucao,
+          responsavel: ordensServico.responsavel,
+          responsavelUsuarioId: ordensServico.responsavelUsuarioId,
+          clienteNome: clientes.nome,
+          projetoNome: projetos.nome,
+        })
+        .from(ordensServico)
+        .leftJoin(clientes, eq(ordensServico.clienteId, clientes.id))
+        .leftJoin(projetos, eq(ordensServico.projetoId, projetos.id))
+        .where(and(...conditions))
+        .orderBy(ordensServico.dataAgendamento, ordensServico.dataInicioPrevista);
+    }),
+
+  // Histórico de status de uma OS
+  statusHistorico: protectedProcedure
+    .input(z.object({ osId: z.number() }))
+    .query(async ({ input }) => {
+      const d = await getDb();
+      if (!d) return [];
+      return d
+        .select({
+          id: osStatusHistorico.id,
+          statusAnterior: osStatusHistorico.statusAnterior,
+          statusNovo: osStatusHistorico.statusNovo,
+          observacao: osStatusHistorico.observacao,
+          createdAt: osStatusHistorico.createdAt,
+          usuarioNome: users.name,
+        })
+        .from(osStatusHistorico)
+        .leftJoin(users, eq(osStatusHistorico.usuarioId, users.id))
+        .where(eq(osStatusHistorico.osId, input.osId))
+        .orderBy(desc(osStatusHistorico.createdAt));
+    }),
+
+  // Atualizar checklist de uma OS
+  updateChecklist: protectedProcedure
+    .input(z.object({
+      osId: z.number(),
+      checklist: z.array(z.object({
+        descricao: z.string(),
+        obrigatorio: z.boolean(),
+        status: z.enum(["PENDENTE", "CONCLUIDO", "NAO_APLICAVEL"]),
+        usuarioResponsavelId: z.number().optional(),
+        dataConclusao: z.string().optional(),
+      })),
+    }))
+    .mutation(async ({ input }) => {
+      const d = await getDb();
+      if (!d) throw new Error("DB unavailable");
+      await d.update(ordensServico)
+        .set({ checklistJson: JSON.stringify(input.checklist) })
+        .where(eq(ordensServico.id, input.osId));
+    }),
+
+  // Adicionar evidência a uma OS
+  addEvidencia: protectedProcedure
+    .input(z.object({
+      osId: z.number(),
+      url: z.string().url(),
+      nome: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const d = await getDb();
+      if (!d) throw new Error("DB unavailable");
+      const [row] = await d.select({ evidenciasUrls: ordensServico.evidenciasUrls })
+        .from(ordensServico).where(eq(ordensServico.id, input.osId));
+      const atual: any[] = row?.evidenciasUrls ? JSON.parse(row.evidenciasUrls) : [];
+      atual.push({ url: input.url, nome: input.nome ?? input.url, adicionadoEm: new Date().toISOString() });
+      await d.update(ordensServico)
+        .set({ evidenciasUrls: JSON.stringify(atual) })
+        .where(eq(ordensServico.id, input.osId));
     }),
 
   getById: protectedProcedure
@@ -478,12 +611,22 @@ export const ordensServicoRouter = router({
       titulo: z.string().min(1).max(200),
       descricao: z.string().optional(),
       status: z.enum(["planejada", "autorizada", "em_execucao", "concluida", "cancelada", "agendada", "em_deslocamento", "pausada", "aguardando_validacao"]).optional(),
-      prioridade: z.enum(["baixa", "media", "alta", "urgente"]).optional(),
+      prioridade: z.enum(["baixa", "normal", "alta", "critica"]).optional(),
+      tipoServico: z.string().max(100).optional(),
+      categoriaServico: z.string().max(100).optional(),
       responsavel: z.string().optional(),
+      responsavelUsuarioId: z.number().optional(),
+      equipeIds: z.array(z.number()).optional(),
+      localExecucao: z.string().max(500).optional(),
+      dataAgendamento: z.string().optional(),
+      dataInicioPrevista: z.string().optional(),
+      dataFimPrevista: z.string().optional(),
       dataAbertura: z.string().optional(),
       dataPrevisao: z.string().optional(),
       valorEstimado: z.number().optional(),
       observacoes: z.string().optional(),
+      checklistJson: z.string().optional(),
+      evidenciasUrls: z.string().optional(),
       enderecoLogradouro: z.string().max(255).optional(),
       enderecoNumero: z.string().max(20).optional(),
       enderecoComplemento: z.string().max(100).optional(),
@@ -504,15 +647,31 @@ export const ordensServicoRouter = router({
     .mutation(async ({ input, ctx }) => {
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
-      const { itens, ...osData } = input;
+      // Validação: OS deve ter projeto vinculado
+      if (!input.projetoId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Uma OS deve estar vinculada a um Projeto." });
+      }
+      const { itens, equipeIds, ...osData } = input;
       const [result] = await d.insert(ordensServico).values({
         ...osData,
+        equipeIds: equipeIds ? JSON.stringify(equipeIds) : null,
         valorEstimado: osData.valorEstimado?.toString(),
         dataAbertura: osData.dataAbertura ? new Date(osData.dataAbertura) : null,
         dataPrevisao: osData.dataPrevisao ? new Date(osData.dataPrevisao) : null,
+        dataAgendamento: osData.dataAgendamento ? new Date(osData.dataAgendamento) : null,
+        dataInicioPrevista: osData.dataInicioPrevista ? new Date(osData.dataInicioPrevista) : null,
+        dataFimPrevista: osData.dataFimPrevista ? new Date(osData.dataFimPrevista) : null,
         createdBy: ctx.user.id,
       });
       const osId = result.insertId;
+      // Registrar status inicial no histórico
+      await d.insert(osStatusHistorico).values({
+        osId,
+        statusAnterior: null,
+        statusNovo: osData.status ?? "planejada",
+        usuarioId: ctx.user.id,
+        observacao: "OS criada",
+      });
       if (itens && itens.length > 0) {
         await d.insert(osItens).values(
           itens.map(item => ({
@@ -533,8 +692,16 @@ export const ordensServicoRouter = router({
       titulo: z.string().min(1).max(200),
       descricao: z.string().optional(),
       status: z.enum(["planejada", "autorizada", "em_execucao", "concluida", "cancelada", "agendada", "em_deslocamento", "pausada", "aguardando_validacao"]),
-      prioridade: z.enum(["baixa", "media", "alta", "urgente"]),
+      prioridade: z.enum(["baixa", "normal", "alta", "critica"]),
+      tipoServico: z.string().max(100).optional(),
+      categoriaServico: z.string().max(100).optional(),
       responsavel: z.string().optional(),
+      responsavelUsuarioId: z.number().optional(),
+      equipeIds: z.array(z.number()).optional(),
+      localExecucao: z.string().max(500).optional(),
+      dataAgendamento: z.string().optional(),
+      dataInicioPrevista: z.string().optional(),
+      dataFimPrevista: z.string().optional(),
       dataAbertura: z.string().optional(),
       dataPrevisao: z.string().optional(),
       dataConclusao: z.string().optional(),
@@ -543,6 +710,8 @@ export const ordensServicoRouter = router({
       valorEstimado: z.number().optional(),
       valorRealizado: z.number().optional(),
       observacoes: z.string().optional(),
+      checklistJson: z.string().optional(),
+      evidenciasUrls: z.string().optional(),
       contratoId: z.number().optional(),
       centroCustoId: z.number().optional(),
       clienteId: z.number().optional(),
@@ -554,21 +723,82 @@ export const ordensServicoRouter = router({
       enderecoCidade: z.string().max(100).optional(),
       enderecoEstado: z.string().max(2).optional(),
       enderecoCep: z.string().max(10).optional(),
+      observacaoStatus: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
-      const { id, ...data } = input;
+      const { id, equipeIds, observacaoStatus, ...data } = input;
+
+      // Buscar OS atual para comparar status e aplicar fluxos automáticos
+      const [osAtual] = await d.select().from(ordensServico).where(eq(ordensServico.id, id));
+      if (!osAtual) throw new TRPCError({ code: "NOT_FOUND", message: "OS não encontrada" });
+
+      // Validação de checklist antes de concluir
+      if (data.status === "concluida" && osAtual.checklistJson) {
+        const checklist = JSON.parse(osAtual.checklistJson) as Array<{ obrigatorio: boolean; status: string }>;
+        const pendentes = checklist.filter(i => i.obrigatorio && i.status !== "CONCLUIDO" && i.status !== "NAO_APLICAVEL");
+        if (pendentes.length > 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Não é possível concluir a OS: ${pendentes.length} item(ns) obrigatório(s) do checklist ainda pendente(s).`
+          });
+        }
+      }
+
+      // Fluxos automáticos por mudança de status
+      let dataInicioReal = data.dataInicioReal ? new Date(data.dataInicioReal) : undefined;
+      let dataFimReal = data.dataFimReal ? new Date(data.dataFimReal) : undefined;
+
+      if (data.status === "em_execucao" && osAtual.status !== "em_execucao") {
+        // Registrar data_inicio_real se ainda não definida
+        if (!osAtual.dataInicioReal && !dataInicioReal) {
+          dataInicioReal = new Date();
+        }
+        // Se projeto está em PLANEJAMENTO, atualizar para EM_EXECUCAO
+        if (osAtual.projetoId) {
+          const [proj] = await d.select({ statusOperacional: projetos.statusOperacional })
+            .from(projetos).where(eq(projetos.id, osAtual.projetoId));
+          if (proj?.statusOperacional === "PLANEJAMENTO" || proj?.statusOperacional === "AGUARDANDO_MOBILIZACAO") {
+            await d.update(projetos)
+              .set({ statusOperacional: "EM_EXECUCAO", dataInicioReal: new Date() })
+              .where(eq(projetos.id, osAtual.projetoId));
+          }
+        }
+      }
+
+      if (data.status === "concluida" && osAtual.status !== "concluida") {
+        // Registrar data_fim_real se ainda não definida
+        if (!osAtual.dataFimReal && !dataFimReal) {
+          dataFimReal = new Date();
+        }
+      }
+
       await d.update(ordensServico).set({
         ...data,
+        equipeIds: equipeIds !== undefined ? JSON.stringify(equipeIds) : undefined,
         valorEstimado: data.valorEstimado?.toString(),
         valorRealizado: data.valorRealizado?.toString(),
         dataAbertura: data.dataAbertura ? new Date(data.dataAbertura) : null,
         dataPrevisao: data.dataPrevisao ? new Date(data.dataPrevisao) : null,
         dataConclusao: data.dataConclusao ? new Date(data.dataConclusao) : null,
-        dataInicioReal: data.dataInicioReal ? new Date(data.dataInicioReal) : undefined,
-        dataFimReal: data.dataFimReal ? new Date(data.dataFimReal) : undefined,
+        dataAgendamento: data.dataAgendamento ? new Date(data.dataAgendamento) : undefined,
+        dataInicioPrevista: data.dataInicioPrevista ? new Date(data.dataInicioPrevista) : undefined,
+        dataFimPrevista: data.dataFimPrevista ? new Date(data.dataFimPrevista) : undefined,
+        dataInicioReal,
+        dataFimReal,
       }).where(eq(ordensServico.id, id));
+
+      // Registrar mudança de status no histórico
+      if (data.status !== osAtual.status) {
+        await d.insert(osStatusHistorico).values({
+          osId: id,
+          statusAnterior: osAtual.status,
+          statusNovo: data.status,
+          usuarioId: ctx.user.id,
+          observacao: observacaoStatus ?? null,
+        });
+      }
     }),
 
   delete: protectedProcedure

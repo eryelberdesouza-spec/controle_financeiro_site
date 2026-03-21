@@ -169,6 +169,13 @@
       "when": 1774042806978,
       "tag": "0023_talented_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1774054393660,
+      "tag": "0024_loving_lenny_balinger",
+      "breakpoints": true
     }
   ]
 }

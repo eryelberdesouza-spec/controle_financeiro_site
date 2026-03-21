@@ -585,3 +585,38 @@
 
 ### Testes
 - [x] Verificar que todos os testes existentes continuam passando (53 testes passando)
+
+## Módulo OS Avançado (v46+)
+
+### Schema e Banco
+- [x] Garantir campos na tabela `ordens_servico`: `tipo_servico`, `categoria_servico`, `prioridade`, `local_execucao`, `equipe_ids` (JSON), `data_agendamento`, `checklist_json`, `evidencias_urls` (JSON)
+- [x] Criar tabela `os_status_historico`: `id`, `os_id`, `status_anterior`, `status_novo`, `usuario_id`, `observacao`, `criado_em`
+- [x] Rodar migração `pnpm db:push`
+
+### Backend
+- [x] Atualizar schema Zod de create/update OS com todos os novos campos
+- [x] Validação: `projeto_id` obrigatório ao criar OS (bloqueia no frontend com toast de erro)
+- [x] Fluxo automático: EM_EXECUCAO → registrar `data_inicio_real` + atualizar projeto se PLANEJAMENTO
+- [x] Fluxo automático: CONCLUIDA → verificar checklist obrigatório + registrar `data_fim_real` + atualizar contadores do projeto
+- [x] Fluxo automático: PAUSADA → manter `data_inicio_real`, não alterar datas previstas
+- [x] Registrar histórico de mudança de status em `os_status_historico`
+- [x] Procedure `engenharia.agenda` para listar OS com filtro de data e status ≠ CONCLUIDA/CANCELADA
+
+### Frontend — Formulário de OS
+- [x] Adicionar campos: `tipo_servico`, `categoria_servico`, `prioridade` (select: BAIXA/NORMAL/ALTA/CRITICA)
+- [x] Adicionar campos: `local_execucao`, `data_agendamento`, `data_inicio_prevista`, `data_fim_prevista`
+- [x] Adicionar seção de Checklist (adicionar/remover itens, marcar obrigatório, status por item)
+- [x] Adicionar seção de Evidências (via AnexosPanel existente)
+- [x] `projeto_id` obrigatório no formulário (validação no handleSubmit)
+
+### Frontend — Agenda Operacional
+- [x] Criar aba "Agenda" na página de Engenharia
+- [x] Visualização em lista com OS agendadas por data (agrupa por dia)
+- [x] Indicador visual de prioridade (cor por BAIXA/NORMAL/ALTA/CRITICA)
+- [x] Destaque para OS de hoje e OS atrasadas
+- [x] Barra de progresso do checklist por OS
+
+### Validações
+- [x] OS sem `projeto_id` não pode ser criada (bloqueia com toast)
+- [x] Histórico de status preservado em `os_status_historico`
+- [x] Compatibilidade retroativa: OS antigas sem `projeto_id` continuam visíveis (campo opcional para dados antigos)

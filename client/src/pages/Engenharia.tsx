@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { EngenhariaImpressao, type ContratoParaImpressao, type OSParaImpressao, type MaterialParaImpressao, type TipoServicoParaImpressao } from "@/components/EngenhariaImpressao";
 import {
   Plus, Search, Edit2, Trash2, FileText, Wrench, Package, ClipboardList,
-  ChevronDown, ChevronUp, Eye, Link2, DollarSign, BarChart2, MapPin, Printer
+  ChevronDown, ChevronUp, Eye, Link2, DollarSign, BarChart2, MapPin, Printer, CheckSquare, Calendar
 } from "lucide-react";
 import AnexosPanel from "@/components/AnexosPanel";
 
@@ -794,13 +794,20 @@ function OrdensServicoTab() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [form, setForm] = useState({
     numero: "", titulo: "", descricao: "", status: "planejada" as const,
-    prioridade: "media" as const, responsavel: "", dataAbertura: "",
+    prioridade: "normal" as const, responsavel: "", dataAbertura: "",
     dataPrevisao: "", valorEstimado: "", observacoes: "",
     contratoId: "" as string | number, clienteId: "" as string | number,
     centroCustoId: null as number | null,
     projetoId: null as number | null,
     enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "",
     enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "",
+    // Novos campos OS avançada
+    tipoServico: "", categoriaServico: "",
+    localExecucao: "",
+    responsavelUsuarioId: null as number | null,
+    equipeIds: [] as number[],
+    dataAgendamento: "", dataInicioPrevista: "", dataFimPrevista: "",
+    checklistJson: "[]", evidenciasUrls: "[]",
   });
   const [itens, setItens] = useState<Array<{
     tipo: "servico" | "material"; tipoServicoId?: number; materialId?: number;
@@ -876,7 +883,7 @@ function OrdensServicoTab() {
   function openNew() {
     setEditId(null);
     setItens([]);
-    setForm({ numero: nextNumero ?? "", titulo: "", descricao: "", status: "planejada", prioridade: "media", responsavel: "", dataAbertura: new Date().toISOString().split("T")[0], dataPrevisao: "", valorEstimado: "", observacoes: "", contratoId: "", clienteId: "", centroCustoId: null, projetoId: null, enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "" });
+    setForm({ numero: nextNumero ?? "", titulo: "", descricao: "", status: "planejada", prioridade: "normal", responsavel: "", dataAbertura: new Date().toISOString().split("T")[0], dataPrevisao: "", valorEstimado: "", observacoes: "", contratoId: "", clienteId: "", centroCustoId: null, projetoId: null, enderecoLogradouro: "", enderecoNumero: "", enderecoComplemento: "", enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "", tipoServico: "", categoriaServico: "", localExecucao: "", responsavelUsuarioId: null, equipeIds: [], dataAgendamento: "", dataInicioPrevista: "", dataFimPrevista: "", checklistJson: "[]", evidenciasUrls: "[]" });
     setShowForm(true);
   }
 
@@ -885,7 +892,7 @@ function OrdensServicoTab() {
     setItens([]);
     setForm({
       numero: o.numero, titulo: o.titulo, descricao: o.descricao ?? "",
-      status: o.status as any, prioridade: o.prioridade as any,
+      status: o.status as any, prioridade: (o.prioridade as any) === "media" || (o.prioridade as any) === "urgente" ? "normal" : (o.prioridade as any) ?? "normal",
       responsavel: o.responsavel ?? "", observacoes: o.observacoes ?? "",
       dataAbertura: o.dataAbertura ? new Date(o.dataAbertura).toISOString().split("T")[0] : "",
       dataPrevisao: o.dataPrevisao ? new Date(o.dataPrevisao).toISOString().split("T")[0] : "",
@@ -896,6 +903,15 @@ function OrdensServicoTab() {
       enderecoLogradouro: o.enderecoLogradouro ?? "", enderecoNumero: o.enderecoNumero ?? "",
       enderecoComplemento: o.enderecoComplemento ?? "", enderecoBairro: o.enderecoBairro ?? "",
       enderecoCidade: o.enderecoCidade ?? "", enderecoEstado: o.enderecoEstado ?? "", enderecoCep: o.enderecoCep ?? "",
+      tipoServico: (o as any).tipoServico ?? "", categoriaServico: (o as any).categoriaServico ?? "",
+      localExecucao: (o as any).localExecucao ?? "",
+      responsavelUsuarioId: (o as any).responsavelUsuarioId ?? null,
+      equipeIds: (o as any).equipeIds ? JSON.parse((o as any).equipeIds) : [],
+      dataAgendamento: (o as any).dataAgendamento ? new Date((o as any).dataAgendamento).toISOString().split("T")[0] : "",
+      dataInicioPrevista: (o as any).dataInicioPrevista ? new Date((o as any).dataInicioPrevista).toISOString().split("T")[0] : "",
+      dataFimPrevista: (o as any).dataFimPrevista ? new Date((o as any).dataFimPrevista).toISOString().split("T")[0] : "",
+      checklistJson: (o as any).checklistJson ?? "[]",
+      evidenciasUrls: (o as any).evidenciasUrls ?? "[]",
     });
     setShowForm(true);
   }
@@ -916,18 +932,32 @@ function OrdensServicoTab() {
   }
 
   function handleSubmit() {
+    if (!form.projetoId) {
+      toast.error("Uma OS deve estar vinculada a um Projeto.");
+      return;
+    }
     const payload = {
       numero: form.numero, titulo: form.titulo, descricao: form.descricao || undefined,
       status: form.status, prioridade: form.prioridade,
+      tipoServico: form.tipoServico || undefined,
+      categoriaServico: form.categoriaServico || undefined,
       responsavel: form.responsavel || undefined,
+      responsavelUsuarioId: form.responsavelUsuarioId ?? undefined,
+      equipeIds: form.equipeIds.length > 0 ? form.equipeIds : undefined,
+      localExecucao: form.localExecucao || undefined,
+      dataAgendamento: form.dataAgendamento || undefined,
+      dataInicioPrevista: form.dataInicioPrevista || undefined,
+      dataFimPrevista: form.dataFimPrevista || undefined,
       dataAbertura: form.dataAbertura || undefined,
       dataPrevisao: form.dataPrevisao || undefined,
       valorEstimado: form.valorEstimado ? parseFloat(form.valorEstimado) : undefined,
       observacoes: form.observacoes || undefined,
+      checklistJson: form.checklistJson !== "[]" ? form.checklistJson : undefined,
+      evidenciasUrls: form.evidenciasUrls !== "[]" ? form.evidenciasUrls : undefined,
       contratoId: form.contratoId ? Number(form.contratoId) : undefined,
       clienteId: form.clienteId ? Number(form.clienteId) : undefined,
       centroCustoId: form.centroCustoId ?? undefined,
-      projetoId: form.projetoId ?? undefined,
+      projetoId: form.projetoId,
       enderecoLogradouro: form.enderecoLogradouro || undefined,
       enderecoNumero: form.enderecoNumero || undefined,
       enderecoComplemento: form.enderecoComplemento || undefined,
@@ -1149,7 +1179,15 @@ function OrdensServicoTab() {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label>Responsável</Label>
+              <Label>Tipo de Serviço</Label>
+              <Input placeholder="Ex: Instalação Elétrica" value={form.tipoServico} onChange={e => setForm(p => ({ ...p, tipoServico: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Categoria do Serviço</Label>
+              <Input placeholder="Ex: Manutenção Preventiva" value={form.categoriaServico} onChange={e => setForm(p => ({ ...p, categoriaServico: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Responsável (nome)</Label>
               <Input value={form.responsavel} onChange={e => setForm(p => ({ ...p, responsavel: e.target.value }))} />
             </div>
             <div className="space-y-1">
@@ -1228,6 +1266,34 @@ function OrdensServicoTab() {
               <Label>Valor Estimado (R$)</Label>
               <Input type="number" min="0" step="0.01" value={form.valorEstimado} onChange={e => setForm(p => ({ ...p, valorEstimado: e.target.value }))} />
             </div>
+
+            {/* Datas operacionais */}
+            <div className="col-span-2">
+              <p className="text-sm font-semibold text-muted-foreground mb-2 mt-1 border-t pt-3">Datas Operacionais</p>
+            </div>
+            <div className="space-y-1">
+              <Label>Data de Agendamento</Label>
+              <Input type="date" value={form.dataAgendamento} onChange={e => setForm(p => ({ ...p, dataAgendamento: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Início Previsto</Label>
+              <Input type="date" value={form.dataInicioPrevista} onChange={e => setForm(p => ({ ...p, dataInicioPrevista: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Fim Previsto</Label>
+              <Input type="date" value={form.dataFimPrevista} onChange={e => setForm(p => ({ ...p, dataFimPrevista: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Previsão de Conclusão (legado)</Label>
+              <Input type="date" value={form.dataPrevisao} onChange={e => setForm(p => ({ ...p, dataPrevisao: e.target.value }))} />
+            </div>
+
+            {/* Local de execução */}
+            <div className="col-span-2 space-y-1">
+              <Label>Local de Execução</Label>
+              <Input placeholder="Ex: Setor Industrial Norte, Galpão 3" value={form.localExecucao} onChange={e => setForm(p => ({ ...p, localExecucao: e.target.value }))} />
+            </div>
+
             <div className="col-span-2 space-y-1">
               <Label>Descrição do Serviço</Label>
               <Textarea rows={3} value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} />
@@ -1235,6 +1301,45 @@ function OrdensServicoTab() {
             <div className="col-span-2 space-y-1">
               <Label>Observações</Label>
               <Textarea rows={2} value={form.observacoes} onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))} />
+            </div>
+
+            {/* Checklist Operacional */}
+            <div className="col-span-2">
+              <p className="text-sm font-semibold text-muted-foreground mb-2 mt-1 border-t pt-3 flex items-center gap-1.5">
+                <CheckSquare className="h-4 w-4" />Checklist Operacional
+              </p>
+              {(() => {
+                let checklist: Array<{descricao: string; obrigatorio: boolean; status: string}> = [];
+                try { checklist = JSON.parse(form.checklistJson || "[]"); } catch {}
+                return (
+                  <div className="space-y-2">
+                    {checklist.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 border rounded-lg bg-muted/20">
+                        <input
+                          type="checkbox"
+                          checked={item.status === "CONCLUIDO"}
+                          onChange={e => {
+                            const updated = [...checklist];
+                            updated[idx] = { ...updated[idx], status: e.target.checked ? "CONCLUIDO" : "PENDENTE" };
+                            setForm(p => ({ ...p, checklistJson: JSON.stringify(updated) }));
+                          }}
+                          className="h-4 w-4"
+                        />
+                        <span className={`flex-1 text-sm ${item.status === "CONCLUIDO" ? "line-through text-muted-foreground" : ""}`}>{item.descricao}</span>
+                        {item.obrigatorio && <span className="text-xs text-red-500 font-medium">Obrigatório</span>}
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => {
+                          const updated = checklist.filter((_, i) => i !== idx);
+                          setForm(p => ({ ...p, checklistJson: JSON.stringify(updated) }));
+                        }}><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                    ))}
+                    <Button size="sm" variant="outline" onClick={() => {
+                      const updated = [...checklist, { descricao: "", obrigatorio: false, status: "PENDENTE" }];
+                      setForm(p => ({ ...p, checklistJson: JSON.stringify(updated) }));
+                    }}><Plus className="h-3 w-3 mr-1" />Adicionar Item</Button>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Endereço do Local de Execução */}
@@ -1371,6 +1476,147 @@ function OrdensServicoTab() {
           dados={impressaoOS}
         />
       )}
+    </div>
+  );
+}
+
+// === Agenda Operacional ===
+function AgendaOperacionalTab() {
+  const { data: ordens = [], isLoading } = trpc.ordensServico.list.useQuery();
+  const { data: listaProjetos = [] } = trpc.projetos.list.useQuery();
+
+  // Filtrar OS pendentes (não concluídas e não canceladas)
+  const osPendentes = useMemo(() => {
+    return ordens
+      .filter(o => o.status !== "concluida" && o.status !== "cancelada")
+      .map(o => ({
+        ...o,
+        dataRef: (o as any).dataAgendamento || (o as any).dataInicioPrevista || o.dataPrevisao || o.dataAbertura,
+        projetoNome: listaProjetos.find((p: any) => p.id === (o as any).projetoId)?.nome ?? null,
+      }))
+      .sort((a, b) => {
+        if (!a.dataRef) return 1;
+        if (!b.dataRef) return -1;
+        return new Date(a.dataRef).getTime() - new Date(b.dataRef).getTime();
+      });
+  }, [ordens, listaProjetos]);
+
+  // Agrupar por data
+  const grupos = useMemo(() => {
+    const map = new Map<string, typeof osPendentes>();
+    for (const os of osPendentes) {
+      const key = os.dataRef
+        ? new Date(os.dataRef).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })
+        : "Sem data agendada";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(os);
+    }
+    return Array.from(map.entries());
+  }, [osPendentes]);
+
+  const hoje = new Date().toDateString();
+
+  if (isLoading) return <div className="text-center py-8 text-muted-foreground">Carregando agenda...</div>;
+
+  if (osPendentes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+        <Calendar className="h-12 w-12 opacity-30" />
+        <p className="text-lg font-medium">Nenhuma OS pendente na agenda</p>
+        <p className="text-sm">Todas as ordens de serviço estão concluídas ou canceladas.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Agenda Operacional</h3>
+          <p className="text-sm text-muted-foreground">{osPendentes.length} OS pendente{osPendentes.length !== 1 ? "s" : ""} — ordenadas por data de agendamento</p>
+        </div>
+      </div>
+
+      {grupos.map(([dataLabel, items]) => {
+        const isSemData = dataLabel === "Sem data agendada";
+        const dataObj = items[0]?.dataRef ? new Date(items[0].dataRef) : null;
+        const isHoje = dataObj ? dataObj.toDateString() === hoje : false;
+        const isAtrasado = dataObj ? dataObj < new Date() && !isHoje : false;
+
+        return (
+          <div key={dataLabel} className="space-y-3">
+            <div className={`flex items-center gap-3 pb-2 border-b ${
+              isHoje ? "border-blue-500" : isAtrasado ? "border-red-400" : "border-border"
+            }`}>
+              <Calendar className={`h-4 w-4 ${
+                isHoje ? "text-blue-500" : isAtrasado ? "text-red-500" : "text-muted-foreground"
+              }`} />
+              <span className={`font-semibold capitalize ${
+                isHoje ? "text-blue-600" : isAtrasado ? "text-red-600" : ""
+              }`}>
+                {isHoje ? "★ HOJE — " : ""}{dataLabel}
+              </span>
+              {isAtrasado && !isSemData && (
+                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">Atrasado</span>
+              )}
+              <span className="text-xs text-muted-foreground ml-auto">{items.length} OS</span>
+            </div>
+
+            <div className="grid gap-3">
+              {items.map(os => {
+                const statusInfo = STATUS_OS[os.status] ?? { label: os.status, color: "bg-gray-100 text-gray-700" };
+                const prioInfo = PRIORIDADE[os.prioridade ?? "normal"] ?? { label: os.prioridade, color: "bg-gray-100 text-gray-700" };
+                let checklist: Array<{descricao: string; obrigatorio: boolean; status: string}> = [];
+                try { checklist = JSON.parse((os as any).checklistJson || "[]"); } catch {}
+                const totalItens = checklist.length;
+                const concluidos = checklist.filter(c => c.status === "CONCLUIDO").length;
+
+                return (
+                  <div key={os.id} className={`p-4 rounded-lg border ${
+                    os.prioridade === "critica" ? "border-red-300 bg-red-50/30" :
+                    os.prioridade === "alta" ? "border-orange-300 bg-orange-50/20" :
+                    "border-border bg-card"
+                  }`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs text-muted-foreground">{os.numero}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusInfo.color}`}>{statusInfo.label}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${prioInfo.color}`}>{prioInfo.label}</span>
+                        </div>
+                        <p className="font-semibold mt-1 truncate">{os.titulo}</p>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
+                          {os.clienteNome && <span>👤 {os.clienteNome}</span>}
+                          {os.projetoNome && <span>📁 {os.projetoNome}</span>}
+                          {(os as any).localExecucao && <span>📍 {(os as any).localExecucao}</span>}
+                          {os.responsavel && <span>🛠️ {os.responsavel}</span>}
+                        </div>
+                        {totalItens > 0 && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <div className="flex-1 bg-muted rounded-full h-1.5 max-w-32">
+                              <div
+                                className="bg-green-500 h-1.5 rounded-full transition-all"
+                                style={{ width: `${totalItens > 0 ? (concluidos / totalItens) * 100 : 0}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground">{concluidos}/{totalItens} checklist</span>
+                          </div>
+                        )}
+                      </div>
+                      {os.valorEstimado && (
+                        <div className="text-right shrink-0">
+                          <p className="text-xs text-muted-foreground">Valor est.</p>
+                          <p className="font-semibold text-sm">{fmt(os.valorEstimado)}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1777,12 +2023,15 @@ export default function Engenharia() {
 
       {/* Abas */}
       <Tabs defaultValue="contratos">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
           <TabsTrigger value="contratos" className="flex items-center gap-1.5">
             <FileText className="h-4 w-4" />Contratos
           </TabsTrigger>
           <TabsTrigger value="ordens" className="flex items-center gap-1.5">
             <ClipboardList className="h-4 w-4" />Ordens de Serviço
+          </TabsTrigger>
+          <TabsTrigger value="agenda" className="flex items-center gap-1.5">
+            <Calendar className="h-4 w-4" />Agenda
           </TabsTrigger>
           <TabsTrigger value="servicos" className="flex items-center gap-1.5">
             <Wrench className="h-4 w-4" />Tipos de Serviço
@@ -1793,6 +2042,7 @@ export default function Engenharia() {
         </TabsList>
         <TabsContent value="contratos" className="mt-6"><ContratosTab /></TabsContent>
         <TabsContent value="ordens" className="mt-6"><OrdensServicoTab /></TabsContent>
+        <TabsContent value="agenda" className="mt-6"><AgendaOperacionalTab /></TabsContent>
         <TabsContent value="servicos" className="mt-6"><TiposServicoTab /></TabsContent>
         <TabsContent value="materiais" className="mt-6"><MateriaisTab /></TabsContent>
       </Tabs>

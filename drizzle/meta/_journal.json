@@ -176,6 +176,20 @@
       "when": 1774054393660,
       "tag": "0024_loving_lenny_balinger",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1774612176337,
+      "tag": "0025_quiet_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1774612201776,
+      "tag": "0026_hot_gambit",
+      "breakpoints": true
     }
   ]
 }

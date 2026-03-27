@@ -20,6 +20,8 @@ import Engenharia from "./pages/Engenharia";
 import Contratos from "./pages/Contratos";
 import RelatorioCentroCusto from "./pages/RelatorioCentroCusto";
 import Projetos from "./pages/Projetos";
+import Propostas from "./pages/Propostas";
+import PropostasConfig from "./pages/PropostasConfig";
 
 function Router() {
   return (
@@ -39,6 +41,8 @@ function Router() {
       <Route path="/engenharia" component={Engenharia} />
       <Route path="/relatorio-centro-custo" component={RelatorioCentroCusto} />
       <Route path="/projetos" component={Projetos} />
+      <Route path="/propostas" component={Propostas} />
+      <Route path="/propostas-config" component={PropostasConfig} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

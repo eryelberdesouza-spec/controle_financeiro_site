@@ -647,3 +647,59 @@
 ### Validações
 - [x] Compatibilidade retroativa: projetos sem recebimentos/pagamentos vinculados mostram R$ 0,00
 - [x] Não modificar lógica financeira existente (pagamentos/recebimentos independentes continuam funcionando)
+
+## Módulo de Propostas Comerciais (v48+)
+
+### Banco de Dados
+- [ ] Tabela `propostas`: numero, clienteId, status, validade_dias, desconto_percentual, desconto_valor, valor_total, sobre_nos_texto, contratoId, data_aprovacao, assinatura_nome, assinatura_data
+- [ ] Tabela `proposta_itens`: propostaId, descricao, quantidade, valor_unitario, valor_subtotal, tipo (MATERIAL/SERVICO), materialId (opcional), ordem
+- [ ] Tabela `proposta_escopos`: propostaId, descricao, ordem (itens numerados do "O Que Propomos Entregar")
+- [ ] Tabela `proposta_pagamentos`: propostaId, formaPagamentoId, ordem (até 4 opções)
+- [ ] Tabela `proposta_info_importantes`: propostaId, infoImportanteId, conteudo_customizado, exclusiva, ordem
+- [ ] Tabela `formas_pagamento_padrao`: nome, descricao, ativo
+- [ ] Tabela `prazos_padrao`: nome, descricao, dias_prazo, ativo
+- [ ] Tabela `info_importantes_padrao`: titulo, conteudo, ativo
+- [ ] Campo `propostaId` na tabela `contratos`
+- [ ] Migração: pnpm db:push
+
+### Backend — Router de Propostas
+- [ ] Numeração automática: PRO-AAAA-MM-XXXX (iniciando em 0025)
+- [ ] CRUD completo: criar, listar, buscar por ID, editar, excluir
+- [ ] Procedure `getProximoNumero`: gera próximo número sequencial
+- [ ] Procedure `mudarStatus`: RASCUNHO → ENVIADA → APROVADA / RECUSADA / CANCELADA / EM_CONTRATACAO / EXPIRADA
+- [ ] Procedure `vincularContrato`: ao aprovar proposta, opção de gerar/vincular contrato
+- [ ] CRUD para `formas_pagamento_padrao`, `prazos_padrao`, `info_importantes_padrao`
+
+### Frontend — Página de Propostas
+- [x] Listagem com filtros por status, cliente, período, número
+- [x] Badges de status coloridos: RASCUNHO, ENVIADA, APROVADA, RECUSADA, EM_CONTRATACAO, EXPIRADA, CANCELADA
+- [x] Botões de ação rápida: Editar, Visualizar PDF, Duplicar, Mudar Status
+- [x] Formulário com seções:
+  - [x] **SOBRE VOCÊ**: busca de cliente, preenche CPF/CNPJ formatado (000.000.000-00 / 00.000.000/0000-00), endereço+CEP, telefone, email, responsável
+  - [x] **SOBRE NÓS**: texto editável pré-preenchido com história da Atom Tech
+  - [x] **O QUE PROPOMOS ENTREGAR**: lista numerada de itens de escopo
+  - [x] **ITENS E VALORES**: tabela com descrição, qtd, valor unitário, subtotal; vínculo com materiais/serviços da Engenharia; desconto (% ou R$); total automático
+  - [x] **CONDIÇÕES DE PAGAMENTO**: seleção de até 4 formas pré-cadastradas
+  - [x] **PRAZO DE EXECUÇÃO**: seleção de prazo pré-cadastrado
+  - [x] **LEIA COM ATENÇÃO — INFORMAÇÕES IMPORTANTES**: cláusulas padrão + item exclusivo adicional
+  - [x] **ASSINATURA DE APROVAÇÃO**: nome e data de assinatura do cliente
+- [x] Cabeçalho da proposta: logo Atom Tech, número PRO-AAAA-MM-XXXX, data de geração, prazo de validade
+
+### Frontend — Geração de PDF
+- [x] Layout profissional A4 com logo Atom Tech no cabeçalho
+- [x] Todas as seções formatadas profissionalmente
+- [x] Tabela de itens com valores alinhados à direita
+- [x] Área de assinatura ao final
+- [x] Botão "Gerar PDF" / "Imprimir"
+
+### Cadastros Auxiliares (Configurações)
+- [x] Aba "Formas de Pagamento" em Configurações: CRUD de formas pré-cadastradas
+- [x] Aba "Prazos de Execução" em Configurações: CRUD de prazos pré-cadastrados
+- [x] Aba "Cláusulas Padrão" em Configurações: CRUD de informações importantes pré-cadastradas
+
+### Integrações
+- [x] Busca de clientes existentes no campo "SOBRE VOCÊ" (autocomplete)
+- [x] Vínculo com materiais/serviços da Engenharia no campo de itens
+- [x] Ao aprovar proposta: botão "Gerar Contrato" pré-preenche contrato com dados da proposta
+- [x] Campo `propostaId` na tabela de contratos para rastreabilidade
+- [x] Formatação automática CPF (000.000.000-00) e CNPJ (00.000.000/0000-00)

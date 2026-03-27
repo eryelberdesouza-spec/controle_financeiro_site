@@ -595,3 +595,164 @@ export const anexos = mysqlTable("anexos", {
 
 export type Anexo = typeof anexos.$inferSelect;
 export type InsertAnexo = typeof anexos.$inferInsert;
+
+// ─── Módulo de Propostas Comerciais ──────────────────────────────────────────
+
+// Formas de Pagamento pré-cadastradas (reutilizáveis em propostas)
+export const formasPagamentoPadrao = mysqlTable("formas_pagamento_padrao", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 150 }).notNull(),
+  descricao: text("descricao"),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+export type FormaPagamentoPadrao = typeof formasPagamentoPadrao.$inferSelect;
+export type InsertFormaPagamentoPadrao = typeof formasPagamentoPadrao.$inferInsert;
+
+// Prazos de Execução pré-cadastrados (reutilizáveis em propostas)
+export const prazosPadrao = mysqlTable("prazos_padrao", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 150 }).notNull(),
+  descricao: text("descricao"),
+  diasPrazo: int("diasPrazo"),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+export type PrazoPadrao = typeof prazosPadrao.$inferSelect;
+export type InsertPrazoPadrao = typeof prazosPadrao.$inferInsert;
+
+// Cláusulas / Informações Importantes pré-cadastradas
+export const infoImportantesPadrao = mysqlTable("info_importantes_padrao", {
+  id: int("id").autoincrement().primaryKey(),
+  titulo: varchar("titulo", { length: 200 }).notNull(),
+  conteudo: text("conteudo").notNull(),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+export type InfoImportantePadrao = typeof infoImportantesPadrao.$inferSelect;
+export type InsertInfoImportantePadrao = typeof infoImportantesPadrao.$inferInsert;
+
+// Propostas Comerciais
+export const propostas = mysqlTable("propostas", {
+  id: int("id").autoincrement().primaryKey(),
+  // Número no formato PRO-AAAA-MM-XXXX (ex: PRO-2026-03-0025)
+  numero: varchar("numero", { length: 50 }).notNull().unique(),
+  // Status da proposta
+  status: mysqlEnum("status", [
+    "RASCUNHO",
+    "ENVIADA",
+    "EM_NEGOCIACAO",
+    "APROVADA",
+    "RECUSADA",
+    "EM_CONTRATACAO",
+    "EXPIRADA",
+    "CANCELADA",
+  ]).default("RASCUNHO").notNull(),
+  // Vínculo com cliente
+  clienteId: int("clienteId").references(() => clientes.id),
+  // Dados do cliente (copiados no momento da criação para histórico)
+  clienteNome: varchar("clienteNome", { length: 255 }),
+  clienteCpfCnpj: varchar("clienteCpfCnpj", { length: 20 }),
+  clienteEndereco: text("clienteEndereco"),
+  clienteCep: varchar("clienteCep", { length: 10 }),
+  clienteTelefone: varchar("clienteTelefone", { length: 30 }),
+  clienteEmail: varchar("clienteEmail", { length: 320 }),
+  clienteResponsavel: varchar("clienteResponsavel", { length: 150 }),
+  // Datas
+  dataGeracao: date("dataGeracao").notNull(),
+  validadeDias: int("validadeDias").default(30).notNull(),
+  dataValidade: date("dataValidade"),
+  // Seção "Sobre Nós" (texto editável)
+  sobreNosTexto: text("sobreNosTexto"),
+  // Prazo de execução (vínculo com prazo pré-cadastrado)
+  prazoPadraoId: int("prazoPadraoId").references(() => prazosPadrao.id),
+  prazoPadraoTexto: text("prazoPadraoTexto"), // cópia do texto no momento da criação
+  // Valores
+  valorSubtotal: decimal("valorSubtotal", { precision: 15, scale: 2 }).default("0"),
+  descontoPercentual: decimal("descontoPercentual", { precision: 5, scale: 2 }).default("0"),
+  descontoValor: decimal("descontoValor", { precision: 15, scale: 2 }).default("0"),
+  valorTotal: decimal("valorTotal", { precision: 15, scale: 2 }).default("0"),
+  // Vínculo com contrato gerado após aprovação
+  contratoId: int("contratoId").references(() => contratos.id),
+  // Vínculo com projeto
+  projetoId: int("projetoId").references(() => projetos.id),
+  // Assinatura de aprovação
+  assinaturaNome: varchar("assinaturaNome", { length: 255 }),
+  assinaturaData: date("assinaturaData"),
+  dataAprovacao: date("dataAprovacao"),
+  // Observações gerais
+  observacoes: text("observacoes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+export type Proposta = typeof propostas.$inferSelect;
+export type InsertProposta = typeof propostas.$inferInsert;
+
+// Escopos da Proposta (seção "O Que Propomos Entregar" — itens numerados)
+export const propostaEscopos = mysqlTable("proposta_escopos", {
+  id: int("id").autoincrement().primaryKey(),
+  propostaId: int("propostaId").notNull().references(() => propostas.id, { onDelete: "cascade" }),
+  descricao: text("descricao").notNull(),
+  ordem: int("ordem").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PropostaEscopo = typeof propostaEscopos.$inferSelect;
+export type InsertPropostaEscopo = typeof propostaEscopos.$inferInsert;
+
+// Itens da Proposta (tabela de quantitativos, valores unitários e subtotais)
+export const propostaItens = mysqlTable("proposta_itens", {
+  id: int("id").autoincrement().primaryKey(),
+  propostaId: int("propostaId").notNull().references(() => propostas.id, { onDelete: "cascade" }),
+  tipo: mysqlEnum("tipo", ["MATERIAL", "SERVICO", "OUTRO"]).default("SERVICO").notNull(),
+  // Vínculo opcional com material do catálogo de engenharia
+  materialId: int("materialId").references(() => materiais.id),
+  // Vínculo opcional com tipo de serviço do catálogo de engenharia
+  tipoServicoId: int("tipoServicoId").references(() => tiposServico.id),
+  descricao: varchar("descricao", { length: 500 }).notNull(),
+  unidade: varchar("unidade", { length: 30 }).default("un"),
+  quantidade: decimal("quantidade", { precision: 15, scale: 3 }).notNull(),
+  valorUnitario: decimal("valorUnitario", { precision: 15, scale: 2 }).notNull(),
+  valorSubtotal: decimal("valorSubtotal", { precision: 15, scale: 2 }).notNull(),
+  ordem: int("ordem").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PropostaItem = typeof propostaItens.$inferSelect;
+export type InsertPropostaItem = typeof propostaItens.$inferInsert;
+
+// Formas de Pagamento selecionadas na Proposta (até 4 opções)
+export const propostaPagamentos = mysqlTable("proposta_pagamentos", {
+  id: int("id").autoincrement().primaryKey(),
+  propostaId: int("propostaId").notNull().references(() => propostas.id, { onDelete: "cascade" }),
+  formaPagamentoId: int("formaPagamentoId").references(() => formasPagamentoPadrao.id),
+  // Texto customizado (caso não use forma pré-cadastrada)
+  textoCustomizado: text("textoCustomizado"),
+  ordem: int("ordem").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PropostaPagamento = typeof propostaPagamentos.$inferSelect;
+export type InsertPropostaPagamento = typeof propostaPagamentos.$inferInsert;
+
+// Informações Importantes da Proposta (cláusulas selecionadas + exclusivas)
+export const propostaInfoImportantes = mysqlTable("proposta_info_importantes", {
+  id: int("id").autoincrement().primaryKey(),
+  propostaId: int("propostaId").notNull().references(() => propostas.id, { onDelete: "cascade" }),
+  // Vínculo com cláusula padrão (opcional) — sem FK para evitar nome de constraint longo no MySQL
+  infoImportanteId: int("infoImportanteId"),
+  // Título e conteúdo (copiados do padrão ou digitados manualmente)
+  titulo: varchar("titulo", { length: 200 }).notNull(),
+  conteudo: text("conteudo").notNull(),
+  // Indica se é uma cláusula exclusiva desta proposta (não vem do padrão)
+  exclusiva: boolean("exclusiva").default(false).notNull(),
+  ordem: int("ordem").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PropostaInfoImportante = typeof propostaInfoImportantes.$inferSelect;
+export type InsertPropostaInfoImportante = typeof propostaInfoImportantes.$inferInsert;

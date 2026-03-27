@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { tiposServicoRouter, materiaisRouter, contratosRouter, ordensServicoRouter, relatorioContratoRouter } from "./routers/engenharia";
 import { projetosRouter, onPrimeiraOSIniciada } from "./routers/projetos";
+import { propostasRouter } from "./routers/propostas";
 import { listAnexos, createAnexo, deleteAnexo, type AnexoModulo } from "./db.anexos";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
@@ -812,6 +813,7 @@ export const appRouter = router({
   permissoes: permissoesRouter,
   anexos: anexosRouter,
   projetos: projetosRouter,
+  propostas: propostasRouter,
 });
 
 export type AppRouter = typeof appRouter;

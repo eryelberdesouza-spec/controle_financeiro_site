@@ -1,0 +1,1 @@
+ALTER TABLE `proposta_info_importantes` DROP FOREIGN KEY `proposta_info_importantes_infoImportanteId_info_importantes_padrao_id_fk`;

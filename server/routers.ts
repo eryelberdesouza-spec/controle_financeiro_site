@@ -628,7 +628,7 @@ const dashboardRouter = router({
 
     // Recebimentos vencidos
     const recVencidos = await d.execute(
-      sql`SELECT COUNT(*) as total, SUM(valor) as soma FROM recebimentos
+      sql`SELECT COUNT(*) as total, SUM(valorTotal) as soma FROM recebimentos
           WHERE status = 'Pendente' AND dataVencimento < CURDATE() LIMIT 1`
     ) as any;
     const rvRow = ((recVencidos as any)[0] as any[])[0];

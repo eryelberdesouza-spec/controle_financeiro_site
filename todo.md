@@ -810,3 +810,22 @@
 - [x] Frontend Projetos: componente WorkflowProjeto com stepper visual (7 etapas)
 - [x] Frontend Projetos: botão de avanço com validação e mensagem de bloqueio
 - [x] 70 testes passando, 0 erros TypeScript
+
+## Reestruturação do Modelo de Proposta (29/03/2026)
+- [x] Schema: adicionar campos escopoDetalhado, prazoInicio, condicoesInicio, observacoesCondicoes na tabela propostas
+- [x] Migração do banco (SQL direto)
+- [x] Backend: novos campos nos schemas de input do router de propostas (create + update)
+- [x] Backend: validação — novas propostas exigem escopo, condição de pagamento e pelo menos 1 item
+- [x] Backend: propostas antigas não são bloqueadas (retrocompatibilidade)
+- [x] Frontend: seção "Escopo do Projeto" após Sobre Nós (textarea detalhado)
+- [x] Frontend: seção "Prazos" expandida (prazo de execução + prazo de início + condições para início)
+- [x] Frontend: seção "Observações e Condições" antes da assinatura
+- [x] Frontend: preenchimento automático de telefone, email, endereço e responsável do cliente
+- [x] Frontend: validação de novas propostas (escopo + 1 item + 1 condição de pagamento)
+- [x] PDF: seção Escopo do Projeto
+- [x] PDF: seção Prazos unificada (execução + início + condições)
+- [x] PDF: seção Observações e Condições
+- [x] PDF: campos do cliente com "Não informado" quando vazios
+- [x] PDF: logo 40% maior (48px → 67px)
+- [x] PDF: cabeçalho com fundo gradiente verde e borda 4px
+- [x] 70 testes passando, 0 erros TypeScript

@@ -83,10 +83,10 @@ Estamos prontos para auxiliá-lo(a) na transição para um futuro energético ma
 // ─── Logo SVG Atom Tech ───────────────────────────────────────────────────────
 
 const ATOM_LOGO_HTML = `<div style="display:flex;flex-direction:column;gap:4px;">
-  <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png" alt="Logo Atom Tech" style="height:48px;width:auto;object-fit:contain;" />
-  <div style="margin-top:4px;">
-    <span style="font-size:13px;font-weight:900;letter-spacing:0.1em;color:#111827;">SIGECO</span>
-    <span style="font-size:8px;color:#22c55e;font-weight:600;display:block;line-height:1.3;">Sistema Integrado de Gestão de Engenharia, Contratos e Operações</span>
+  <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png" alt="Logo Atom Tech" style="height:67px;width:auto;object-fit:contain;" />
+  <div style="margin-top:6px;">
+    <span style="font-size:16px;font-weight:900;letter-spacing:0.12em;color:#111827;">SIGECO</span>
+    <span style="font-size:9px;color:#16a34a;font-weight:700;display:block;line-height:1.4;letter-spacing:0.02em;">Sistema Integrado de Gestão de Engenharia, Contratos e Operações</span>
   </div>
 </div>`;
 
@@ -154,7 +154,7 @@ function gerarPDFProposta(p: any) {
   .page { max-width: 820px; margin: 0 auto; padding: 32px 40px; }
 
   /* Cabeçalho */
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 3px solid #16a34a; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 4px solid #16a34a; background: linear-gradient(135deg, #f0fdf4 0%, #fff 100%); padding: 20px 20px 16px; border-radius: 8px; margin-bottom: 28px; }
   .header-left { display: flex; flex-direction: column; gap: 6px; }
   .header-contact { font-size: 10px; color: #6b7280; line-height: 1.5; }
   .header-right { text-align: right; }
@@ -226,11 +226,11 @@ function gerarPDFProposta(p: any) {
       <div class="client-grid">
         <div class="client-field"><div class="client-label">Nome / Razão Social</div><div class="client-value">${p.clienteNome ?? "—"}</div></div>
         <div class="client-field"><div class="client-label">CPF / CNPJ</div><div class="client-value">${p.clienteCpfCnpj ? fmtCpfCnpj(p.clienteCpfCnpj) : "—"}</div></div>
-        <div class="client-field"><div class="client-label">Responsável</div><div class="client-value">${p.clienteResponsavel ?? "—"}</div></div>
-        <div class="client-field"><div class="client-label">Telefone</div><div class="client-value">${p.clienteTelefone ?? "—"}</div></div>
-        <div class="client-field"><div class="client-label">E-mail</div><div class="client-value">${p.clienteEmail ?? "—"}</div></div>
-        <div class="client-field"><div class="client-label">CEP</div><div class="client-value">${p.clienteCep ?? "—"}</div></div>
-        <div class="client-field" style="grid-column:1/-1;"><div class="client-label">Endereço</div><div class="client-value">${p.clienteEndereco ?? "—"}</div></div>
+        <div class="client-field"><div class="client-label">Responsável</div><div class="client-value">${p.clienteResponsavel || "Não informado"}</div></div>
+        <div class="client-field"><div class="client-label">Telefone</div><div class="client-value">${p.clienteTelefone || "Não informado"}</div></div>
+        <div class="client-field"><div class="client-label">E-mail</div><div class="client-value">${p.clienteEmail || "Não informado"}</div></div>
+        <div class="client-field"><div class="client-label">CEP</div><div class="client-value">${p.clienteCep || "Não informado"}</div></div>
+        <div class="client-field" style="grid-column:1/-1;"><div class="client-label">Endereço</div><div class="client-value">${p.clienteEndereco || "Não informado"}</div></div>
       </div>
     </div>
   </div>
@@ -242,6 +242,9 @@ function gerarPDFProposta(p: any) {
       ${sobreNosFormatado}
     </div>
   </div>
+
+  <!-- ESCOPO DO PROJETO -->
+  ${p.escopoDetalhado ? `<div class="section"><div class="section-header">Escopo do Projeto</div><div class="section-body" style="line-height:1.7;color:#374151;white-space:pre-wrap;">${p.escopoDetalhado}</div></div>` : ""}
 
   <!-- O QUE PROPOMOS ENTREGAR -->
   ${escoposHtml ? `<div class="section"><div class="section-header">O Que Propomos Entregar</div><div class="section-body">${escoposHtml}</div></div>` : ""}
@@ -280,8 +283,19 @@ function gerarPDFProposta(p: any) {
   <!-- CONDIÇÕES DE PAGAMENTO -->
   ${pagamentosHtml ? `<div class="section"><div class="section-header">Como Você Poderá Pagar</div><div class="section-body">${pagamentosHtml}</div></div>` : ""}
 
-  <!-- PRAZO DE EXECUÇÃO -->
-  ${p.prazoPadraoTexto ? `<div class="section"><div class="section-header">Quando Será Realizado os Serviços / Fornecimentos</div><div class="section-body" style="color:#374151;">${p.prazoPadraoTexto}</div></div>` : ""}
+  <!-- PRAZOS -->
+  ${(p.prazoPadraoTexto || p.prazoInicio || p.condicoesInicio) ? `
+  <div class="section">
+    <div class="section-header">Prazos</div>
+    <div class="section-body">
+      ${p.prazoPadraoTexto ? `<div style="margin-bottom:10px;"><strong style="color:#166534;">Prazo de Execução:</strong><br/><span style="color:#374151;">${p.prazoPadraoTexto}</span></div>` : ""}
+      ${p.prazoInicio ? `<div style="margin-bottom:10px;"><strong style="color:#166534;">Prazo de Início:</strong><br/><span style="color:#374151;">${p.prazoInicio}</span></div>` : ""}
+      ${p.condicoesInicio ? `<div><strong style="color:#166534;">Condições para Início:</strong><br/><span style="color:#374151;white-space:pre-wrap;">${p.condicoesInicio}</span></div>` : ""}
+    </div>
+  </div>` : ""}
+
+  <!-- OBSERVAÇÕES E CONDIÇÕES -->
+  ${p.observacoesCondicoes ? `<div class="section"><div class="section-header">Observações e Condições</div><div class="section-body" style="color:#374151;line-height:1.7;white-space:pre-wrap;">${p.observacoesCondicoes}</div></div>` : ""}
 
   <!-- INFORMAÇÕES IMPORTANTES -->
   ${infosHtml ? `<div class="section"><div class="section-header">⚠ Leia com Atenção — Informações Importantes</div><div class="section-body">${infosHtml}</div></div>` : ""}
@@ -613,8 +627,12 @@ export default function Propostas() {
       dataGeracao: today.toISOString().split("T")[0],
       validadeDias: "30",
       sobreNosTexto: SOBRE_NOS_PADRAO,
+      escopoDetalhado: "",
       prazoPadraoId: "",
       prazoPadraoTexto: "",
+      prazoInicio: "",
+      condicoesInicio: "",
+      observacoesCondicoes: "",
       descontoPercentual: "0",
       descontoValor: "0",
       observacoes: "",
@@ -668,8 +686,12 @@ export default function Propostas() {
         dataGeracao: p.dataGeracao ? new Date(p.dataGeracao).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
         validadeDias: String(p.validadeDias ?? 30),
         sobreNosTexto: p.sobreNosTexto ?? SOBRE_NOS_PADRAO,
+        escopoDetalhado: (p as any).escopoDetalhado ?? "",
         prazoPadraoId: p.prazoPadraoId ? String(p.prazoPadraoId) : "",
         prazoPadraoTexto: p.prazoPadraoTexto ?? "",
+        prazoInicio: (p as any).prazoInicio ?? "",
+        condicoesInicio: (p as any).condicoesInicio ?? "",
+        observacoesCondicoes: (p as any).observacoesCondicoes ?? "",
         descontoPercentual: p.descontoPercentual ?? "0",
         descontoValor: p.descontoValor ?? "0",
         observacoes: p.observacoes ?? "",
@@ -721,11 +743,11 @@ export default function Propostas() {
       clienteId,
       clienteNome: cliente.nome ?? "",
       clienteCpfCnpj: cliente.cpfCnpj ?? "",
-      clienteEndereco: endereco,
+      clienteEndereco: endereco || "",
       clienteCep: cliente.cep ?? "",
-      clienteTelefone: cliente.telefone ?? "",
+      clienteTelefone: cliente.telefone ?? cliente.celular ?? "",
       clienteEmail: cliente.email ?? "",
-      clienteResponsavel: cliente.responsavel ?? "",
+      clienteResponsavel: cliente.responsavel ?? cliente.nome ?? "",
     }));
   }
 
@@ -761,6 +783,12 @@ export default function Propostas() {
 
   function handleSubmit() {
     if (!form.clienteNome.trim()) { toast.error("Informe o nome do cliente"); return; }
+    // Validações para novas propostas (não bloqueia edições de propostas antigas)
+    if (!editId) {
+      if (!form.escopoDetalhado.trim()) { toast.error("Preencha o Escopo do Projeto antes de criar a proposta"); return; }
+      if (itens.filter((it) => it.descricao.trim()).length === 0) { toast.error("Adicione pelo menos 1 item na proposta"); return; }
+      if (pagamentosOpcoes.filter((pg) => pg.formaPagamentoId || pg.textoCustomizado).length === 0) { toast.error("Defina pelo menos 1 condição de pagamento"); return; }
+    }
     const payload = {
       numero: form.numero,
       clienteId: form.clienteId ? parseInt(form.clienteId) : undefined,
@@ -774,8 +802,12 @@ export default function Propostas() {
       dataGeracao: form.dataGeracao,
       validadeDias: parseInt(form.validadeDias) || 30,
       sobreNosTexto: form.sobreNosTexto || undefined,
+      escopoDetalhado: form.escopoDetalhado || undefined,
       prazoPadraoId: form.prazoPadraoId ? parseInt(form.prazoPadraoId) : undefined,
       prazoPadraoTexto: form.prazoPadraoTexto || undefined,
+      prazoInicio: form.prazoInicio || undefined,
+      condicoesInicio: form.condicoesInicio || undefined,
+      observacoesCondicoes: form.observacoesCondicoes || undefined,
       descontoPercentual: form.descontoPercentual,
       descontoValor: String(descontoFinal.toFixed(2)),
       valorTotal: String(total.toFixed(2)),
@@ -1028,6 +1060,21 @@ export default function Propostas() {
               />
             </SectionCard>
 
+            {/* SEÇÃO 2.5: ESCOPO DO PROJETO */}
+            <SectionCard title="ESCOPO DO PROJETO" subtitle="Descrição técnica detalhada do que será entregue">
+              <Textarea
+                value={form.escopoDetalhado}
+                onChange={(e) => setForm((f) => ({ ...f, escopoDetalhado: e.target.value }))}
+                rows={8}
+                disabled={isReadOnly}
+                className="font-sans text-sm"
+                placeholder="Descreva detalhadamente o escopo técnico do projeto: especificações, materiais, serviços, área de instalação, potência, etc."
+              />
+              {!isReadOnly && (
+                <p className="text-xs text-muted-foreground mt-1">Campo obrigatório para novas propostas. Descreva com precisão técnica o que será fornecido.</p>
+              )}
+            </SectionCard>
+
             {/* SEÇÃO 3: O QUE PROPOMOS ENTREGAR */}
             <SectionCard title="O QUE PROPOMOS ENTREGAR" subtitle="Itens numerados do escopo de fornecimento">
               <div className="space-y-2">
@@ -1215,29 +1262,50 @@ export default function Propostas() {
               </div>
             </SectionCard>
 
-            {/* SEÇÃO 6: PRAZO DE EXECUÇÃO */}
-            <SectionCard title="PRAZO DE EXECUÇÃO" subtitle="Quando os serviços/fornecimentos serão realizados">
-              <div className="space-y-3">
-                <div>
-                  <Label>Selecionar Prazo Pré-cadastrado</Label>
-                  <Select value={form.prazoPadraoId} onValueChange={handlePrazoSelect} disabled={isReadOnly}>
-                    <SelectTrigger><SelectValue placeholder="Selecionar prazo..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="custom_prazo">Digitar manualmente...</SelectItem>
-                      {(prazos as any[]).map((p: any) => (
-                        <SelectItem key={p.id} value={String(p.id)}>{p.nome} {p.diasPrazo ? `(${p.diasPrazo} dias)` : ""}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            {/* SEÇÃO 6: PRAZOS */}
+            <SectionCard title="PRAZOS" subtitle="Prazo de execução, prazo de início e condições para início">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Prazo de Execução (Pré-cadastrado)</Label>
+                    <Select value={form.prazoPadraoId} onValueChange={handlePrazoSelect} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue placeholder="Selecionar prazo..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="custom_prazo">Digitar manualmente...</SelectItem>
+                        {(prazos as any[]).map((p: any) => (
+                          <SelectItem key={p.id} value={String(p.id)}>{p.nome} {p.diasPrazo ? `(${p.diasPrazo} dias)` : ""}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Prazo de Início</Label>
+                    <Input
+                      value={form.prazoInicio}
+                      onChange={(e) => setForm((f) => ({ ...f, prazoInicio: e.target.value }))}
+                      disabled={isReadOnly}
+                      placeholder="Ex: 5 dias úteis após pagamento da entrada"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <Label>Descrição do Prazo</Label>
+                  <Label>Descrição do Prazo de Execução</Label>
                   <Textarea
                     value={form.prazoPadraoTexto}
                     onChange={(e) => setForm((f) => ({ ...f, prazoPadraoTexto: e.target.value }))}
                     rows={3}
                     disabled={isReadOnly}
-                    placeholder="Descreva o prazo de execução..."
+                    placeholder="Descreva o prazo de execução em detalhes..."
+                  />
+                </div>
+                <div>
+                  <Label>Condições para Início dos Serviços</Label>
+                  <Textarea
+                    value={form.condicoesInicio}
+                    onChange={(e) => setForm((f) => ({ ...f, condicoesInicio: e.target.value }))}
+                    rows={3}
+                    disabled={isReadOnly}
+                    placeholder="Ex: Pagamento da entrada (50%) + entrega do material pelo cliente + assinatura do contrato"
                   />
                 </div>
               </div>
@@ -1298,6 +1366,18 @@ export default function Propostas() {
                   </Button>
                 )}
               </div>
+            </SectionCard>
+
+            {/* SEÇÃO 7.5: OBSERVAÇÕES E CONDIÇÕES */}
+            <SectionCard title="OBSERVAÇÕES E CONDIÇÕES" subtitle="Cláusulas operacionais e comerciais complementares">
+              <Textarea
+                value={form.observacoesCondicoes}
+                onChange={(e) => setForm((f) => ({ ...f, observacoesCondicoes: e.target.value }))}
+                rows={6}
+                disabled={isReadOnly}
+                className="font-sans text-sm"
+                placeholder="Ex: Esta proposta não inclui obras civis. O cliente é responsável pelo fornecimento de energia elétrica para a instalação. Garantia de 5 anos nos equipamentos..."
+              />
             </SectionCard>
 
             {/* SEÇÃO 8: ASSINATURA */}

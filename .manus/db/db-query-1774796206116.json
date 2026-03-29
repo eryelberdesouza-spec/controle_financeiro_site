@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE propostas \n  ADD COLUMN IF NOT EXISTS escopoDetalhado TEXT NULL,\n  ADD COLUMN IF NOT EXISTS prazoInicio VARCHAR(255) NULL,\n  ADD COLUMN IF NOT EXISTS condicoesInicio TEXT NULL,\n  ADD COLUMN IF NOT EXISTS observacoesCondicoes TEXT NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute \nALTER TABLE propostas \n  ADD COLUMN IF NOT EXISTS escopoDetalhado TEXT NULL,\n  ADD COLUMN IF NOT EXISTS prazoInicio VARCHAR(255) NULL,\n  ADD COLUMN IF NOT EXISTS condicoesInicio TEXT NULL,\n  ADD COLUMN IF NOT EXISTS observacoesCondicoes TEXT NULL;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2659
+}

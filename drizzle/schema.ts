@@ -698,9 +698,16 @@ export const propostas = mysqlTable("propostas", {
   dataValidade: date("dataValidade"),
   // Seção "Sobre Nós" (texto editável)
   sobreNosTexto: text("sobreNosTexto"),
+  // Escopo detalhado do projeto (texto livre técnico completo)
+  escopoDetalhado: text("escopoDetalhado"),
   // Prazo de execução (vínculo com prazo pré-cadastrado)
   prazoPadraoId: int("prazoPadraoId").references(() => prazosPadrao.id),
   prazoPadraoTexto: text("prazoPadraoTexto"), // cópia do texto no momento da criação
+  // Prazo de início e condições para início
+  prazoInicio: varchar("prazoInicio", { length: 255 }),
+  condicoesInicio: text("condicoesInicio"),
+  // Observações e condições comerciais/operacionais
+  observacoesCondicoes: text("observacoesCondicoes"),
   // Valores
   valorSubtotal: decimal("valorSubtotal", { precision: 15, scale: 2 }).default("0"),
   descontoPercentual: decimal("descontoPercentual", { precision: 5, scale: 2 }).default("0"),

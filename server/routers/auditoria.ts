@@ -8,7 +8,7 @@ import { desc, eq, and, gte, lte } from "drizzle-orm";
 export async function registrarAuditoria(params: {
   entidade: string;
   entidadeId?: number;
-  acao: "criacao" | "edicao" | "exclusao";
+  acao: "criacao" | "edicao" | "exclusao" | "atualizar_status" | "converter_em_contrato" | "enviar_para_assinatura" | "webhook_zapsign";
   usuarioId?: number;
   usuarioNome?: string;
   valorAnterior?: object | null;

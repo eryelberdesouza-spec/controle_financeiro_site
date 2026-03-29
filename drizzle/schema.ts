@@ -381,6 +381,9 @@ export const contratos = mysqlTable("contratos", {
   enderecoCidade: varchar("enderecoCidade", { length: 100 }),
   enderecoEstado: varchar("enderecoEstado", { length: 2 }),
   enderecoCep: varchar("enderecoCep", { length: 10 }),
+  // Vínculo com proposta de origem (quando gerado automaticamente)
+  propostaOrigemId: int("propostaOrigemId"),
+  origemDescricao: varchar("origemDescricao", { length: 255 }),
   // Sinaliza registros sem vínculo com projeto (legados)
   inconsistente: boolean("inconsistente").default(false).notNull(),
   motivoInconsistencia: varchar("motivoInconsistencia", { length: 500 }),
@@ -723,6 +726,15 @@ export const propostas = mysqlTable("propostas", {
   dataAprovacao: date("dataAprovacao"),
   // Observações gerais
   observacoes: text("observacoes"),
+  // Controle de conversão em contrato
+  convertidaEmContrato: boolean("convertidaEmContrato").default(false).notNull(),
+  // ZapSign — assinatura digital
+  zapsignDocId: varchar("zapsignDocId", { length: 100 }),
+  zapsignSignerToken: varchar("zapsignSignerToken", { length: 255 }),
+  zapsignStatus: mysqlEnum("zapsignStatus", ["aguardando_assinatura", "assinado", "recusado"]),
+  zapsignPdfUrl: text("zapsignPdfUrl"),
+  zapsignEnviadoEm: timestamp("zapsignEnviadoEm"),
+  zapsignAssinadoEm: timestamp("zapsignAssinadoEm"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -825,7 +837,7 @@ export const auditLog = mysqlTable("audit_log", {
   // ID do registro afetado
   entidadeId: int("entidadeId"),
   // Ação realizada
-  acao: mysqlEnum("acao", ["criacao", "edicao", "exclusao"]).notNull(),
+  acao: mysqlEnum("acao", ["criacao", "edicao", "exclusao", "atualizar_status", "converter_em_contrato", "enviar_para_assinatura", "webhook_zapsign"]).notNull(),
   // Usuário que realizou a ação
   usuarioId: int("usuarioId").references(() => users.id),
   usuarioNome: varchar("usuarioNome", { length: 200 }),

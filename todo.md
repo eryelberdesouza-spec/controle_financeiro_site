@@ -829,3 +829,20 @@
 - [x] PDF: logo 40% maior (48px → 67px)
 - [x] PDF: cabeçalho com fundo gradiente verde e borda 4px
 - [x] 70 testes passando, 0 erros TypeScript
+
+## Conversão de Proposta em Contrato + ZapSign (29/03/2026)
+- [x] Schema: campos zapsignDocId, zapsignSignerToken, zapsignStatus, zapsignPdfUrl, zapsignEnviadoEm, zapsignAssinadoEm em propostas
+- [x] Schema: campo propostaOrigemId em contratos
+- [x] Schema: campo convertidaEmContrato em propostas
+- [x] Migração do banco (SQL direto)
+- [x] Backend: router conversao com procedures converterEmContrato, atualizarStatus, enviarParaAssinatura
+- [x] Backend: conversão automática cria contrato + recebimentos a partir dos itens da proposta
+- [x] Backend: bloqueio de conversão dupla (convertidaEmContrato=true)
+- [x] Backend: bloqueio de envio duplicado para assinatura (zapsignDocId já preenchido)
+- [x] Backend: webhook ZapSign em /api/webhooks/zapsign — converte automaticamente ao assinar
+- [x] Backend: auditoria registrada em todas as ações (converter, enviar, webhook)
+- [x] Frontend: botão Enviar para Assinatura (ZapSign) na tabela de propostas
+- [x] Frontend: botão Converter em Contrato na tabela de propostas
+- [x] Frontend: bloqueio de edição de proposta convertida (somente leitura)
+- [x] Secrets: ZAPSIGN_API_TOKEN configurado e validado
+- [x] 72 testes passando, 0 erros TypeScript

@@ -611,6 +611,25 @@ export default function Propostas() {
   const mudarStatusMutation = trpc.propostas.mudarStatus.useMutation({
     onSuccess: () => { toast.success("Status atualizado!"); utils.propostas.list.invalidate(); setStatusModalId(null); },
   });
+  const converterMutation = trpc.conversao.converterEmContrato.useMutation({
+    onSuccess: (d: any) => {
+      toast.success(`Contrato ${d.contratoNumero} criado! ${d.recebimentosGerados} recebimento(s) gerado(s).`);
+      utils.propostas.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const enviarAssinaturaMutation = trpc.conversao.enviarParaAssinatura.useMutation({
+    onSuccess: (d: any) => {
+      if (d.signerUrl) {
+        toast.success("Proposta enviada para assinatura! Link copiado.");
+        navigator.clipboard.writeText(d.signerUrl).catch(() => {});
+      } else {
+        toast.success("Proposta enviada para assinatura!");
+      }
+      utils.propostas.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   function getEmptyForm() {
     const today = new Date();
@@ -920,11 +939,43 @@ export default function Propostas() {
                               <td className="p-3">
                                 <div className="flex items-center justify-center gap-1">
                                   <Button variant="ghost" size="sm" title="Visualizar" onClick={() => openView(p.id)}><Eye className="w-4 h-4" /></Button>
-                                  <Button variant="ghost" size="sm" title="Editar" onClick={() => openEdit(p.id)}><Edit className="w-4 h-4" /></Button>
+                                  {!p.convertidaEmContrato && <Button variant="ghost" size="sm" title="Editar" onClick={() => openEdit(p.id)}><Edit className="w-4 h-4" /></Button>}
                                   <Button variant="ghost" size="sm" title="Imprimir PDF" onClick={() => gerarPDFProposta(p)}><Printer className="w-4 h-4" /></Button>
                                   <Button variant="ghost" size="sm" title="Duplicar" onClick={() => duplicarMutation.mutate({ id: p.id })}><Copy className="w-4 h-4" /></Button>
-                                  <Button variant="ghost" size="sm" title="Mudar Status" onClick={() => setStatusModalId(p.id)}><ChevronDown className="w-4 h-4" /></Button>
-                                  <Button variant="ghost" size="sm" title="Excluir" className="text-red-500 hover:text-red-700" onClick={() => { if (confirm("Excluir esta proposta?")) deleteMutation.mutate({ id: p.id }); }}><Trash2 className="w-4 h-4" /></Button>
+                                  {!p.convertidaEmContrato && <Button variant="ghost" size="sm" title="Mudar Status" onClick={() => setStatusModalId(p.id)}><ChevronDown className="w-4 h-4" /></Button>}
+                                  {/* Botão Enviar para Assinatura — só se não enviado/assinado e não convertido */}
+                                  {!p.convertidaEmContrato && !p.zapsignDocId && (p.status === "APROVADA" || p.status === "ENVIADA" || p.status === "EM_NEGOCIACAO" || p.status === "RASCUNHO") && (
+                                    <Button variant="ghost" size="sm" title="Enviar para Assinatura (ZapSign)" className="text-blue-600 hover:text-blue-800"
+                                      onClick={() => { if (confirm(`Enviar proposta ${p.numero} para assinatura via ZapSign?`)) enviarAssinaturaMutation.mutate({ propostaId: p.id }); }}
+                                      disabled={enviarAssinaturaMutation.isPending}>
+                                      <Send className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                  {/* Badge ZapSign */}
+                                  {p.zapsignDocId && !p.convertidaEmContrato && (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
+                                      p.zapsignStatus === "assinado" ? "bg-green-100 text-green-700 border-green-200" :
+                                      p.zapsignStatus === "recusado" ? "bg-red-100 text-red-700 border-red-200" :
+                                      "bg-blue-100 text-blue-700 border-blue-200"
+                                    }`}>
+                                      {p.zapsignStatus === "assinado" ? "✓ Assinado" : p.zapsignStatus === "recusado" ? "✗ Recusado" : "⏳ Aguardando"}
+                                    </span>
+                                  )}
+                                  {/* Botão Converter em Contrato — só se aprovada/assinada e não convertida */}
+                                  {!p.convertidaEmContrato && (p.status === "APROVADA" || p.status === "EM_CONTRATACAO" || p.zapsignStatus === "assinado") && (
+                                    <Button variant="ghost" size="sm" title="Converter em Contrato" className="text-purple-600 hover:text-purple-800"
+                                      onClick={() => { if (confirm(`Converter proposta ${p.numero} em contrato? Recebimentos serão gerados automaticamente.`)) converterMutation.mutate({ propostaId: p.id }); }}
+                                      disabled={converterMutation.isPending}>
+                                      <Link2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                  {/* Badge Convertida */}
+                                  {p.convertidaEmContrato && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-purple-100 text-purple-700 border-purple-200">
+                                      <Link2 className="w-3 h-3" /> Contrato
+                                    </span>
+                                  )}
+                                  {!p.convertidaEmContrato && <Button variant="ghost" size="sm" title="Excluir" className="text-red-500 hover:text-red-700" onClick={() => { if (confirm("Excluir esta proposta?")) deleteMutation.mutate({ id: p.id }); }}><Trash2 className="w-4 h-4" /></Button>}
                                 </div>
                               </td>
                             </tr>

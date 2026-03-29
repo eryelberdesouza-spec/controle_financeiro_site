@@ -5,6 +5,7 @@ import { propostasRouter } from "./routers/propostas";
 import { orcamentoRouter } from "./routers/orcamento";
 import { auditoriaRouter, registrarAuditoria } from "./routers/auditoria";
 import { workflowRouter } from "./routers/workflow";
+import { conversaoRouter } from "./routers/conversao";
 import { listAnexos, createAnexo, deleteAnexo, type AnexoModulo } from "./db.anexos";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
@@ -1157,6 +1158,7 @@ export const appRouter = router({
   orcamento: orcamentoRouter,
   auditoria: auditoriaRouter,
   workflow: workflowRouter,
+  conversao: conversaoRouter,
   engenharia: router({
     listContratos: staffProcedure.query(async () => {
       const db = await getDb();

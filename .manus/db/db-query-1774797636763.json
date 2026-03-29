@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE propostas \n  ADD COLUMN IF NOT EXISTS convertidaEmContrato TINYINT(1) NOT NULL DEFAULT 0,\n  ADD COLUMN IF NOT EXISTS zapsignDocId VARCHAR(100) NULL,\n  ADD COLUMN IF NOT EXISTS zapsignSignerToken VARCHAR(255) NULL,\n  ADD COLUMN IF NOT EXISTS zapsignStatus ENUM('aguardando_assinatura','assinado','recusado') NULL,\n  ADD COLUMN IF NOT EXISTS zapsignPdfUrl TEXT NULL,\n  ADD COLUMN IF NOT EXISTS zapsignEnviadoEm DATETIME NULL,\n  ADD COLUMN IF NOT EXISTS zapsignAssinadoEm DATETIME NULL;\n\nALTER TABLE contratos\n  ADD COLUMN IF NOT EXISTS propostaOrigemId INT NULL,\n  ADD COLUMN IF NOT EXISTS origemDescricao VARCHAR(255) NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute \nALTER TABLE propostas \n  ADD COLUMN IF NOT EXISTS convertidaEmContrato TINYINT(1) NOT NULL DEFAULT 0,\n  ADD COLUMN IF NOT EXISTS zapsignDocId VARCHAR(100) NULL,\n  ADD COLUMN IF NOT EXISTS zapsignSignerToken VARCHAR(255) NULL,\n  ADD COLUMN IF NOT EXISTS zapsignStatus ENUM('aguardando_assinatura','assinado','recusado') NULL,\n  ADD COLUMN IF NOT EXISTS zapsignPdfUrl TEXT NULL,\n  ADD COLUMN IF NOT EXISTS zapsignEnviadoEm DATETIME NULL,\n  ADD COLUMN IF NOT EXISTS zapsignAssinadoEm DATETIME NULL;\n\nALTER TABLE contratos\n  ADD COLUMN IF NOT EXISTS propostaOrigemId INT NULL,\n  ADD COLUMN IF NOT EXISTS origemDescricao VARCHAR(255) NULL;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3574
+}

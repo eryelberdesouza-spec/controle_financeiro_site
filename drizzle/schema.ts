@@ -199,6 +199,8 @@ export const recebimentos = mysqlTable("recebimentos", {
   dataRecebimento: timestamp("dataRecebimento"),
   status: mysqlEnum("status", ["Pendente", "Recebido", "Atrasado", "Cancelado"]).default("Pendente").notNull(),
    observacao: text("observacao"),
+  // Indica se foi gerado automaticamente a partir de um contrato
+  geradoAutomaticamente: boolean("geradoAutomaticamente").default(false).notNull(),
   // Sinaliza registros sem vínculo com projeto/contrato (legados)
   inconsistente: boolean("inconsistente").default(false).notNull(),
   motivoInconsistencia: varchar("motivoInconsistencia", { length: 500 }),

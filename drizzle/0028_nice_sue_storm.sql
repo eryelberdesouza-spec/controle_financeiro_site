@@ -1,0 +1,1 @@
+ALTER TABLE `recebimentos` ADD `geradoAutomaticamente` boolean DEFAULT false NOT NULL;

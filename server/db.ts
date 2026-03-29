@@ -262,6 +262,7 @@ export async function listRecebimentos(filters?: { status?: string; tipoRecebime
     quantidadeParcelas: recebimentos.quantidadeParcelas,
     parcelaAtual: recebimentos.parcelaAtual,
     observacao: recebimentos.observacao,
+    geradoAutomaticamente: recebimentos.geradoAutomaticamente,
     createdAt: recebimentos.createdAt,
     updatedAt: recebimentos.updatedAt,
   })

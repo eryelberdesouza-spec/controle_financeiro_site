@@ -640,6 +640,12 @@ export default function Recebimentos() {
                                   <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
                                 </span>
                               )}
+                              {(r as any).geradoAutomaticamente && (
+                                <span title="Gerado automaticamente por contrato" className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 shrink-0">
+                                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                                  Auto
+                                </span>
+                              )}
                               {r.nomeRazaoSocial}
                             </div>
                             {r.quantidadeParcelas > 1 && (

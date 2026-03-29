@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb, getUserPermissions } from "../db";
+import { getDb, getUserPermissions, getNextNumeroControleRecebimento, createRecebimento, createRecebimentoParcelas } from "../db";
 import { TRPCError } from "@trpc/server";
 
 // Helper local para verificar permissão granular
@@ -274,6 +274,11 @@ export const contratosRouter = router({
       enderecoCidade: z.string().max(100).optional(),
       enderecoEstado: z.string().max(2).optional(),
       enderecoCep: z.string().max(10).optional(),
+      // Campos para geração automática de recebimentos
+      gerarRecebimentos: z.boolean().default(false),
+      numeroParcelas: z.number().min(1).max(60).default(1),
+      tipoRecebimento: z.enum(["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"]).default("Pix"),
+      dataPrimeiroVencimento: z.string().optional(), // YYYY-MM-DD
     }))
     .mutation(async ({ input, ctx }) => {
       const d = await getDb();
@@ -296,7 +301,65 @@ export const contratosRouter = router({
           ${input.enderecoCep ?? null}, ${ctx.user.id}
         )
       `);
-      return { id: (result as any).insertId };
+      const contratoId = (result as any).insertId;
+
+      // ── Geração automática de recebimentos ──────────────────────────────────
+      if (input.gerarRecebimentos && input.valorTotal > 0) {
+        const n = input.numeroParcelas;
+        const valorParcela = parseFloat((input.valorTotal / n).toFixed(2));
+        const valorUltima = parseFloat((input.valorTotal - valorParcela * (n - 1)).toFixed(2));
+        const dataBase = input.dataPrimeiroVencimento
+          ? new Date(input.dataPrimeiroVencimento + "T12:00:00")
+          : (input.dataInicio ? new Date(input.dataInicio + "T12:00:00") : new Date());
+        let nomeCliente = "Cliente";
+        if (input.clienteId) {
+          const cliRows = await d.select({ nome: clientes.nome }).from(clientes).where(eq(clientes.id, input.clienteId)).limit(1);
+          if (cliRows.length > 0) nomeCliente = cliRows[0].nome;
+        }
+        for (let i = 0; i < n; i++) {
+          const vencimento = new Date(dataBase);
+          vencimento.setMonth(vencimento.getMonth() + i);
+          const valor = i === n - 1 ? valorUltima : valorParcela;
+          const numeroControle = await getNextNumeroControleRecebimento();
+          const now = new Date();
+          const statusParcela: "Pendente" | "Atrasado" = vencimento < now ? "Atrasado" : "Pendente";
+          const [recResult] = await createRecebimento({
+            numeroControle,
+            numeroContrato: input.numero,
+            nomeRazaoSocial: nomeCliente,
+            descricao: n === 1
+              ? `${input.objeto}`
+              : `${input.objeto} — Parcela ${i + 1}/${n}`,
+            tipoRecebimento: input.tipoRecebimento,
+            clienteId: input.clienteId ?? null,
+            centroCustoId: input.centroCustoId ?? null,
+            contratoId,
+            projetoId: input.projetoId ?? null,
+            valorTotal: valor.toString(),
+            valorEquipamento: "0",
+            valorServico: valor.toString(),
+            juros: "0",
+            desconto: "0",
+            quantidadeParcelas: 1,
+            parcelaAtual: 1,
+            dataVencimento: vencimento,
+            status: statusParcela,
+            geradoAutomaticamente: true,
+            createdBy: ctx.user.id,
+          } as any);
+          const recebimentoId = (recResult as any).insertId;
+          await createRecebimentoParcelas([{
+            recebimentoId,
+            numeroParcela: 1,
+            valor: valor.toString(),
+            dataVencimento: vencimento,
+            status: statusParcela,
+          } as any]);
+        }
+      }
+      // ────────────────────────────────────────────────────────────────────────
+
+      return { id: contratoId };
     }),
 
   update: protectedProcedure
@@ -397,6 +460,119 @@ export const contratosRouter = router({
     const next = maxNum + 1;
     return `CTR-${year}-${month}-${String(next).padStart(3, "0")}`;
   }),
+
+  // Conta recebimentos já gerados para um contrato
+  countRecebimentos: protectedProcedure
+    .input(z.object({ contratoId: z.number() }))
+    .query(async ({ input }) => {
+      const d = await getDb();
+      if (!d) return 0;
+      const rows = await d
+        .select({ id: recebimentos.id })
+        .from(recebimentos)
+        .where(eq(recebimentos.contratoId, input.contratoId));
+      return rows.length;
+    }),
+
+  // Regenera recebimentos de um contrato (apaga os existentes e recria)
+  regenerarRecebimentos: protectedProcedure
+    .input(z.object({
+      contratoId: z.number(),
+      numeroParcelas: z.number().min(1).max(60),
+      tipoRecebimento: z.enum(["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"]).default("Pix"),
+      dataPrimeiroVencimento: z.string(), // YYYY-MM-DD
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const d = await getDb();
+      if (!d) throw new Error("DB unavailable");
+
+      // Buscar dados do contrato
+      const [contrato] = await d
+        .select({
+          id: contratos.id,
+          numero: contratos.numero,
+          objeto: contratos.objeto,
+          valorTotal: contratos.valorTotal,
+          clienteId: contratos.clienteId,
+          centroCustoId: contratos.centroCustoId,
+          projetoId: contratos.projetoId,
+          dataInicio: contratos.dataInicio,
+        })
+        .from(contratos)
+        .where(eq(contratos.id, input.contratoId))
+        .limit(1);
+      if (!contrato) throw new TRPCError({ code: "NOT_FOUND", message: "Contrato não encontrado" });
+
+      // Apagar recebimentos existentes vinculados ao contrato (e suas parcelas)
+      const recExistentes = await d
+        .select({ id: recebimentos.id })
+        .from(recebimentos)
+        .where(eq(recebimentos.contratoId, input.contratoId));
+      for (const rec of recExistentes) {
+        await d.execute(sql`DELETE FROM recebimento_parcelas WHERE recebimentoId = ${rec.id}`);
+      }
+      if (recExistentes.length > 0) {
+        await d.execute(sql`DELETE FROM recebimentos WHERE contratoId = ${input.contratoId}`);
+      }
+
+      // Buscar nome do cliente
+      let nomeCliente = "Cliente";
+      if (contrato.clienteId) {
+        const cliRows = await d.select({ nome: clientes.nome }).from(clientes).where(eq(clientes.id, contrato.clienteId)).limit(1);
+        if (cliRows.length > 0) nomeCliente = cliRows[0].nome;
+      }
+
+      const n = input.numeroParcelas;
+      const valorTotal = parseFloat(contrato.valorTotal ?? "0");
+      const valorParcela = parseFloat((valorTotal / n).toFixed(2));
+      const valorUltima = parseFloat((valorTotal - valorParcela * (n - 1)).toFixed(2));
+      const dataBase = new Date(input.dataPrimeiroVencimento + "T12:00:00");
+
+      const recebimentosGerados: number[] = [];
+      for (let i = 0; i < n; i++) {
+        const vencimento = new Date(dataBase);
+        vencimento.setMonth(vencimento.getMonth() + i);
+        const valor = i === n - 1 ? valorUltima : valorParcela;
+        const numeroControle = await getNextNumeroControleRecebimento();
+        const now = new Date();
+        const statusParcela: "Pendente" | "Atrasado" = vencimento < now ? "Atrasado" : "Pendente";
+
+        const [recResult] = await createRecebimento({
+          numeroControle,
+          numeroContrato: contrato.numero,
+          nomeRazaoSocial: nomeCliente,
+          descricao: n === 1
+            ? `${contrato.objeto}`
+            : `${contrato.objeto} — Parcela ${i + 1}/${n}`,
+          tipoRecebimento: input.tipoRecebimento,
+          clienteId: contrato.clienteId ?? null,
+          centroCustoId: contrato.centroCustoId ?? null,
+          contratoId: input.contratoId,
+          projetoId: contrato.projetoId ?? null,
+          valorTotal: valor.toString(),
+          valorEquipamento: "0",
+          valorServico: valor.toString(),
+          juros: "0",
+          desconto: "0",
+          quantidadeParcelas: 1,
+          parcelaAtual: 1,
+          dataVencimento: vencimento,
+          status: statusParcela,
+          createdBy: ctx.user.id,
+        } as any);
+        const recebimentoId = (recResult as any).insertId;
+        recebimentosGerados.push(recebimentoId);
+        await createRecebimentoParcelas([{
+          recebimentoId,
+          numeroParcela: 1,
+          valor: valor.toString(),
+          dataVencimento: vencimento,
+          status: statusParcela,
+        } as any]);
+      }
+
+      return { gerados: recebimentosGerados.length };
+    }),
 });
 
 // === Ordens de Serviço ===

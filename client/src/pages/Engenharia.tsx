@@ -90,9 +90,19 @@ export function ContratosTab() {
     enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "",
   });
 
+  // Estado para geração automática de recebimentos
+  const [gerarRec, setGerarRec] = useState(false);
+  const [numParcelas, setNumParcelas] = useState(1);
+  const [tipoRecGerado, setTipoRecGerado] = useState<"Pix" | "Boleto" | "Transferência" | "Cartão de Crédito" | "Cartão de Débito" | "Dinheiro" | "Outro">("Pix");
+  const [dataPrimeiroVenc, setDataPrimeiroVenc] = useState("");
+
   const createMutation = trpc.contratos.create.useMutation({
-    onSuccess: () => { utils.contratos.list.invalidate(); setShowForm(false); toast.success("Contrato criado!"); },
+    onSuccess: () => { utils.contratos.list.invalidate(); utils.recebimentos.list.invalidate(); setShowForm(false); toast.success(gerarRec ? `Contrato criado com recebimentos gerados!` : "Contrato criado!"); },
     onError: (err) => toast.error(`Erro ao criar contrato: ${err.message}`),
+  });
+  const regenerarMutation = trpc.contratos.regenerarRecebimentos.useMutation({
+    onSuccess: (data) => { utils.recebimentos.list.invalidate(); toast.success(`${data.gerados} recebimento(s) gerado(s) com sucesso!`); },
+    onError: (err) => toast.error(`Erro ao regenerar recebimentos: ${err.message}`),
   });
   const updateMutation = trpc.contratos.update.useMutation({
     onSuccess: () => { utils.contratos.list.invalidate(); setShowForm(false); setEditId(null); toast.success("Contrato atualizado!"); },
@@ -188,9 +198,14 @@ export function ContratosTab() {
       enderecoCep: form.enderecoCep || undefined,
     };
     if (editId) updateMutation.mutate({ id: editId, ...payload });
-    else createMutation.mutate(payload);
+    else createMutation.mutate({
+      ...payload,
+      gerarRecebimentos: gerarRec,
+      numeroParcelas: numParcelas,
+      tipoRecebimento: tipoRecGerado,
+      dataPrimeiroVencimento: dataPrimeiroVenc || undefined,
+    });
   }
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
@@ -773,6 +788,114 @@ export function ContratosTab() {
               <Input maxLength={2} placeholder="SP" value={form.enderecoEstado} onChange={e => setForm(p => ({ ...p, enderecoEstado: e.target.value.toUpperCase() }))} />
             </div>
           </div>
+          {/* Geração Automática de Recebimentos */}
+          {!editId && (
+            <div className="border rounded-lg p-4 bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-green-800 dark:text-green-300">Gerar Recebimentos Automaticamente</p>
+                  <p className="text-xs text-green-600 dark:text-green-400">Cria parcelas de recebimento vinculadas a este contrato</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setGerarRec(v => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    gerarRec ? "bg-green-600" : "bg-gray-300 dark:bg-gray-600"
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    gerarRec ? "translate-x-6" : "translate-x-1"
+                  }`} />
+                </button>
+              </div>
+              {gerarRec && (
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Número de Parcelas</Label>
+                    <Input
+                      type="number" min={1} max={60}
+                      value={numParcelas}
+                      onChange={e => setNumParcelas(parseInt(e.target.value) || 1)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Forma de Recebimento</Label>
+                    <select
+                      value={tipoRecGerado}
+                      onChange={e => setTipoRecGerado(e.target.value as any)}
+                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    >
+                      {["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"].map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label className="text-xs">Data do 1º Vencimento <span className="text-muted-foreground">(deixe em branco para usar a data de início do contrato)</span></Label>
+                    <Input
+                      type="date"
+                      value={dataPrimeiroVenc}
+                      onChange={e => setDataPrimeiroVenc(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  {form.valorTotal && (
+                    <div className="col-span-2 text-xs text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded p-2">
+                      Serão gerados <strong>{numParcelas} recebimento(s)</strong> de{" "}
+                      <strong>R$ {(parseFloat(String(form.valorTotal).replace(",",".")) / numParcelas).toFixed(2)}</strong> cada,
+                      com vencimentos mensais a partir da data informada.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {/* Regenerar Recebimentos (apenas em edição) */}
+          {editId && (
+            <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Recebimentos do Contrato</p>
+                <p className="text-xs text-muted-foreground">Regenerar apaga os recebimentos existentes e cria novos com os parâmetros abaixo.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Número de Parcelas</Label>
+                  <Input type="number" min={1} max={60} value={numParcelas} onChange={e => setNumParcelas(parseInt(e.target.value) || 1)} className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Forma de Recebimento</Label>
+                  <select value={tipoRecGerado} onChange={e => setTipoRecGerado(e.target.value as any)} className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm">
+                    {["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"].map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-xs">Data do 1º Vencimento</Label>
+                  <Input type="date" value={dataPrimeiroVenc} onChange={e => setDataPrimeiroVenc(e.target.value)} className="h-8 text-sm" />
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-blue-700 border-blue-300 hover:bg-blue-100"
+                disabled={!dataPrimeiroVenc || regenerarMutation.isPending}
+                onClick={() => {
+                  if (!editId) return;
+                  if (!window.confirm(`Isso apagará os recebimentos existentes deste contrato e criará ${numParcelas} novo(s). Confirmar?`)) return;
+                  regenerarMutation.mutate({
+                    contratoId: editId,
+                    numeroParcelas: numParcelas,
+                    tipoRecebimento: tipoRecGerado,
+                    dataPrimeiroVencimento: dataPrimeiroVenc,
+                  });
+                }}
+              >
+                {regenerarMutation.isPending ? "Gerando..." : "Regenerar Recebimentos"}
+              </Button>
+            </div>
+          )}
           {/* Anexos do Contrato */}
           {editId && (
             <div className="space-y-2 px-1">
@@ -1900,7 +2023,6 @@ function MateriaisTab() {
     if (editId) updateMutation.mutate({ id: editId, ...payload });
     else createMutation.mutate(payload);
   }
-
   return (
     <div className="space-y-4">
       <div className="flex gap-3 items-center justify-between">

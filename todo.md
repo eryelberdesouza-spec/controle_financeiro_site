@@ -739,3 +739,12 @@
 - [ ] Frontend: tornar campo Projeto obrigatório no formulário de OS
 - [ ] Frontend: painel de inconsistências em Configurações mostrando registros sem vínculo
 - [ ] Frontend: botão para corrigir vínculo de registros inconsistentes
+
+## Geração Automática de Recebimentos por Contrato (29/03/2026)
+- [x] Backend: ao criar contrato, gerar automaticamente parcelas de recebimento (projeto_id, contrato_id, valor, data_vencimento, status)
+- [x] Backend: ao editar contrato (valor/parcelas), oferecer opção de regenerar parcelas
+- [x] Backend: status automático pendente→atrasado baseado em data_vencimento
+- [x] Frontend Contratos: exibir parcelas geradas com botão "Ver Recebimentos" e "Regenerar Parcelas"
+- [x] Frontend Recebimentos: exibir origem do recebimento (gerado por contrato vs manual)
+- [x] Frontend Recebimentos: bloquear criação manual sem contrato apenas para novos registros
+- [x] Validação: criar contrato teste e verificar geração automática

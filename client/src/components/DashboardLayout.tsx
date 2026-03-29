@@ -23,7 +23,7 @@ import {
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { usePermissions } from "@/hooks/usePermissions";
-import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList, SlidersHorizontal } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -38,7 +38,6 @@ const menuItems = [
   { icon: Building2, label: "Centros de Custo", path: "/centros-custo", modulo: "centros_custo" as const },
   { icon: FolderOpen, label: "Projetos", path: "/projetos", modulo: "projetos" as const },
   { icon: ClipboardList, label: "Propostas", path: "/propostas", modulo: "engenharia_contratos" as const },
-  { icon: SlidersHorizontal, label: "Config. Propostas", path: "/propostas-config", modulo: "engenharia_contratos" as const },
   { icon: FileText, label: "Contratos", path: "/contratos", modulo: "engenharia_contratos" as const },
   { icon: HardHat, label: "Engenharia", path: "/engenharia", modulo: "engenharia_os" as const },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios", modulo: "relatorios" as const },

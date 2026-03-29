@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +16,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Plus, Search, Edit2, Trash2, Eye, FolderOpen, TrendingUp,
   Calendar, MapPin, User, DollarSign, ClipboardList, Building2,
-  CheckCircle, Clock, AlertTriangle, XCircle, Loader2
+  CheckCircle, Clock, AlertTriangle, XCircle, Loader2, ChevronDown
 } from "lucide-react";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -453,6 +454,11 @@ export default function Projetos() {
     onError: (e) => toast.error(`Erro ao excluir: ${e.message}`),
   });
 
+  const mudarStatusMutation = trpc.projetos.mudarStatus.useMutation({
+    onSuccess: () => { utils.projetos.list.invalidate(); toast.success("Status atualizado!"); },
+    onError: (e) => toast.error(`Erro: ${e.message}`),
+  });
+
   function abrirNovo() {
     setEditando(null);
     setForm(FORM_VAZIO);
@@ -646,6 +652,27 @@ export default function Projetos() {
                     <TableCell className="text-sm">{fmtData(p.dataInicioPrevista)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline" className="h-8 px-2 text-xs gap-1">
+                              Status <ChevronDown className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuLabel className="text-xs">Mudar Status</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {STATUS_PROJETO.map((s) => (
+                              <DropdownMenuItem key={s.value}
+                                disabled={p.statusOperacional === s.value}
+                                onClick={() => mudarStatusMutation.mutate({ id: p.id, statusOperacional: s.value as any })}
+                                className={`text-xs ${p.statusOperacional === s.value ? "font-bold" : ""}`}
+                              >
+                                <span className={`w-2 h-2 rounded-full mr-2 inline-block ${s.color.split(" ")[0]}`} />
+                                {s.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button
                           size="sm" variant="ghost"
                           onClick={() => setPainelId(p.id)}

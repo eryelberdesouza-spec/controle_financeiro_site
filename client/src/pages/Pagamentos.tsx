@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import AnexosPanel from "@/components/AnexosPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -409,8 +410,21 @@ export default function Pagamentos() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nomeCompleto || !form.valor) { toast.error("Preencha os campos obrigatórios"); return; }
-    // Em modo de criação: exige gerar parcelas. Em modo de edição: as parcelas já existem no banco.
-    if (!editId && form.parcelado && parcelas.length === 0) { toast.error("Gere as parcelas antes de salvar."); return; }
+    // Gera parcelas automaticamente se parcelado e ainda não foram geradas manualmente
+    if (form.parcelado && parcelas.length === 0) {
+      if (!form.dataPrimeiroVencimento) { toast.error("Informe a data do 1º vencimento para gerar as parcelas."); return; }
+      const autoGeradas = gerarParcelas("pagamento", form.quantidadeParcelas, parseFloat(form.valor), form.dataPrimeiroVencimento);
+      setParcelas(autoGeradas);
+      // Continua o submit com as parcelas recém geradas
+      const payload2 = {
+        ...form,
+        dataPagamento: form.dataPagamento ? new Date(form.dataPagamento + "T12:00:00") : new Date(),
+        quantidadeParcelas: form.parcelado ? form.quantidadeParcelas : 1,
+      };
+      if (editId) updateMutation.mutate({ id: editId, ...payload2 });
+      else createMutation.mutate(payload2);
+      return;
+    }
     const payload = {
       ...form,
       dataPagamento: form.dataPagamento ? new Date(form.dataPagamento + "T12:00:00") : new Date(),
@@ -666,11 +680,12 @@ export default function Pagamentos() {
         </Card>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden">
-          <DialogHeader>
-            <DialogTitle>{editId ? "Editar Pagamento" : "Novo Pagamento"}</DialogTitle>
-          </DialogHeader>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto p-0">
+          <SheetHeader className="px-6 py-4 border-b bg-muted/30 sticky top-0 z-10">
+            <SheetTitle>{editId ? "Editar Pagamento" : "Novo Pagamento"}</SheetTitle>
+          </SheetHeader>
+          <div className="px-6 py-4">
           <form onSubmit={handleSubmit} className="space-y-5 w-full min-w-0">
             {/* Busca de cliente — preenche Nome e CPF automaticamente */}
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1.5">
@@ -976,8 +991,9 @@ export default function Pagamentos() {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
       <ComprovanteViewer
         open={comprovanteOpen}
         onClose={() => setComprovanteOpen(false)}

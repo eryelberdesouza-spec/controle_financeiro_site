@@ -703,3 +703,18 @@
 - [x] Ao aprovar proposta: botão "Gerar Contrato" pré-preenche contrato com dados da proposta
 - [x] Campo `propostaId` na tabela de contratos para rastreabilidade
 - [x] Formatação automática CPF (000.000.000-00) e CNPJ (00.000.000/0000-00)
+
+## Correções v5 (27/03/2026)
+- [x] Integrar "Config. Propostas" como aba interna dentro da página Propostas
+- [x] Remover "Config. Propostas" do menu lateral
+- [x] Corrigir impressão/PDF: cor verde nos cabeçalhos de seção (igual ao PDF de referência)
+- [x] Corrigir impressão/PDF: usar logo real da Atom Tech (SVG inline)
+- [x] Corrigir impressão/PDF: todos os itens da proposta aparecem na impressão
+- [x] Corrigir impressão/PDF: layout fiel ao PDF de referência (cabeçalho, seções, tabela)
+- [x] Atualizar texto padrão "Sobre Nós" com texto oficial da Atom Tech
+- [x] Ampliar janelas de edição em todas as abas (usar Sheet lateral ou Dialog maximizado)
+- [x] Implementar mudança de status rápida em Contratos (igual ao Propostas)
+- [x] Implementar mudança de status rápida em Engenharia/OS (igual ao Propostas)
+- [x] Implementar mudança de status rápida em Projetos (igual ao Propostas)
+- [x] Corrigir geração automática de parcelas em Pagamentos (parcelas geradas ao criar/editar)
+- [x] Corrigir geração automática de parcelas em Recebimentos (parcelas geradas ao criar/editar)

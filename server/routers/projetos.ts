@@ -481,4 +481,18 @@ export const projetosRouter = router({
       await db.delete(projetos).where(eq(projetos.id, input.id));
       return { success: true };
     }),
+
+  mudarStatus: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      statusOperacional: z.enum(["PLANEJAMENTO", "EM_EXECUCAO", "PARALISADO", "CONCLUIDO", "CANCELADO"]),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco indisponível" });
+      const set: Record<string, any> = { statusOperacional: input.statusOperacional };
+      if (input.statusOperacional === "EM_EXECUCAO") set.dataInicioReal = new Date();
+      await db.update(projetos).set(set).where(eq(projetos.id, input.id));
+      return { success: true };
+    }),
 });

@@ -364,6 +364,18 @@ export const contratosRouter = router({
       await d.delete(contratos).where(eq(contratos.id, input.id));
     }),
 
+  mudarStatus: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(["proposta", "em_negociacao", "ativo", "suspenso", "encerrado"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await requirePerm(ctx.user.id, ctx.user.role, "engenharia_contratos", "podeEditar");
+      const d = await getDb();
+      if (!d) throw new Error("DB unavailable");
+      await d.execute(sql`UPDATE contratos SET status = ${input.status} WHERE id = ${input.id}`);
+    }),
+
   nextNumero: protectedProcedure.query(async () => {
     const d = await getDb();
     const now = new Date();
@@ -808,6 +820,18 @@ export const ordensServicoRouter = router({
       const d = await getDb();
       if (!d) throw new Error("DB unavailable");
       await d.delete(ordensServico).where(eq(ordensServico.id, input.id));
+    }),
+
+  mudarStatus: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(["planejada", "em_andamento", "pausada", "concluida", "cancelada"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await requirePerm(ctx.user.id, ctx.user.role, "engenharia_os", "podeEditar");
+      const d = await getDb();
+      if (!d) throw new Error("DB unavailable");
+      await d.execute(sql`UPDATE ordens_servico SET status = ${input.status} WHERE id = ${input.id}`);
     }),
 
   nextNumero: protectedProcedure.query(async () => {

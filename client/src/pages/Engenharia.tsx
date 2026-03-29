@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { EngenhariaImpressao, type ContratoParaImpressao, type OSParaImpressao, type MaterialParaImpressao, type TipoServicoParaImpressao } from "@/components/EngenhariaImpressao";
@@ -98,6 +100,10 @@ export function ContratosTab() {
   });
   const deleteMutation = trpc.contratos.delete.useMutation({
     onSuccess: () => { utils.contratos.list.invalidate(); toast.success("Contrato removido."); }
+  });
+  const mudarStatusMutation = trpc.contratos.mudarStatus.useMutation({
+    onSuccess: () => { utils.contratos.list.invalidate(); toast.success("Status atualizado!"); },
+    onError: (err) => toast.error(`Erro: ${err.message}`),
   });
   const criarCCRapidoMutation = trpc.centrosCusto.create.useMutation({
     onSuccess: (cc: any) => {
@@ -262,7 +268,35 @@ export function ContratosTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      {podeEditar && c.status !== "ativo" && c.status !== "encerrado" && (
+                      {podeEditar && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline" className="h-8 px-2 text-xs gap-1">
+                              Status <ChevronDown className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuLabel className="text-xs">Mudar Status</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {Object.entries(STATUS_CONTRATO).map(([k, v]) => (
+                              <DropdownMenuItem key={k} disabled={c.status === k}
+                                onClick={() => {
+                                  if (k === "ativo" && c.status !== "ativo") {
+                                    if (confirm(`Ativar contrato ${c.numero}? Um Centro de Custo será criado automaticamente.`)) ativarMutation.mutate({ id: c.id });
+                                  } else {
+                                    mudarStatusMutation.mutate({ id: c.id, status: k as any });
+                                  }
+                                }}
+                                className={`text-xs ${c.status === k ? "font-bold" : ""}`}
+                              >
+                                <span className={`w-2 h-2 rounded-full mr-2 inline-block ${v.color.split(" ")[0]}`} />
+                                {v.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                      {podeEditar && c.status !== "ativo" && c.status !== "encerrado" && false && (
                         <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50 h-8 px-2 text-xs" title="Ativar Contrato" onClick={() => { if (confirm(`Ativar contrato ${c.numero}? Um Centro de Custo será criado automaticamente.`)) ativarMutation.mutate({ id: c.id }); }} disabled={ativarMutation.isPending}>
                           Ativar
                         </Button>
@@ -587,10 +621,13 @@ export function ContratosTab() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showForm} onOpenChange={v => { setShowForm(v); if (!v) setEditId(null); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editId ? "Editar Contrato" : "Novo Contrato"}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
+      <Sheet open={showForm} onOpenChange={v => { setShowForm(v); if (!v) setEditId(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto p-0">
+          <SheetHeader className="px-6 py-4 border-b bg-muted/30 sticky top-0 z-10">
+            <SheetTitle>{editId ? "Editar Contrato" : "Novo Contrato"}</SheetTitle>
+          </SheetHeader>
+          <div className="px-6 py-4 space-y-4">
+          <div className="grid grid-cols-2 gap-4 py-2 space-y-0">
             <div className="space-y-1">
               <Label>Nº do Contrato *</Label>
               <Input value={form.numero} onChange={e => setForm(p => ({ ...p, numero: e.target.value }))} />
@@ -746,14 +783,15 @@ export function ContratosTab() {
               <AnexosPanel modulo="contrato" registroId={editId} podeAnexar podeExcluir />
             </div>
           )}
-          <DialogFooter>
+          <div className="flex justify-end gap-2 pt-4 border-t mt-4 pb-6">
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
               {editId ? "Salvar Alterações" : "Criar Contrato"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+          </div>
+        </SheetContent>
+      </Sheet>
       {/* Modal de Impressão de Contratos */}
       {impressaoContratos && (
         <EngenhariaImpressao
@@ -822,6 +860,10 @@ function OrdensServicoTab() {
   });
   const deleteMutation = trpc.ordensServico.delete.useMutation({
     onSuccess: () => { utils.ordensServico.list.invalidate(); toast.success("OS removida."); }
+  });
+  const mudarStatusMutation = trpc.ordensServico.mudarStatus.useMutation({
+    onSuccess: () => { utils.ordensServico.list.invalidate(); toast.success("Status atualizado!"); },
+    onError: (err) => toast.error(`Erro: ${err.message}`),
   });
 
   const [impressaoOS, setImpressaoOS] = useState<OSParaImpressao[] | null>(null);
@@ -1048,6 +1090,28 @@ function OrdensServicoTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      {podeEditar && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline" className="h-8 px-2 text-xs gap-1">
+                              Status <ChevronDown className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuLabel className="text-xs">Mudar Status</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {Object.entries(STATUS_OS).map(([k, v]) => (
+                              <DropdownMenuItem key={k} disabled={o.status === k}
+                                onClick={() => mudarStatusMutation.mutate({ id: o.id, status: k as any })}
+                                className={`text-xs ${o.status === k ? "font-bold" : ""}`}
+                              >
+                                <span className={`w-2 h-2 rounded-full mr-2 inline-block ${v.color.split(" ")[0]}`} />
+                                {v.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                       <Button size="icon" variant="ghost" title="Imprimir OS" onClick={() => setImpressaoOS([o])}>
                         <Printer className="h-4 w-4 text-green-600" />
                       </Button>
@@ -1148,9 +1212,12 @@ function OrdensServicoTab() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showForm} onOpenChange={v => { setShowForm(v); if (!v) { setEditId(null); setItens([]); } }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editId ? "Editar OS" : "Nova Ordem de Serviço"}</DialogTitle></DialogHeader>
+      <Sheet open={showForm} onOpenChange={v => { setShowForm(v); if (!v) { setEditId(null); setItens([]); } }}>
+        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto p-0">
+          <SheetHeader className="px-6 py-4 border-b bg-muted/30 sticky top-0 z-10">
+            <SheetTitle>{editId ? "Editar OS" : "Nova Ordem de Serviço"}</SheetTitle>
+          </SheetHeader>
+          <div className="px-6 py-4">
           <div className="grid grid-cols-2 gap-4 py-2">
             <div className="space-y-1">
               <Label>Nº da OS *</Label>
@@ -1458,15 +1525,15 @@ function OrdensServicoTab() {
               <AnexosPanel modulo="os" registroId={editId} podeAnexar podeExcluir />
             </div>
           )}
-          <DialogFooter>
+           <div className="flex justify-end gap-2 pt-4 border-t mt-4 pb-6">
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
               {editId ? "Salvar Alterações" : "Criar OS"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+          </div>
+          </div>
+        </SheetContent>
+      </Sheet>
       {/* Modal de Impressão de OS */}
       {impressaoOS && (
         <EngenhariaImpressao

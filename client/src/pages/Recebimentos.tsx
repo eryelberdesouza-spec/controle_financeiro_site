@@ -4,6 +4,7 @@ import { TabelaParcelas, gerarParcelas, type ParcelaLocal } from "@/components/T
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import AnexosPanel from "@/components/AnexosPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -429,10 +430,16 @@ export default function Recebimentos() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nomeRazaoSocial || !form.valorTotal) { toast.error("Preencha os campos obrigatórios"); return; }
-    // Em modo de criação: exige gerar parcelas. Em modo de edição: as parcelas já existem no banco.
-    if (!editId && form.parcelado && parcelas.length === 0) { toast.error("Gere as parcelas antes de salvar."); return; }
     // Bloqueia se as parcelas ainda estão sendo carregadas do banco
     if (parcelasCarregando) { toast.error("Aguarde o carregamento das parcelas..."); return; }
+    // Gera parcelas automaticamente se parcelado e ainda não foram geradas manualmente
+    if (form.parcelado && parcelas.length === 0) {
+      const dataRef = form.dataPrimeiroVencimento || form.dataVencimento;
+      if (!dataRef) { toast.error("Informe a data do 1º vencimento para gerar as parcelas."); return; }
+      const valorLiquido = parseFloat(form.valorTotal) - (parseFloat(form.juros ?? "0") || 0) - (parseFloat(form.desconto ?? "0") || 0);
+      const autoGeradas = gerarParcelas("recebimento", form.quantidadeParcelas, valorLiquido, dataRef);
+      setParcelas(autoGeradas);
+    }
 
     // Quando parcelado, usa a data do primeiro vencimento; quando não parcelado, usa dataVencimento
     const dataVencimentoFinal = form.parcelado
@@ -720,11 +727,12 @@ export default function Recebimentos() {
         </Card>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editId ? "Editar Recebimento" : "Novo Recebimento"}</DialogTitle>
-          </DialogHeader>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto p-0">
+          <SheetHeader className="px-6 py-4 border-b bg-muted/30 sticky top-0 z-10">
+            <SheetTitle>{editId ? "Editar Recebimento" : "Novo Recebimento"}</SheetTitle>
+          </SheetHeader>
+          <div className="px-6 py-4">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Busca de cliente — preenche Nome automaticamente */}
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1.5">
@@ -1024,8 +1032,9 @@ export default function Recebimentos() {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
       <ComprovanteViewer
         open={comprovanteOpen}
         onClose={() => setComprovanteOpen(false)}

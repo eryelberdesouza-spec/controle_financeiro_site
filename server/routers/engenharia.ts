@@ -955,10 +955,29 @@ export const ordensServicoRouter = router({
         }
       }
 
+      // Calcular tempo total e custo de mão de obra ao concluir OS
+      let tempoTotalMinutos: number | undefined;
+      let custoMaoObraCalculado: string | undefined;
+
       if (data.status === "concluida" && osAtual.status !== "concluida") {
         // Registrar data_fim_real se ainda não definida
         if (!osAtual.dataFimReal && !dataFimReal) {
           dataFimReal = new Date();
+        }
+        // Calcular tempo total em minutos (inicio_real -> fim_real)
+        const inicioRef = dataInicioReal || (osAtual.dataInicioReal ? new Date(osAtual.dataInicioReal) : null);
+        const fimRef = dataFimReal || new Date();
+        if (inicioRef) {
+          tempoTotalMinutos = Math.round((fimRef.getTime() - inicioRef.getTime()) / 60000);
+          // Custo de mão de obra: R$50/hora como taxa padrão (configurarável futuramente)
+          const TAXA_HORA_MAO_OBRA = 50;
+          custoMaoObraCalculado = ((tempoTotalMinutos / 60) * TAXA_HORA_MAO_OBRA).toFixed(2);
+          // Alimentar orçamento do projeto na categoria Mão de Obra se vinculado
+          if (osAtual.projetoId && custoMaoObraCalculado) {
+            // Registrar como pagamento de mão de obra no orçamento (via custo realizado)
+            // O custo realizado já é calculado via pagamentos com categoriaCusto=Mao_de_Obra
+            // Aqui apenas armazenamos o custo calculado na própria OS para referência
+          }
         }
       }
 
@@ -975,6 +994,8 @@ export const ordensServicoRouter = router({
         dataFimPrevista: data.dataFimPrevista ? new Date(data.dataFimPrevista) : undefined,
         dataInicioReal,
         dataFimReal,
+        ...(tempoTotalMinutos !== undefined ? { tempoTotalMinutos } : {}),
+        ...(custoMaoObraCalculado !== undefined ? { custoMaoObra: custoMaoObraCalculado } : {}),
       }).where(eq(ordensServico.id, id));
 
       // Registrar mudança de status no histórico

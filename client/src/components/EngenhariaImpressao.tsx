@@ -214,7 +214,9 @@ body {
   object-fit: contain !important;
 }
 .comp-header-info { flex: 1; }
-.comp-header-info h1 { font-size: 15px; font-weight: 800; margin-bottom: 2px; color: #0f172a; }
+.sigeco-title { font-size: 16px; font-weight: 900; letter-spacing: 0.08em; color: #111827; margin-bottom: 1px; }
+.sigeco-sub { font-size: 8px; color: #22c55e; font-weight: 600; line-height: 1.3; margin-bottom: 2px; }
+.comp-header-info h1 { font-size: 11px; font-weight: 600; color: #374151; margin-bottom: 2px; }
 .comp-header-info p { font-size: 9px; color: #475569; line-height: 1.5; }
 .comp-header-date { text-align: right; font-size: 8px; color: #64748b; white-space: nowrap; }
 .comp-header-date strong { display: block; font-size: 10px; color: #1e293b; font-weight: 700; }
@@ -375,13 +377,18 @@ td.center, th.center { text-align: center; }
 
 // === Builders de HTML para impressão ===
 
+const SIGECO_LOGO_ENGENHARIA = "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png";
+
 function buildHeaderHTML(empresa: any) {
   const now = new Date();
+  const logoSrc = empresa?.logoUrl || SIGECO_LOGO_ENGENHARIA;
   return `
     <div class="comp-header">
-      ${empresa?.logoUrl ? `<img src="${empresa.logoUrl}" alt="Logo" />` : ""}
+      <img src="${logoSrc}" alt="Logo SIGECO" />
       <div class="comp-header-info">
-        <h1>${empresa?.nomeEmpresa || "Empresa"}</h1>
+        <p class="sigeco-title">SIGECO</p>
+        <p class="sigeco-sub">Sistema Integrado de Gestão de Engenharia, Contratos e Operações</p>
+        <h1>${empresa?.nomeEmpresa || "Atom Tech"}</h1>
         ${empresa?.cnpj ? `<p>CNPJ: ${empresa.cnpj}</p>` : ""}
         ${empresa?.telefone ? `<p>Tel: ${empresa.telefone}</p>` : ""}
         ${empresa?.email ? `<p>${empresa.email}</p>` : ""}

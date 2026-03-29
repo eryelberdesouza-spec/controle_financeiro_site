@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
+import { registrarAuditoria } from "./auditoria";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import {
@@ -410,6 +411,15 @@ export const projetosRouter = router({
       ) as any;
 
       const insertId = (result as any).insertId;
+      await registrarAuditoria({
+        entidade: "projeto",
+        entidadeId: insertId,
+        acao: "criacao",
+        usuarioId: ctx.user.id,
+        usuarioNome: ctx.user.name ?? undefined,
+        valorNovo: { ...input, numero, centroCustoId },
+        descricao: `Projeto criado: ${input.nome} (${numero})`,
+      });
       return { id: insertId, numero };
     }),
 
@@ -466,6 +476,16 @@ export const projetosRouter = router({
 
       if (Object.keys(set).length === 0) return { success: true };
       await db.update(projetos).set(set).where(eq(projetos.id, id));
+      // Auditoria assíncrona (não bloqueia a resposta)
+      registrarAuditoria({
+        entidade: "projeto",
+        entidadeId: id,
+        acao: "edicao",
+        usuarioId: (input as any).updatedBy ?? 0,
+        valorNovo: set,
+        camposAlterados: Object.keys(set),
+        descricao: `Projeto #${id} atualizado: ${Object.keys(set).join(", ")}`,
+      }).catch(() => {});
       return { success: true };
     }),
 
@@ -478,6 +498,14 @@ export const projetosRouter = router({
       }
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco indisponível" });
+      await registrarAuditoria({
+        entidade: "projeto",
+        entidadeId: input.id,
+        acao: "exclusao",
+        usuarioId: ctx.user.id,
+        usuarioNome: ctx.user.name ?? undefined,
+        descricao: `Projeto #${input.id} excluído`,
+      });
       await db.delete(projetos).where(eq(projetos.id, input.id));
       return { success: true };
     }),

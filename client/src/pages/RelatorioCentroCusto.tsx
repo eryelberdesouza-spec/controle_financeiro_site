@@ -129,9 +129,8 @@ export default function RelatorioCentroCusto() {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
-    const logoHtml = empresa?.logoUrl
-      ? `<img src="${empresa.logoUrl}" alt="Logo" style="height:50px;object-fit:contain;margin-right:12px;" />`
-      : "";
+    const logoSrc = empresa?.logoUrl || "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png";
+    const logoHtml = `<img src="${logoSrc}" alt="Logo SIGECO" style="height:50px;object-fit:contain;margin-right:12px;" />`;
 
     const pagRows = pagamentosList.map(p => `
       <tr>
@@ -167,10 +166,12 @@ export default function RelatorioCentroCusto() {
           @page { size: A4; margin: 15mm 12mm; }
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; }
-          .header { background: #1e3a5f; color: white; padding: 16px 20px; display: flex; align-items: center; border-radius: 6px; margin-bottom: 16px; }
+          .header { background: #f9fafb; border-bottom: 3px solid #111827; padding: 12px 20px; display: flex; align-items: center; margin-bottom: 16px; }
           .header-info { flex: 1; }
-          .header-info h1 { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
-          .header-info p { font-size: 11px; opacity: 0.85; }
+          .sigeco-title { font-size: 18px; font-weight: 900; letter-spacing: 0.08em; color: #111827; margin-bottom: 1px; }
+          .sigeco-sub { font-size: 9px; color: #22c55e; font-weight: 600; margin-bottom: 2px; }
+          .header-info h1 { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 2px; }
+          .header-info p { font-size: 10px; color: #6b7280; }
           .section-title { font-size: 13px; font-weight: bold; color: #1e3a5f; border-bottom: 2px solid #1e3a5f; padding-bottom: 4px; margin: 16px 0 8px; }
           .cards { display: flex; gap: 10px; margin-bottom: 16px; }
           .card { flex: 1; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; }
@@ -191,7 +192,9 @@ export default function RelatorioCentroCusto() {
         <div class="header">
           ${logoHtml}
           <div class="header-info">
-            <h1>${empresa?.nomeEmpresa ?? "Empresa"}</h1>
+            <p class="sigeco-title">SIGECO</p>
+            <p class="sigeco-sub">Sistema Integrado de Gestão de Engenharia, Contratos e Operações</p>
+            <h1>${empresa?.nomeEmpresa ?? "Atom Tech"}</h1>
             <p>Relatório por Centro de Custo</p>
             ${empresa?.cnpj ? `<p>CNPJ: ${empresa.cnpj}</p>` : ""}
           </div>
@@ -269,7 +272,8 @@ export default function RelatorioCentroCusto() {
         ` : ""}
 
         <div class="footer">
-          Relatório gerado em ${new Date().toLocaleString("pt-BR")} — ${empresa?.nomeEmpresa ?? ""}
+          <strong>SIGECO</strong> — Sistema Integrado de Gestão de Engenharia, Contratos e Operações<br/>
+          ${empresa?.nomeEmpresa ?? "Atom Tech"} — Relatório gerado em ${new Date().toLocaleString("pt-BR")}
         </div>
       </body>
       </html>

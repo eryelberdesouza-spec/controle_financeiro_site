@@ -9,7 +9,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import {
   ArrowDownCircle, ArrowUpCircle, TrendingUp, Wallet,
   AlertTriangle, CheckCircle2, Clock, CalendarDays, Bell, BellRing,
-  Settings, X, Eye, EyeOff,
+  Settings, X, Eye, EyeOff, FolderOpen, Target, Zap, ChevronRight,
+  TrendingDown, BarChart3, AlertCircle,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -37,6 +38,8 @@ const WIDGETS_DEFAULT = [
   { id: "centrocusto",  label: "Por Centro de Custo",             visivel: true },
   { id: "composicao",   label: "Composição de Faturamento",       visivel: true },
   { id: "status",       label: "Status Detalhado (Tabelas)",      visivel: true },
+  { id: "kpiProjetos",  label: "KPIs Estratégicos por Projeto",    visivel: true },
+  { id: "acoesPrioritarias", label: "Ações Prioritárias",             visivel: true },
 ];
 
 function applyTema(temaId: string) {
@@ -141,6 +144,14 @@ export default function Home() {
   const { data: porCentroRaw } = trpc.dashboard.porCentroCusto.useQuery(periodoInput);
   const porCentroRecebimentos = (porCentroRaw as any)?.recebimentos ?? [];
   const porCentroPagamentos = (porCentroRaw as any)?.pagamentos ?? [];
+
+  // KPIs estratégicos por projeto
+  const { data: kpiProjetosData } = trpc.dashboard.kpiProjetos.useQuery();
+  const kpiProjetos = kpiProjetosData?.projetos ?? [];
+  const kpiTotais = kpiProjetosData?.totais ?? { receita: 0, custo: 0, margem: 0, margemPct: null };
+
+  // Ações prioritárias
+  const { data: acoesPrioritariasData } = trpc.dashboard.acoesPrioritarias.useQuery();
 
   const totalRecebimentos = parseFloat(String(stats?.recebimentos?.totalGeral ?? 0));
   const totalPagamentos = parseFloat(String(stats?.pagamentos?.totalGeral ?? 0));
@@ -688,6 +699,151 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+        )}
+        {/* KPIs Estratégicos por Projeto */}
+        {isVisible("kpiProjetos") && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                KPIs Estratégicos por Projeto
+              </h2>
+              <button onClick={() => setLocation("/projetos")} className="text-xs text-primary hover:underline flex items-center gap-1">
+                Ver todos <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+
+            {/* Totais consolidados */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Card className="border-l-4 border-l-green-500">
+                <CardContent className="pt-4 pb-3">
+                  <p className="text-xs text-muted-foreground">Receita Total (Contratos)</p>
+                  <p className="text-xl font-bold text-green-600">{formatCurrency(kpiTotais.receita)}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-l-4 border-l-red-500">
+                <CardContent className="pt-4 pb-3">
+                  <p className="text-xs text-muted-foreground">Custo Total Realizado</p>
+                  <p className="text-xl font-bold text-red-600">{formatCurrency(kpiTotais.custo)}</p>
+                </CardContent>
+              </Card>
+              <Card className={`border-l-4 ${kpiTotais.margem >= 0 ? "border-l-blue-500" : "border-l-orange-500"}`}>
+                <CardContent className="pt-4 pb-3">
+                  <p className="text-xs text-muted-foreground">Margem Bruta Total</p>
+                  <p className={`text-xl font-bold ${kpiTotais.margem >= 0 ? "text-blue-600" : "text-orange-600"}`}>
+                    {formatCurrency(kpiTotais.margem)}
+                    {kpiTotais.margemPct !== null && (
+                      <span className="text-sm font-normal ml-1">({kpiTotais.margemPct.toFixed(1)}%)</span>
+                    )}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tabela por projeto */}
+            {kpiProjetos.length > 0 && (
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="text-left px-4 py-2 font-medium text-muted-foreground">Projeto</th>
+                          <th className="text-right px-4 py-2 font-medium text-muted-foreground">Receita</th>
+                          <th className="text-right px-4 py-2 font-medium text-muted-foreground">Custo</th>
+                          <th className="text-right px-4 py-2 font-medium text-muted-foreground">Margem</th>
+                          <th className="text-right px-4 py-2 font-medium text-muted-foreground">Desvio</th>
+                          <th className="text-center px-4 py-2 font-medium text-muted-foreground">OS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {kpiProjetos.map(p => (
+                          <tr key={p.id} className="border-b hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-2">
+                              <div className="flex items-center gap-2">
+                                <FolderOpen className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                                <button
+                                  onClick={() => setLocation(`/projetos/${p.id}/orcamento`)}
+                                  className="text-left hover:text-primary hover:underline truncate max-w-[180px]"
+                                >
+                                  {p.nome}
+                                </button>
+                                {p.alertaDesvio && <AlertCircle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />}
+                              </div>
+                            </td>
+                            <td className="px-4 py-2 text-right font-medium">{formatCurrency(p.receita)}</td>
+                            <td className="px-4 py-2 text-right text-red-600">{formatCurrency(p.custo)}</td>
+                            <td className={`px-4 py-2 text-right font-semibold ${p.margem >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {formatCurrency(p.margem)}
+                              {p.margemPct !== null && (
+                                <span className="text-xs font-normal ml-1">({p.margemPct.toFixed(1)}%)</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {p.desvio !== null ? (
+                                <span className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded ${
+                                  p.desvio > 10 ? "bg-red-100 text-red-700" :
+                                  p.desvio > 0 ? "bg-yellow-100 text-yellow-700" :
+                                  "bg-green-100 text-green-700"
+                                }`}>
+                                  {p.desvio > 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+                                  {p.desvio > 0 ? "+" : ""}{p.desvio.toFixed(1)}%
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-center text-xs text-muted-foreground">
+                              {p.osConcluidasCount}/{p.totalOs}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Ações Prioritárias */}
+        {isVisible("acoesPrioritarias") && acoesPrioritariasData && acoesPrioritariasData.length > 0 && (
+          <Card className="border-l-4 border-l-amber-500">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <Zap className="h-5 w-5" />
+                Ações Prioritárias
+                <span className="ml-auto text-xs font-normal bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full">
+                  {acoesPrioritariasData.length} {acoesPrioritariasData.length === 1 ? "item" : "itens"}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {acoesPrioritariasData.map((acao, i) => (
+                <div
+                  key={i}
+                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity ${
+                    acao.urgencia === "alta" ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800" :
+                    "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                  }`}
+                  onClick={() => setLocation(acao.link)}
+                >
+                  <AlertCircle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+                    acao.urgencia === "alta" ? "text-red-500" : "text-yellow-500"
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">{acao.descricao}</p>
+                  </div>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                    acao.urgencia === "alta" ? "bg-red-200 text-red-800" : "bg-yellow-200 text-yellow-800"
+                  }`}>
+                    {acao.urgencia === "alta" ? "URGENTE" : "ATENÇÃO"}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         )}
       </div>
     </DashboardLayout>

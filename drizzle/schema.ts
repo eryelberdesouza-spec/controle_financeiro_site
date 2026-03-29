@@ -447,6 +447,12 @@ export const ordensServico = mysqlTable("ordens_servico", {
   // Sinaliza registros sem vínculo com projeto (legados)
   inconsistente: boolean("inconsistente").default(false).notNull(),
   motivoInconsistencia: varchar("motivoInconsistencia", { length: 500 }),
+  // Tempo total calculado automaticamente ao fechar OS (em minutos)
+  tempoTotalMinutos: int("tempoTotalMinutos"),
+  // Custo de mão de obra calculado ao fechar OS (alimenta orçamento do projeto)
+  custoMaoObra: decimal("custoMaoObra", { precision: 15, scale: 2 }),
+  // Tipo de OS para checklist estruturado
+  tipoOs: varchar("tipoOs", { length: 100 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -802,3 +808,29 @@ export const projetoOrcamento = mysqlTable("projeto_orcamento", {
 });
 export type ProjetoOrcamento = typeof projetoOrcamento.$inferSelect;
 export type InsertProjetoOrcamento = typeof projetoOrcamento.$inferInsert;
+
+// ─── Log de Auditoria ────────────────────────────────────────────────────────
+// Registra criação, edição e exclusão de entidades com rastreabilidade completa.
+export const auditLog = mysqlTable("audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  // Entidade afetada (ex: "pagamento", "projeto", "contrato", "os")
+  entidade: varchar("entidade", { length: 100 }).notNull(),
+  // ID do registro afetado
+  entidadeId: int("entidadeId"),
+  // Ação realizada
+  acao: mysqlEnum("acao", ["criacao", "edicao", "exclusao"]).notNull(),
+  // Usuário que realizou a ação
+  usuarioId: int("usuarioId").references(() => users.id),
+  usuarioNome: varchar("usuarioNome", { length: 200 }),
+  // Snapshot do valor anterior (JSON)
+  valorAnterior: text("valorAnterior"),
+  // Snapshot do valor novo (JSON)
+  valorNovo: text("valorNovo"),
+  // Campos alterados (lista separada por vírgula)
+  camposAlterados: text("camposAlterados"),
+  // Descrição legível da mudança
+  descricao: text("descricao"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AuditLog = typeof auditLog.$inferSelect;
+export type InsertAuditLog = typeof auditLog.$inferInsert;

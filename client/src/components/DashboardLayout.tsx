@@ -23,7 +23,7 @@ import {
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { usePermissions } from "@/hooks/usePermissions";
-import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList, AlertTriangle } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList, AlertTriangle, Shield, GitBranch } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -42,6 +42,7 @@ const menuItems = [
   { icon: FileText, label: "Contratos", path: "/contratos", modulo: "engenharia_contratos" as const },
   { icon: HardHat, label: "Engenharia", path: "/engenharia", modulo: "engenharia_os" as const },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios", modulo: "relatorios" as const },
+  { icon: Shield, label: "Auditoria", path: "/auditoria", adminOnly: true },
   { icon: Users, label: "Usuários", path: "/usuarios", adminOnly: true },
   { icon: Settings, label: "Configurações", path: "/configuracoes", adminOnly: true },
   { icon: BookOpen, label: "Guia de Uso", path: "/guia" },
@@ -188,20 +189,23 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  {empresa?.logoUrl && (
-                    <img
-                      src={empresa.logoUrl}
-                      alt="Logo"
-                      className="h-7 w-7 object-contain rounded shrink-0"
-                    />
-                  )}
-                  <span className="font-semibold tracking-tight truncate text-primary">
-                    {empresa?.nomeEmpresa || "FinControl"}
-                  </span>
+                  <img
+                    src={empresa?.logoUrl || "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png"}
+                    alt="Logo SIGECO"
+                    className="h-8 object-contain shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="font-bold tracking-tight text-sm leading-none text-primary">SIGECO</p>
+                    <p className="text-[9px] text-muted-foreground leading-tight truncate">Gestão de Engenharia</p>
+                  </div>
                 </div>
-              ) : empresa?.logoUrl ? (
-                <img src={empresa.logoUrl} alt="Logo" className="h-6 w-6 object-contain rounded mx-auto" />
-              ) : null}
+              ) : (
+                <img
+                  src={empresa?.logoUrl || "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png"}
+                  alt="Logo"
+                  className="h-6 object-contain mx-auto"
+                />
+              )}
             </div>
           </SidebarHeader>
 

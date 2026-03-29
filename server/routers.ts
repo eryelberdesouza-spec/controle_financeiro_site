@@ -3,6 +3,8 @@ import { tiposServicoRouter, materiaisRouter, contratosRouter, ordensServicoRout
 import { projetosRouter, onPrimeiraOSIniciada } from "./routers/projetos";
 import { propostasRouter } from "./routers/propostas";
 import { orcamentoRouter } from "./routers/orcamento";
+import { auditoriaRouter, registrarAuditoria } from "./routers/auditoria";
+import { workflowRouter } from "./routers/workflow";
 import { listAnexos, createAnexo, deleteAnexo, type AnexoModulo } from "./db.anexos";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
@@ -236,7 +238,17 @@ const pagamentosRouter = router({
           }
         }
       }
-      return createPagamento({ ...input, projetoId, createdBy: ctx.user.id });
+      const novoPagamento = await createPagamento({ ...input, projetoId, createdBy: ctx.user.id });
+      await registrarAuditoria({
+        entidade: "pagamento",
+        entidadeId: (novoPagamento as any)?.insertId ?? undefined,
+        acao: "criacao",
+        usuarioId: ctx.user.id,
+        usuarioNome: ctx.user.name ?? undefined,
+        valorNovo: { ...input, projetoId },
+        descricao: `Pagamento criado: ${input.nomeCompleto} — R$ ${input.valor}`,
+      });
+      return novoPagamento;
     }),
 
   update: staffProcedure
@@ -266,7 +278,21 @@ const pagamentosRouter = router({
       parcelado: z.boolean().optional(),
       quantidadeParcelas: z.number().optional(),
     }))
-    .mutation(({ input }) => { const { id, ...data } = input; return updatePagamento(id, data); }),
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      const resultado = await updatePagamento(id, data);
+      await registrarAuditoria({
+        entidade: "pagamento",
+        entidadeId: id,
+        acao: "edicao",
+        usuarioId: ctx.user.id,
+        usuarioNome: ctx.user.name ?? undefined,
+        valorNovo: data,
+        camposAlterados: Object.keys(data),
+        descricao: `Pagamento #${id} atualizado`,
+      });
+      return resultado;
+    }),
 
   // Somente admin pode excluir pagamentos
   delete: staffProcedure
@@ -274,6 +300,14 @@ const pagamentosRouter = router({
     .mutation(async ({ ctx, input }) => {
       const user = ctx.user as any;
       await requirePermission(user.id, user.role, "pagamentos", "podeExcluir");
+      await registrarAuditoria({
+        entidade: "pagamento",
+        entidadeId: input.id,
+        acao: "exclusao",
+        usuarioId: ctx.user.id,
+        usuarioNome: ctx.user.name ?? undefined,
+        descricao: `Pagamento #${input.id} excluído`,
+      });
       return deletePagamento(input.id);
     }),
 
@@ -346,7 +380,17 @@ const recebimentosRouter = router({
           }
         }
       }
-      return createRecebimento({ ...input, projetoId, createdBy: ctx.user.id });
+      const novoRec = await createRecebimento({ ...input, projetoId, createdBy: ctx.user.id });
+      await registrarAuditoria({
+        entidade: "recebimento",
+        entidadeId: (novoRec as any)?.insertId ?? undefined,
+        acao: "criacao",
+        usuarioId: ctx.user.id,
+        usuarioNome: ctx.user.name ?? undefined,
+        valorNovo: { ...input, projetoId },
+        descricao: `Recebimento criado: ${input.nomeRazaoSocial} — R$ ${input.valorTotal}`,
+      });
+      return novoRec;
     }),
 
   update: staffProcedure
@@ -373,7 +417,21 @@ const recebimentosRouter = router({
       status: z.enum(["Pendente", "Recebido", "Atrasado", "Cancelado"]).optional(),
       observacao: z.string().optional(),
     }))
-    .mutation(({ input }) => { const { id, ...data } = input; return updateRecebimento(id, data); }),
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      const resultado = await updateRecebimento(id, data);
+      await registrarAuditoria({
+        entidade: "recebimento",
+        entidadeId: id,
+        acao: "edicao",
+        usuarioId: ctx.user.id,
+        usuarioNome: ctx.user.name ?? undefined,
+        valorNovo: data,
+        camposAlterados: Object.keys(data),
+        descricao: `Recebimento #${id} atualizado`,
+      });
+      return resultado;
+    }),
 
   // Somente admin pode excluir recebimentos
   delete: staffProcedure
@@ -381,6 +439,14 @@ const recebimentosRouter = router({
     .mutation(async ({ ctx, input }) => {
       const user = ctx.user as any;
       await requirePermission(user.id, user.role, "recebimentos", "podeExcluir");
+      await registrarAuditoria({
+        entidade: "recebimento",
+        entidadeId: input.id,
+        acao: "exclusao",
+        usuarioId: ctx.user.id,
+        usuarioNome: ctx.user.name ?? undefined,
+        descricao: `Recebimento #${input.id} excluído`,
+      });
       return deleteRecebimento(input.id);
     }),
 
@@ -450,6 +516,168 @@ const dashboardRouter = router({
       tema: z.string().default("azul"),
     }))
     .mutation(({ input, ctx }) => saveDashboardConfig(ctx.user.id, input.widgets, input.tema)),
+
+  // KPIs estratégicos por projeto (receita, custo, margem)
+  kpiProjetos: staffProcedure.query(async () => {
+    const d = await getDb();
+    if (!d) return { projetos: [], totais: { receita: 0, custo: 0, margem: 0, margemPct: null } };
+
+    const resultado = await d.execute(
+      sql`
+        SELECT
+          p.id,
+          p.nome,
+          p.statusOperacional,
+          COALESCE(p.valorContratado, 0) as receita,
+          COALESCE((
+            SELECT SUM(pg.valor)
+            FROM pagamentos pg
+            WHERE pg.projetoId = p.id
+            AND pg.status IN ('Pago', 'Pendente', 'Processando')
+          ), 0) as custo,
+          COALESCE((
+            SELECT SUM(po.valorPrevisto)
+            FROM projeto_orcamento po
+            WHERE po.projetoId = p.id
+          ), 0) as custoPrevisto,
+          COALESCE((
+            SELECT COUNT(*)
+            FROM ordens_servico os
+            WHERE os.projetoId = p.id AND os.status NOT IN ('cancelada')
+          ), 0) as totalOs,
+          COALESCE((
+            SELECT COUNT(*)
+            FROM ordens_servico os
+            WHERE os.projetoId = p.id AND os.status = 'concluida'
+          ), 0) as osConcluidasCount
+        FROM projetos p
+        WHERE p.statusOperacional NOT IN ('CANCELADO', 'ENCERRADO_FINANCEIRAMENTE')
+        ORDER BY p.nome ASC
+        LIMIT 20
+      `
+    ) as any;
+
+    const rows = ((resultado as any)[0] as any[]).map((r: any) => {
+      const receita = parseFloat(r.receita || "0");
+      const custo = parseFloat(r.custo || "0");
+      const custoPrevisto = parseFloat(r.custoPrevisto || "0");
+      const margem = receita - custo;
+      const margemPct = receita > 0 ? ((margem / receita) * 100) : null;
+      const desvio = custoPrevisto > 0 ? (((custo - custoPrevisto) / custoPrevisto) * 100) : null;
+      return {
+        id: r.id as number,
+        nome: r.nome as string,
+        statusOperacional: r.statusOperacional as string,
+        receita,
+        custo,
+        custoPrevisto,
+        margem,
+        margemPct,
+        desvio,
+        alertaDesvio: desvio !== null && desvio > 10,
+        alertaMargem: margemPct !== null && margemPct < 10,
+        totalOs: parseInt(r.totalOs || "0"),
+        osConcluidasCount: parseInt(r.osConcluidasCount || "0"),
+      };
+    });
+
+    const totais = rows.reduce(
+      (acc, r) => ({ receita: acc.receita + r.receita, custo: acc.custo + r.custo, margem: acc.margem + r.margem }),
+      { receita: 0, custo: 0, margem: 0 }
+    );
+    const margemPct = totais.receita > 0 ? ((totais.margem / totais.receita) * 100) : null;
+
+    return { projetos: rows, totais: { ...totais, margemPct } };
+  }),
+
+  // Ações prioritárias (alertas acionáveis para o gestor)
+  acoesPrioritarias: staffProcedure.query(async () => {
+    const d = await getDb();
+    if (!d) return [];
+
+    const acoes: Array<{ tipo: string; descricao: string; link: string; urgencia: "alta" | "media" | "baixa" }> = [];
+
+    // Projetos com desvio de custo > 10%
+    const desvios = await d.execute(
+      sql`
+        SELECT p.id, p.nome,
+          COALESCE(SUM(po.valorPrevisto), 0) as previsto,
+          COALESCE((
+            SELECT SUM(pg.valor) FROM pagamentos pg
+            WHERE pg.projetoId = p.id AND pg.status IN ('Pago','Pendente','Processando')
+          ), 0) as realizado
+        FROM projetos p
+        LEFT JOIN projeto_orcamento po ON po.projetoId = p.id
+        WHERE p.statusOperacional = 'EM_EXECUCAO'
+        GROUP BY p.id, p.nome
+        HAVING previsto > 0 AND ((realizado - previsto) / previsto * 100) > 10
+        LIMIT 5
+      `
+    ) as any;
+    for (const r of ((desvios as any)[0] as any[])) {
+      const prev = parseFloat(r.previsto || "0");
+      const real = parseFloat(r.realizado || "0");
+      const pct = prev > 0 ? (((real - prev) / prev) * 100).toFixed(1) : "0";
+      acoes.push({
+        tipo: "desvio_custo",
+        descricao: `Projeto "${r.nome}" com desvio de custo de +${pct}% acima do orçado`,
+        link: `/projetos/${r.id}/orcamento`,
+        urgencia: parseFloat(pct) > 25 ? "alta" : "media",
+      });
+    }
+
+    // Recebimentos vencidos
+    const recVencidos = await d.execute(
+      sql`SELECT COUNT(*) as total, SUM(valor) as soma FROM recebimentos
+          WHERE status = 'Pendente' AND dataVencimento < CURDATE() LIMIT 1`
+    ) as any;
+    const rvRow = ((recVencidos as any)[0] as any[])[0];
+    if (rvRow && parseInt(rvRow.total || "0") > 0) {
+      acoes.push({
+        tipo: "recebimento_vencido",
+        descricao: `${rvRow.total} recebimento(s) vencido(s) — total R$ ${parseFloat(rvRow.soma || "0").toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+        link: "/recebimentos",
+        urgencia: "alta",
+      });
+    }
+
+    // OS abertas há mais de 30 dias sem atualização
+    const osAbertas = await d.execute(
+      sql`SELECT COUNT(*) as total FROM ordens_servico
+          WHERE status NOT IN ('concluida','cancelada')
+          AND dataAbertura < DATE_SUB(CURDATE(), INTERVAL 30 DAY) LIMIT 1`
+    ) as any;
+    const osRow = ((osAbertas as any)[0] as any[])[0];
+    if (osRow && parseInt(osRow.total || "0") > 0) {
+      acoes.push({
+        tipo: "os_parada",
+        descricao: `${osRow.total} OS aberta(s) há mais de 30 dias sem conclusão`,
+        link: "/engenharia",
+        urgencia: "media",
+      });
+    }
+
+    // Projetos em execução sem orçamento
+    const semOrc = await d.execute(
+      sql`SELECT COUNT(*) as total FROM projetos p
+          WHERE p.statusOperacional = 'EM_EXECUCAO'
+          AND NOT EXISTS (SELECT 1 FROM projeto_orcamento po WHERE po.projetoId = p.id) LIMIT 1`
+    ) as any;
+    const semOrcRow = ((semOrc as any)[0] as any[])[0];
+    if (semOrcRow && parseInt(semOrcRow.total || "0") > 0) {
+      acoes.push({
+        tipo: "sem_orcamento",
+        descricao: `${semOrcRow.total} projeto(s) em execução sem orçamento cadastrado`,
+        link: "/projetos",
+        urgencia: "media",
+      });
+    }
+
+    return acoes.sort((a, b) => {
+      const ord = { alta: 0, media: 1, baixa: 2 };
+      return ord[a.urgencia] - ord[b.urgencia];
+    });
+  }),
 });
 
 // === Clientes ===
@@ -927,6 +1155,8 @@ export const appRouter = router({
   propostas: propostasRouter,
   inconsistencias: inconsistenciasRouter,
   orcamento: orcamentoRouter,
+  auditoria: auditoriaRouter,
+  workflow: workflowRouter,
   engenharia: router({
     listContratos: staffProcedure.query(async () => {
       const db = await getDb();

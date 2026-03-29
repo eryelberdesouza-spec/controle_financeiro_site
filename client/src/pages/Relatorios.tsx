@@ -288,12 +288,18 @@ function AbaGeral() {
 
       {/* Área de impressão */}
       <div id="relatorio-print">
-        {/* Cabeçalho de impressão */}
-        <div className="hidden print:flex items-center gap-4 mb-6 border-b pb-4">
-          {logoUrl && <img src={logoUrl} alt="Logo" className="h-14 w-auto object-contain" />}
-          <div>
-            <h1 className="text-2xl font-bold">{nomeEmpresa}</h1>
-            <p className="text-sm text-muted-foreground">Relatório Financeiro — Gerado em {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</p>
+        {/* Cabeçalho de impressão SIGECO */}
+        <div className="hidden print:flex items-center gap-4 mb-6 border-b-2 border-gray-800 pb-4">
+          <img
+            src={logoUrl || "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png"}
+            alt="Logo SIGECO"
+            className="h-14 w-auto object-contain"
+          />
+          <div className="flex-1">
+            <h1 className="text-xl font-black tracking-widest text-gray-900">SIGECO</h1>
+            <p className="text-[11px] text-green-600 font-semibold">Sistema Integrado de Gestão de Engenharia, Contratos e Operações</p>
+            <p className="text-xs text-gray-600 font-medium">{nomeEmpresa}</p>
+            <p className="text-xs text-muted-foreground">Relatório Financeiro — Gerado em {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</p>
             {(filtros.dataInicio || filtros.dataFim) && (
               <p className="text-sm text-muted-foreground">
                 Período: {filtros.dataInicio ? formatDate(filtros.dataInicio) : "início"} até {filtros.dataFim ? formatDate(filtros.dataFim) : "hoje"}
@@ -579,9 +585,11 @@ function AbaGeral() {
           </Card>
         )}
 
-        {/* Rodapé de impressão */}
-        <div className="hidden print:block mt-8 pt-4 border-t text-center text-xs text-muted-foreground">
-          <p>{nomeEmpresa} — Documento gerado em {new Date().toLocaleString("pt-BR")}</p>
+        {/* Rodapé de impressão SIGECO */}
+        <div className="hidden print:block mt-8 pt-4 border-t text-center text-xs text-gray-500">
+          <p className="font-bold tracking-widest text-gray-700">SIGECO</p>
+          <p>Sistema Integrado de Gestão de Engenharia, Contratos e Operações</p>
+          <p className="mt-1">{nomeEmpresa} — Documento gerado em {new Date().toLocaleString("pt-BR")}</p>
         </div>
       </div>
     </div>
@@ -656,10 +664,9 @@ function AbaCentroCusto() {
   function handleImprimir() {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
-    const logoHtml = empresa?.logoUrl
-      ? `<img src="${empresa.logoUrl}" alt="Logo" style="height:50px;object-fit:contain;margin-right:12px;" />`
-      : "";
-    const nomeEmpresa = empresa?.nomeEmpresa || "Relatório por Centro de Custo";
+    const logoSrc = empresa?.logoUrl || "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png";
+    const logoHtml = `<img src="${logoSrc}" alt="Logo SIGECO" style="height:50px;object-fit:contain;margin-right:12px;" />`;
+    const nomeEmpresa = empresa?.nomeEmpresa || "Atom Tech";
     const pagRows = pagamentosList.map(p => `
       <tr>
         <td>${p.numeroControle ?? "—"}</td>
@@ -689,7 +696,7 @@ function AbaCentroCusto() {
       .header{display:flex;align-items:center;border-bottom:2px solid #1e3a5f;padding-bottom:12px;margin-bottom:16px}
       .kpi{display:inline-block;padding:8px 16px;border:1px solid #e5e7eb;border-radius:6px;margin:4px}
       .green{color:#16a34a}.red{color:#dc2626}</style></head><body>
-      <div class="header">${logoHtml}<div><h1>${nomeEmpresa}</h1>
+      <div class="header">${logoHtml}<div><h1 style="font-size:16px;font-weight:900;letter-spacing:0.08em;color:#111827;margin:0 0 2px 0">SIGECO</h1><p style="font-size:9px;color:#22c55e;font-weight:600;margin:0 0 2px 0">Sistema Integrado de Gestão de Engenharia, Contratos e Operações</p><p style="font-size:11px;color:#374151;font-weight:600;margin:0 0 2px 0">${nomeEmpresa}</p>
       <p>Relatório por Centro de Custo — ${nomeCentroCusto}</p>
       <p>Período: ${periodoLabel} — Emitido em ${new Date().toLocaleDateString("pt-BR")}</p></div></div>
       <div>

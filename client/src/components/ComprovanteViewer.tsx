@@ -118,15 +118,17 @@ body {
   margin-bottom: 10px;
 }
 .comp-header img {
-  height: 44px !important;
-  max-height: 44px !important;
+  height: 48px !important;
+  max-height: 48px !important;
   width: auto !important;
-  max-width: 100px !important;
+  max-width: 120px !important;
   object-fit: contain !important;
 }
 .comp-header-info { flex: 1; }
-.comp-header-info h1 { font-size: 12px; font-weight: 700; margin-bottom: 1px; }
-.comp-header-info p { font-size: 9px; color: #4b5563; line-height: 1.3; }
+.sigeco-title { font-size: 14px; font-weight: 900; color: #111827; letter-spacing: 0.08em; margin-bottom: 1px; }
+.sigeco-subtitle { font-size: 8px; color: #22c55e; font-weight: 600; line-height: 1.3; margin-bottom: 2px; }
+.sigeco-empresa { font-size: 9px; color: #374151; font-weight: 600; }
+.comp-header-info p { font-size: 8px; color: #6b7280; line-height: 1.3; }
 .comp-header-date { text-align: right; font-size: 9px; color: #6b7280; white-space: nowrap; }
 .comp-header-date strong { display: block; font-size: 10px; color: #374151; }
 .comp-title-row {
@@ -194,12 +196,18 @@ td.center, th.center { text-align: center; }
 
 // === Builders de HTML para impressão ===
 
+const SIGECO_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png";
+
 function buildHeaderHTML(empresa: any) {
+  const logoSrc = empresa?.logoUrl || SIGECO_LOGO;
+  const nomeEmpresa = empresa?.nomeEmpresa || "Atom Tech";
   return `
     <div class="comp-header">
-      ${empresa?.logoUrl ? `<img src="${empresa.logoUrl}" alt="Logo" />` : ""}
+      <img src="${logoSrc}" alt="Logo SIGECO" />
       <div class="comp-header-info">
-        <h1>${empresa?.nomeEmpresa || "Empresa"}</h1>
+        <h1 class="sigeco-title">SIGECO</h1>
+        <p class="sigeco-subtitle">Sistema Integrado de Gestão de Engenharia, Contratos e Operações</p>
+        <p class="sigeco-empresa">${nomeEmpresa}</p>
         ${empresa?.cnpj ? `<p>CNPJ: ${empresa.cnpj}</p>` : ""}
         ${empresa?.telefone ? `<p>Tel: ${empresa.telefone}</p>` : ""}
         ${empresa?.email ? `<p>${empresa.email}</p>` : ""}
@@ -500,13 +508,17 @@ function PreviewPagamentoCard({
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5 text-sm text-gray-900 shadow-sm">
-      {/* Cabeçalho */}
+      {/* Cabeçalho SIGECO */}
       <div className="flex items-center gap-3 border-b-2 border-gray-800 pb-3 mb-4">
-        {empresa?.logoUrl && (
-          <img src={empresa.logoUrl} alt="Logo" className="h-12 w-auto max-w-[100px] object-contain" />
-        )}
+        <img
+          src={empresa?.logoUrl || "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png"}
+          alt="Logo SIGECO"
+          className="h-12 w-auto max-w-[120px] object-contain"
+        />
         <div className="flex-1">
-          <p className="font-bold text-base">{empresa?.nomeEmpresa || "Empresa"}</p>
+          <p className="font-black text-base tracking-widest text-gray-900">SIGECO</p>
+          <p className="text-[10px] text-green-600 font-semibold leading-tight">Sistema Integrado de Gestão de Engenharia, Contratos e Operações</p>
+          <p className="text-xs text-gray-600 font-medium">{empresa?.nomeEmpresa || "Atom Tech"}</p>
           {empresa?.cnpj && <p className="text-xs text-gray-500">CNPJ: {empresa.cnpj}</p>}
           {empresa?.telefone && <p className="text-xs text-gray-500">Tel: {empresa.telefone}</p>}
           {empresa?.email && <p className="text-xs text-gray-500">{empresa.email}</p>}
@@ -625,13 +637,17 @@ function PreviewRecebimentoCard({
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5 text-sm text-gray-900 shadow-sm">
-      {/* Cabeçalho */}
+      {/* Cabeçalho SIGECO */}
       <div className="flex items-center gap-3 border-b-2 border-gray-800 pb-3 mb-4">
-        {empresa?.logoUrl && (
-          <img src={empresa.logoUrl} alt="Logo" className="h-12 w-auto max-w-[100px] object-contain" />
-        )}
+        <img
+          src={empresa?.logoUrl || "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png"}
+          alt="Logo SIGECO"
+          className="h-12 w-auto max-w-[120px] object-contain"
+        />
         <div className="flex-1">
-          <p className="font-bold text-base">{empresa?.nomeEmpresa || "Empresa"}</p>
+          <p className="font-black text-base tracking-widest text-gray-900">SIGECO</p>
+          <p className="text-[10px] text-green-600 font-semibold leading-tight">Sistema Integrado de Gestão de Engenharia, Contratos e Operações</p>
+          <p className="text-xs text-gray-600 font-medium">{empresa?.nomeEmpresa || "Atom Tech"}</p>
           {empresa?.cnpj && <p className="text-xs text-gray-500">CNPJ: {empresa.cnpj}</p>}
           {empresa?.telefone && <p className="text-xs text-gray-500">Tel: {empresa.telefone}</p>}
           {empresa?.email && <p className="text-xs text-gray-500">{empresa.email}</p>}

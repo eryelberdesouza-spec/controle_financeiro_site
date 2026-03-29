@@ -82,16 +82,13 @@ Estamos prontos para auxiliá-lo(a) na transição para um futuro energético ma
 
 // ─── Logo SVG Atom Tech ───────────────────────────────────────────────────────
 
-const ATOM_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="180" height="54">
-  <rect width="200" height="60" fill="white"/>
-  <!-- Símbolo de raio/energia -->
-  <polygon points="28,8 18,32 26,32 16,52 36,26 27,26 38,8" fill="#f59e0b"/>
-  <!-- Texto ATOM TECH -->
-  <text x="48" y="28" font-family="Arial,sans-serif" font-size="18" font-weight="800" fill="#166534" letter-spacing="-0.5">ATOM TECH</text>
-  <text x="48" y="44" font-family="Arial,sans-serif" font-size="9" fill="#16a34a" letter-spacing="1">ENERGIA SOLAR E TECNOLOGIA</text>
-  <!-- Linha decorativa -->
-  <line x1="48" y1="48" x2="195" y2="48" stroke="#16a34a" stroke-width="1.5"/>
-</svg>`;
+const ATOM_LOGO_HTML = `<div style="display:flex;flex-direction:column;gap:4px;">
+  <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png" alt="Logo Atom Tech" style="height:48px;width:auto;object-fit:contain;" />
+  <div style="margin-top:4px;">
+    <span style="font-size:13px;font-weight:900;letter-spacing:0.1em;color:#111827;">SIGECO</span>
+    <span style="font-size:8px;color:#22c55e;font-weight:600;display:block;line-height:1.3;">Sistema Integrado de Gestão de Engenharia, Contratos e Operações</span>
+  </div>
+</div>`;
 
 // ─── Geração de PDF ───────────────────────────────────────────────────────────
 
@@ -207,7 +204,7 @@ function gerarPDFProposta(p: any) {
   <!-- CABEÇALHO -->
   <div class="header">
     <div class="header-left">
-      ${ATOM_LOGO_SVG}
+      ${ATOM_LOGO_HTML}
       <div class="header-contact">
         SIA Trecho 3 - Lts 625/695, Ed. SIA Centro Empresarial, Sala 231-B – Brasília – DF, CEP 71.200-030<br>
         Tel: (61) 3978-1738 / 99608-9098 &nbsp;|&nbsp; contato@atomtech.tec.br &nbsp;|&nbsp; www.atomtec.tec.br<br>
@@ -308,6 +305,7 @@ function gerarPDFProposta(p: any) {
   </div>
 
   <div class="footer">
+    <strong>SIGECO</strong> — Sistema Integrado de Gestão de Engenharia, Contratos e Operações<br/>
     ATOM TECH — Energia Solar e Tecnologia — SIA Trecho 3, Brasília – DF — CNPJ 34.011.045/0001-83
   </div>
 </div>

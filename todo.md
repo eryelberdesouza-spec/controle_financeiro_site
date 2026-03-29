@@ -766,3 +766,47 @@
 - [x] Frontend Pagamentos: campo opcional para pagamentos sem projeto (retrocompatibilidade)
 - [x] Frontend Pagamentos: coluna Categoria na listagem
 - [x] 70 testes passando, 0 erros TypeScript
+
+## Identidade Visual SIGECO + Renomeação do Sistema (29/03/2026)
+- [x] Upload logos Atom Tech para CDN
+- [x] Criar arquivo de constantes SIGECO (nome, subtítulo, logo URL)
+- [x] Renomear título da aba do navegador para SIGECO
+- [x] Atualizar sidebar: logo Atom Tech + "SIGECO" no topo
+- [x] Atualizar DashboardLayout com identidade SIGECO
+- [x] Aplicar cabeçalho SIGECO (logo + nome + subtítulo) em ComprovanteViewer (pagamentos/recebimentos)
+- [x] Aplicar cabeçalho SIGECO em Relatórios (página de impressão)
+- [x] Aplicar cabeçalho SIGECO em OS (impressão)
+- [x] Aplicar cabeçalho SIGECO em Contratos (impressão/exportação)
+- [x] Aplicar rodapé SIGECO (data geração + "SIGECO" + nº página) em todos os documentos
+- [x] Aplicar identidade SIGECO no PDF de Propostas (jsPDF)
+
+## OS como Módulo Operacional Avançado (29/03/2026)
+- [x] Schema: adicionar campos tempoTotalMinutos e custoMaoObra em ordens_servico
+- [x] Migração do banco (SQL direto)
+- [x] Backend: calcular tempo_total automaticamente ao fechar OS (dataInicio + dataFim)
+- [x] Backend: ao fechar OS, alimentar custo de mão de obra no projeto (categoriaCusto=Mao_de_Obra)
+
+## Dashboard com KPIs Estratégicos (29/03/2026)
+- [x] Backend: procedure kpiProjetos (receita total, custo, margem % por projeto)
+- [x] Backend: procedure acoesPrioritarias (cobranças vencidas, projetos sem orçamento, OS pendentes)
+- [x] Frontend Dashboard: bloco KPIs estratégicos por projeto (receita, custo, margem)
+- [x] Frontend Dashboard: bloco "Ações Prioritárias" com alertas automáticos
+- [x] Frontend Dashboard: identificar projetos com prejuízo (margem negativa)
+
+## Sistema de Log e Auditoria (29/03/2026)
+- [x] Schema: criar tabela audit_log (userId, entidade, entidadeId, acao, dadosAntigos, dadosNovos, createdAt)
+- [x] Migração do banco (SQL direto)
+- [x] Backend: helper registrarAuditoria() para registrar eventos
+- [x] Backend: integrar auditoria em create/update/delete de pagamentos
+- [x] Backend: integrar auditoria em create/update/delete de recebimentos
+- [x] Backend: integrar auditoria em create/update/delete de projetos
+- [x] Backend: procedure para listar logs (admin only, com filtros)
+- [x] Frontend: página de Auditoria (somente admin) com tabela de logs e filtros
+
+## Workflow de Projeto por Status (29/03/2026)
+- [x] Backend: router workflow com procedures avancarStatus, verificarRequisitos, getWorkflow
+- [x] Backend: validação de avanço de status (contrato→exige contrato criado, execução→exige orçamento, operação→exige OS concluídas)
+- [x] Backend: projetos legados (criados antes de 2025) não são bloqueados
+- [x] Frontend Projetos: componente WorkflowProjeto com stepper visual (7 etapas)
+- [x] Frontend Projetos: botão de avanço com validação e mensagem de bloqueio
+- [x] 70 testes passando, 0 erros TypeScript

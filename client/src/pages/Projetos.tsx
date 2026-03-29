@@ -16,7 +16,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Plus, Search, Edit2, Trash2, Eye, FolderOpen, TrendingUp,
   Calendar, MapPin, User, DollarSign, ClipboardList, Building2,
-  CheckCircle, Clock, AlertTriangle, XCircle, Loader2, ChevronDown, BarChart3
+  CheckCircle, Clock, AlertTriangle, XCircle, Loader2, ChevronDown, BarChart3,
+  ArrowRight, GitBranch, Lock, CheckCircle2, ChevronRight
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -86,6 +87,109 @@ const FORM_VAZIO: FormData = {
   valorContratado: "", localExecucao: "", descricao: "", observacoes: "",
   criarCentroCusto: false,
 };
+
+// ─── Workflow do Projeto ─────────────────────────────────────────────────────
+
+const WORKFLOW_LABELS: Record<string, { label: string; icon: React.ReactNode; desc: string }> = {
+  lead: { label: "Lead", icon: <User className="w-4 h-4" />, desc: "Oportunidade identificada" },
+  proposta: { label: "Proposta", icon: <ClipboardList className="w-4 h-4" />, desc: "Proposta em elaboração" },
+  contrato: { label: "Contrato", icon: <Building2 className="w-4 h-4" />, desc: "Contrato assinado" },
+  engenharia: { label: "Engenharia", icon: <GitBranch className="w-4 h-4" />, desc: "Projeto técnico" },
+  execucao: { label: "Execução", icon: <TrendingUp className="w-4 h-4" />, desc: "Em campo" },
+  operacao: { label: "Operação", icon: <CheckCircle2 className="w-4 h-4" />, desc: "Entregue ao cliente" },
+  encerrado: { label: "Encerrado", icon: <CheckCircle className="w-4 h-4" />, desc: "Financeiramente encerrado" },
+};
+
+function WorkflowProjeto({ projetoId }: { projetoId: number }) {
+  const utils = trpc.useUtils();
+  const { data: wf, isLoading } = trpc.workflow.getWorkflow.useQuery({ projetoId });
+
+  const avancarMutation = trpc.workflow.avancarStatus.useMutation({
+    onSuccess: (res) => {
+      toast.success(`Status avançado para ${WORKFLOW_LABELS[res.statusNovo?.toLowerCase?.() ?? ""]?.label ?? res.statusNovo}`);
+      utils.workflow.getWorkflow.invalidate({ projetoId });
+      utils.projetos.list.invalidate();
+      utils.projetos.painel.invalidate({ id: projetoId });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  if (isLoading) return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="animate-spin w-4 h-4" /> Carregando workflow...</div>;
+  if (!wf) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <GitBranch className="w-4 h-4" /> Workflow do Projeto
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* Linha do tempo */}
+        <div className="flex items-center gap-0 overflow-x-auto pb-2">
+          {wf.workflow.map((etapa, idx) => (
+            <div key={etapa.status} className="flex items-center">
+              <div className={`flex flex-col items-center min-w-[80px] ${
+                etapa.atual ? 'opacity-100' : etapa.concluido ? 'opacity-90' : 'opacity-40'
+              }`}>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${
+                  etapa.atual
+                    ? 'bg-primary border-primary text-primary-foreground shadow-md scale-110'
+                    : etapa.concluido
+                    ? 'bg-green-500 border-green-500 text-white'
+                    : 'bg-muted border-muted-foreground/30 text-muted-foreground'
+                }`}>
+                  {etapa.concluido ? <CheckCircle className="w-4 h-4" /> : WORKFLOW_LABELS[etapa.status]?.icon}
+                </div>
+                <span className={`text-xs mt-1 text-center font-medium ${
+                  etapa.atual ? 'text-primary' : etapa.concluido ? 'text-green-600' : 'text-muted-foreground'
+                }`}>{etapa.label}</span>
+                {etapa.atual && (
+                  <span className="text-[10px] text-primary/70 text-center leading-tight">{WORKFLOW_LABELS[etapa.status]?.desc}</span>
+                )}
+              </div>
+              {idx < wf.workflow.length - 1 && (
+                <ChevronRight className={`w-4 h-4 shrink-0 mx-1 ${
+                  wf.workflow[idx + 1].concluido || wf.workflow[idx + 1].atual ? 'text-green-500' : 'text-muted-foreground/30'
+                }`} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Botão de avançar */}
+        {wf.proximoStatus && (
+          <div className="mt-4 flex items-center gap-3">
+            {wf.requisitosProximo && !wf.requisitosProximo.ok ? (
+              <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex-1">
+                <Lock className="w-4 h-4 shrink-0" />
+                <span>{wf.requisitosProximo.mensagem}</span>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                className="gap-2"
+                disabled={avancarMutation.isPending}
+                onClick={() => avancarMutation.mutate({ projetoId, novoStatus: wf.proximoStatus as any })}
+              >
+                {avancarMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                Avançar para {WORKFLOW_LABELS[wf.proximoStatus]?.label}
+              </Button>
+            )}
+          </div>
+        )}
+        {!wf.proximoStatus && (
+          <div className="mt-3 flex items-center gap-2 text-sm text-emerald-600">
+            <CheckCircle className="w-4 h-4" />
+            <span className="font-medium">Projeto encerrado — todas as etapas concluídas</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+import React from "react";
 
 // ─── Painel do Projeto ────────────────────────────────────────────────────────
 
@@ -389,6 +493,9 @@ function PainelProjeto({ projetoId, onClose }: { projetoId: number; onClose: () 
           <p className="text-sm">{projeto.observacoes}</p>
         </div>
       )}
+
+      {/* Workflow de Projeto */}
+      <WorkflowProjeto projetoId={projetoId} />
 
       <div className="flex justify-end">
         <Button variant="outline" onClick={onClose}>Fechar</Button>

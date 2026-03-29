@@ -16,8 +16,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Plus, Search, Edit2, Trash2, Eye, FolderOpen, TrendingUp,
   Calendar, MapPin, User, DollarSign, ClipboardList, Building2,
-  CheckCircle, Clock, AlertTriangle, XCircle, Loader2, ChevronDown
+  CheckCircle, Clock, AlertTriangle, XCircle, Loader2, ChevronDown, BarChart3
 } from "lucide-react";
+import { useLocation } from "wouter";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -401,6 +402,7 @@ function PainelProjeto({ projetoId, onClose }: { projetoId: number; onClose: () 
 export default function Projetos() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
+  const [, navigate] = useLocation();
 
   const { data: projetos = [], isLoading } = trpc.projetos.list.useQuery();
   const { data: nextNumeroData } = trpc.projetos.nextNumero.useQuery();
@@ -679,6 +681,13 @@ export default function Projetos() {
                           title="Ver painel"
                         >
                           <Eye className="w-4 h-4 text-blue-500" />
+                        </Button>
+                        <Button
+                          size="sm" variant="ghost"
+                          onClick={() => navigate(`/projetos/${p.id}/orcamento`)}
+                          title="Orçamento do Projeto"
+                        >
+                          <BarChart3 className="w-4 h-4 text-green-600" />
                         </Button>
                         <Button
                           size="sm" variant="ghost"

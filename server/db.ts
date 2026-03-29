@@ -123,6 +123,9 @@ export async function listPagamentos(filters?: { status?: string; centroCusto?: 
     parcelado: pagamentos.parcelado,
     quantidadeParcelas: pagamentos.quantidadeParcelas,
     observacao: pagamentos.observacao,
+    categoriaCusto: pagamentos.categoriaCusto,
+    projetoId: pagamentos.projetoId,
+    contratoId: pagamentos.contratoId,
     createdAt: pagamentos.createdAt,
     updatedAt: pagamentos.updatedAt,
   })

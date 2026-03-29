@@ -55,6 +55,8 @@ export const projetos = mysqlTable("projetos", {
   localExecucao: varchar("localExecucao", { length: 255 }),
   descricao: text("descricao"),
   observacoes: text("observacoes"),
+  // Indica se o projeto exige orçamento antes da execução (false para projetos antigos)
+  exigeOrcamento: boolean("exigeOrcamento").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -164,6 +166,14 @@ export const pagamentos = mysqlTable("pagamentos", {
   autorizadoPor: varchar("autorizadoPor", { length: 255 }),
   parcelado: boolean("parcelado").default(false).notNull(),
   quantidadeParcelas: int("quantidadeParcelas").default(1).notNull(),
+  // Categoria de custo para controle de orçamento por projeto
+  categoriaCusto: mysqlEnum("categoriaCusto", [
+    "Material",
+    "Mao_de_Obra",
+    "Equipamentos",
+    "Terceiros",
+    "Outros",
+  ]),
   // Sinaliza registros sem vínculo com projeto (legados)
   inconsistente: boolean("inconsistente").default(false).notNull(),
   motivoInconsistencia: varchar("motivoInconsistencia", { length: 500 }),
@@ -768,3 +778,27 @@ export const propostaInfoImportantes = mysqlTable("proposta_info_importantes", {
 });
 export type PropostaInfoImportante = typeof propostaInfoImportantes.$inferSelect;
 export type InsertPropostaInfoImportante = typeof propostaInfoImportantes.$inferInsert;
+
+// ─── Orçamento por Projeto ───────────────────────────────────────────────────
+// Armazena o orçamento previsto por categoria de custo para cada projeto.
+// Permite comparar custo previsto vs realizado e calcular desvio percentual.
+export const projetoOrcamento = mysqlTable("projeto_orcamento", {
+  id: int("id").autoincrement().primaryKey(),
+  projetoId: int("projetoId").notNull().references(() => projetos.id, { onDelete: "cascade" }),
+  // Categoria de custo (alinhada com categoriaCusto de pagamentos)
+  categoria: mysqlEnum("categoria", [
+    "Material",
+    "Mao_de_Obra",
+    "Equipamentos",
+    "Terceiros",
+    "Outros",
+  ]).notNull(),
+  valorPrevisto: decimal("valorPrevisto", { precision: 15, scale: 2 }).notNull().default("0"),
+  // Observação livre por categoria
+  observacao: text("observacao"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy").references(() => users.id),
+});
+export type ProjetoOrcamento = typeof projetoOrcamento.$inferSelect;
+export type InsertProjetoOrcamento = typeof projetoOrcamento.$inferInsert;

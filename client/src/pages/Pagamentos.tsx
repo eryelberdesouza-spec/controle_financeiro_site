@@ -59,6 +59,7 @@ type FormData = {
   centroCustoId: number | null;
   contratoId: number | null;
   projetoId: number;
+  categoriaCusto: string;
   valor: string;
   valorEquipamento: string;
   valorServico: string;
@@ -74,7 +75,7 @@ type FormData = {
 
 const defaultForm: FormData = {
   numeroControle: "", nomeCompleto: "", cpf: "", banco: "", tipoPix: "CPF",
-  chavePix: "", tipoServico: "", centroCusto: "", clienteId: null, centroCustoId: null, contratoId: null, projetoId: 0, valor: "",
+  chavePix: "", tipoServico: "", centroCusto: "", clienteId: null, centroCustoId: null, contratoId: null, projetoId: 0, categoriaCusto: "", valor: "",
   valorEquipamento: "", valorServico: "",
   dataPagamento: "", status: "Pendente", descricao: "", observacao: "", autorizadoPor: "",
   parcelado: false, quantidadeParcelas: 2, dataPrimeiroVencimento: "",
@@ -416,8 +417,10 @@ export default function Pagamentos() {
       const autoGeradas = gerarParcelas("pagamento", form.quantidadeParcelas, parseFloat(form.valor), form.dataPrimeiroVencimento);
       setParcelas(autoGeradas);
       // Continua o submit com as parcelas recém geradas
+      const { dataPrimeiroVencimento: _d2, ...restForm2 } = form;
       const payload2 = {
-        ...form,
+        ...restForm2,
+        categoriaCusto: form.categoriaCusto as any || undefined,
         dataPagamento: form.dataPagamento ? new Date(form.dataPagamento + "T12:00:00") : new Date(),
         quantidadeParcelas: form.parcelado ? form.quantidadeParcelas : 1,
       };
@@ -425,8 +428,10 @@ export default function Pagamentos() {
       else createMutation.mutate(payload2);
       return;
     }
+    const { dataPrimeiroVencimento: _d, ...restForm } = form;
     const payload = {
-      ...form,
+      ...restForm,
+      categoriaCusto: form.categoriaCusto as any || undefined,
       dataPagamento: form.dataPagamento ? new Date(form.dataPagamento + "T12:00:00") : new Date(),
       quantidadeParcelas: form.parcelado ? form.quantidadeParcelas : 1,
     };
@@ -443,7 +448,7 @@ export default function Pagamentos() {
       numeroControle: p.numeroControle ?? "", nomeCompleto: p.nomeCompleto ?? "",
       cpf: p.cpf ?? "", banco: p.banco ?? "", tipoPix: p.tipoPix ?? "CPF",
       chavePix: p.chavePix ?? "", tipoServico: p.tipoServico ?? "",
-      centroCusto: p.centroCusto ?? "", clienteId: p.clienteId ?? null, centroCustoId: p.centroCustoId ?? null, contratoId: p.contratoId ?? null, projetoId: p.projetoId ?? 0, valor: String(p.valor ?? ""),
+      centroCusto: p.centroCusto ?? "", clienteId: p.clienteId ?? null, centroCustoId: p.centroCustoId ?? null, contratoId: p.contratoId ?? null, projetoId: p.projetoId ?? 0, categoriaCusto: p.categoriaCusto ?? "", valor: String(p.valor ?? ""),
       valorEquipamento: String(p.valorEquipamento ?? ""),
       valorServico: String(p.valorServico ?? ""),
       dataPagamento: p.dataPagamento ? new Date(p.dataPagamento).toISOString().split("T")[0] : "",
@@ -583,6 +588,7 @@ export default function Pagamentos() {
                       <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Banco</th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">Serviço</th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden xl:table-cell">Centro de Custo</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground hidden 2xl:table-cell">Categoria</th>
                       <th className="text-right p-3 font-medium text-muted-foreground">Valor</th>
                       <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">Data</th>
                       <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
@@ -630,6 +636,15 @@ export default function Pagamentos() {
                               </span>
                             ) : (
                               <span className="text-xs text-muted-foreground/50">Sem CC</span>
+                            )}
+                          </td>
+                          <td className="p-3 hidden 2xl:table-cell">
+                            {p.categoriaCusto ? (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 border border-green-200">
+                                {p.categoriaCusto === "Mao_de_Obra" ? "Mão de Obra" : p.categoriaCusto}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/50">—</span>
                             )}
                           </td>
                           <td className="p-3 text-right font-semibold">{formatCurrency(p.valor)}</td>
@@ -790,6 +805,27 @@ export default function Pagamentos() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Categoria de Custo {form.projetoId ? <span className="text-red-500">*</span> : <span className="text-muted-foreground text-xs">(recomendado)</span>}</Label>
+                <Select
+                  value={form.categoriaCusto || ""}
+                  onValueChange={v => setForm(f => ({ ...f, categoriaCusto: v }))}
+                >
+                  <SelectTrigger className={form.projetoId && !form.categoriaCusto ? "border-orange-400" : ""}>
+                    <SelectValue placeholder="Selecionar categoria..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Material">📦 Material</SelectItem>
+                    <SelectItem value="Mao_de_Obra">👷 Mão de Obra</SelectItem>
+                    <SelectItem value="Equipamentos">🔧 Equipamentos</SelectItem>
+                    <SelectItem value="Terceiros">🤝 Terceiros</SelectItem>
+                    <SelectItem value="Outros">📋 Outros</SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.projetoId && !form.categoriaCusto && (
+                  <p className="text-xs text-orange-600 mt-1">Informe a categoria para controle de orçamento do projeto.</p>
+                )}
               </div>
               <div className="md:col-span-2">
                 <div className="rounded-lg border bg-muted/20 p-4 space-y-3">

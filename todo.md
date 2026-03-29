@@ -748,3 +748,21 @@
 - [x] Frontend Recebimentos: exibir origem do recebimento (gerado por contrato vs manual)
 - [x] Frontend Recebimentos: bloquear criação manual sem contrato apenas para novos registros
 - [x] Validação: criar contrato teste e verificar geração automática
+
+## Controle de Custos por Orçamento de Projeto (29/03/2026)
+- [x] Schema: tabela `projeto_orcamento` (projetoId, categoria, valorPrevisto, createdAt)
+- [x] Schema: campo `categoriaCusto` em pagamentos (Material, Mão de Obra, Equipamentos, Terceiros, Outros)
+- [x] Schema: campo `exigeOrcamento` em projetos (boolean, default false para projetos antigos)
+- [x] Migração do banco (SQL direto)
+- [x] Backend: procedure `orcamento.upsert` — criar/atualizar orçamento por categoria
+- [x] Backend: procedure `orcamento.getByProjeto` — retornar orçamento e custo realizado por categoria
+- [x] Backend: cálculo automático: custo previsto, custo realizado, desvio (%) por categoria
+- [x] Backend: procedure `orcamento.saveAll` — salvar todas as categorias de uma vez + margem bruta
+- [x] Frontend Projetos: botão de acesso ao Orçamento na listagem de projetos
+- [x] Frontend Projetos: página dedicada /projetos/:id/orcamento com formulário por categoria
+- [x] Frontend Projetos: painel de margem com barras de progresso (previsto vs realizado)
+- [x] Frontend Projetos: badge de alerta quando desvio > 10%
+- [x] Frontend Pagamentos: campo `categoriaCusto` obrigatório para pagamentos vinculados a projeto
+- [x] Frontend Pagamentos: campo opcional para pagamentos sem projeto (retrocompatibilidade)
+- [x] Frontend Pagamentos: coluna Categoria na listagem
+- [x] 70 testes passando, 0 erros TypeScript

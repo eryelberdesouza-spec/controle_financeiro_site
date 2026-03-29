@@ -23,6 +23,7 @@ import Projetos from "./pages/Projetos";
 import Propostas from "./pages/Propostas";
 import PropostasConfig from "./pages/PropostasConfig";
 import Inconsistencias from "./pages/Inconsistencias";
+import OrcamentoProjeto from "./pages/OrcamentoProjeto";
 
 function Router() {
   return (
@@ -45,6 +46,7 @@ function Router() {
       <Route path="/propostas" component={Propostas} />
       <Route path="/propostas-config" component={PropostasConfig} />
       <Route path="/inconsistencias" component={Inconsistencias} />
+      <Route path="/projetos/:id/orcamento" component={OrcamentoProjeto} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

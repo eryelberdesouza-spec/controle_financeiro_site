@@ -2,6 +2,7 @@ import { z } from "zod";
 import { tiposServicoRouter, materiaisRouter, contratosRouter, ordensServicoRouter, relatorioContratoRouter } from "./routers/engenharia";
 import { projetosRouter, onPrimeiraOSIniciada } from "./routers/projetos";
 import { propostasRouter } from "./routers/propostas";
+import { orcamentoRouter } from "./routers/orcamento";
 import { listAnexos, createAnexo, deleteAnexo, type AnexoModulo } from "./db.anexos";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
@@ -198,6 +199,7 @@ const pagamentosRouter = router({
       centroCustoId: z.number().nullable().optional(),
       contratoId: z.number().nullable().optional(),
       projetoId: z.number().min(1, "Selecione um projeto"),
+      categoriaCusto: z.enum(["Material", "Mao_de_Obra", "Equipamentos", "Terceiros", "Outros"]).optional(),
       valor: z.string().min(1),
       valorEquipamento: z.string().optional().default("0"),
       valorServico: z.string().optional().default("0"),
@@ -252,6 +254,7 @@ const pagamentosRouter = router({
       centroCustoId: z.number().nullable().optional(),
       contratoId: z.number().nullable().optional(),
       projetoId: z.number().nullable().optional(),
+      categoriaCusto: z.enum(["Material", "Mao_de_Obra", "Equipamentos", "Terceiros", "Outros"]).optional().nullable(),
       valor: z.string().optional(),
       valorEquipamento: z.string().optional(),
       valorServico: z.string().optional(),
@@ -923,6 +926,7 @@ export const appRouter = router({
   projetos: projetosRouter,
   propostas: propostasRouter,
   inconsistencias: inconsistenciasRouter,
+  orcamento: orcamentoRouter,
   engenharia: router({
     listContratos: staffProcedure.query(async () => {
       const db = await getDb();

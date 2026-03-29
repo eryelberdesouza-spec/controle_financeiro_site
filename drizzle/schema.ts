@@ -164,11 +164,13 @@ export const pagamentos = mysqlTable("pagamentos", {
   autorizadoPor: varchar("autorizadoPor", { length: 255 }),
   parcelado: boolean("parcelado").default(false).notNull(),
   quantidadeParcelas: int("quantidadeParcelas").default(1).notNull(),
+  // Sinaliza registros sem vínculo com projeto (legados)
+  inconsistente: boolean("inconsistente").default(false).notNull(),
+  motivoInconsistencia: varchar("motivoInconsistencia", { length: 500 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
 });
-
 export type Pagamento = typeof pagamentos.$inferSelect;
 export type InsertPagamento = typeof pagamentos.$inferInsert;
 
@@ -196,12 +198,14 @@ export const recebimentos = mysqlTable("recebimentos", {
   dataVencimento: timestamp("dataVencimento").notNull(),
   dataRecebimento: timestamp("dataRecebimento"),
   status: mysqlEnum("status", ["Pendente", "Recebido", "Atrasado", "Cancelado"]).default("Pendente").notNull(),
-  observacao: text("observacao"),
+   observacao: text("observacao"),
+  // Sinaliza registros sem vínculo com projeto/contrato (legados)
+  inconsistente: boolean("inconsistente").default(false).notNull(),
+  motivoInconsistencia: varchar("motivoInconsistencia", { length: 500 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
 });
-
 export type Recebimento = typeof recebimentos.$inferSelect;
 export type InsertRecebimento = typeof recebimentos.$inferInsert;
 
@@ -365,6 +369,9 @@ export const contratos = mysqlTable("contratos", {
   enderecoCidade: varchar("enderecoCidade", { length: 100 }),
   enderecoEstado: varchar("enderecoEstado", { length: 2 }),
   enderecoCep: varchar("enderecoCep", { length: 10 }),
+  // Sinaliza registros sem vínculo com projeto (legados)
+  inconsistente: boolean("inconsistente").default(false).notNull(),
+  motivoInconsistencia: varchar("motivoInconsistencia", { length: 500 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -425,6 +432,9 @@ export const ordensServico = mysqlTable("ordens_servico", {
   // Datas reais de início e fim da OS
   dataInicioReal: date("dataInicioReal"),
   dataFimReal: date("dataFimReal"),
+  // Sinaliza registros sem vínculo com projeto (legados)
+  inconsistente: boolean("inconsistente").default(false).notNull(),
+  motivoInconsistencia: varchar("motivoInconsistencia", { length: 500 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),

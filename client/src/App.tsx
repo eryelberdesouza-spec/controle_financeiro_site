@@ -22,6 +22,7 @@ import RelatorioCentroCusto from "./pages/RelatorioCentroCusto";
 import Projetos from "./pages/Projetos";
 import Propostas from "./pages/Propostas";
 import PropostasConfig from "./pages/PropostasConfig";
+import Inconsistencias from "./pages/Inconsistencias";
 
 function Router() {
   return (
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/projetos" component={Projetos} />
       <Route path="/propostas" component={Propostas} />
       <Route path="/propostas-config" component={PropostasConfig} />
+      <Route path="/inconsistencias" component={Inconsistencias} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

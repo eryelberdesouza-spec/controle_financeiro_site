@@ -58,7 +58,7 @@ type FormData = {
   clienteId: number | null;
   centroCustoId: number | null;
   contratoId: number | null;
-  projetoId: number | null;
+  projetoId: number;
   valor: string;
   valorEquipamento: string;
   valorServico: string;
@@ -74,7 +74,7 @@ type FormData = {
 
 const defaultForm: FormData = {
   numeroControle: "", nomeCompleto: "", cpf: "", banco: "", tipoPix: "CPF",
-  chavePix: "", tipoServico: "", centroCusto: "", clienteId: null, centroCustoId: null, contratoId: null, projetoId: null, valor: "",
+  chavePix: "", tipoServico: "", centroCusto: "", clienteId: null, centroCustoId: null, contratoId: null, projetoId: 0, valor: "",
   valorEquipamento: "", valorServico: "",
   dataPagamento: "", status: "Pendente", descricao: "", observacao: "", autorizadoPor: "",
   parcelado: false, quantidadeParcelas: 2, dataPrimeiroVencimento: "",
@@ -443,7 +443,7 @@ export default function Pagamentos() {
       numeroControle: p.numeroControle ?? "", nomeCompleto: p.nomeCompleto ?? "",
       cpf: p.cpf ?? "", banco: p.banco ?? "", tipoPix: p.tipoPix ?? "CPF",
       chavePix: p.chavePix ?? "", tipoServico: p.tipoServico ?? "",
-      centroCusto: p.centroCusto ?? "", clienteId: p.clienteId ?? null, centroCustoId: p.centroCustoId ?? null, contratoId: p.contratoId ?? null, projetoId: p.projetoId ?? null, valor: String(p.valor ?? ""),
+      centroCusto: p.centroCusto ?? "", clienteId: p.clienteId ?? null, centroCustoId: p.centroCustoId ?? null, contratoId: p.contratoId ?? null, projetoId: p.projetoId ?? 0, valor: String(p.valor ?? ""),
       valorEquipamento: String(p.valorEquipamento ?? ""),
       valorServico: String(p.valorServico ?? ""),
       dataPagamento: p.dataPagamento ? new Date(p.dataPagamento).toISOString().split("T")[0] : "",
@@ -776,14 +776,13 @@ export default function Pagamentos() {
                 </Select>
               </div>
               <div>
-                <Label>Projeto Vinculado</Label>
+                <Label>Projeto Vinculado <span className="text-red-500">*</span></Label>
                 <Select
-                  value={form.projetoId ? String(form.projetoId) : "nenhum"}
-                  onValueChange={v => setForm(f => ({ ...f, projetoId: v === "nenhum" ? null : Number(v) }))}
+                  value={form.projetoId ? String(form.projetoId) : ""}
+                  onValueChange={v => setForm(f => ({ ...f, projetoId: Number(v) }))}
                 >
-                  <SelectTrigger><SelectValue placeholder="Selecionar projeto (opcional)" /></SelectTrigger>
+                  <SelectTrigger className={!form.projetoId ? "border-orange-400" : ""}><SelectValue placeholder="Selecionar projeto (obrigatório)" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="nenhum">Nenhum</SelectItem>
                     {listaProjetos.map(p => (
                       <SelectItem key={p.id} value={String(p.id)}>
                         {p.numero ? `${p.numero} — ` : ""}{p.nome}

@@ -49,8 +49,8 @@ type FormData = {
   tipoRecebimento: TipoRecebimento;
   clienteId: number | null;
   centroCustoId: number | null;
-  contratoId: number | null;
-  projetoId: number | null;
+  contratoId: number;
+  projetoId: number;
   valorTotal: string;
   valorEquipamento: string;
   valorServico: string;
@@ -68,7 +68,7 @@ type FormData = {
 
 const defaultForm: FormData = {
   numeroControle: "", numeroContrato: "", nomeRazaoSocial: "", descricao: "",
-  tipoRecebimento: "Pix", clienteId: null, centroCustoId: null, contratoId: null, projetoId: null, valorTotal: "", valorEquipamento: "",
+  tipoRecebimento: "Pix", clienteId: null, centroCustoId: null, contratoId: 0, projetoId: 0, valorTotal: "", valorEquipamento: "",
   valorServico: "", juros: "0", desconto: "0",
   quantidadeParcelas: 1, parcelaAtual: 1,
   dataVencimento: "", dataRecebimento: "", status: "Pendente", observacao: "",
@@ -469,7 +469,7 @@ export default function Recebimentos() {
       numeroControle: r.numeroControle ?? "", numeroContrato: r.numeroContrato ?? "",
       nomeRazaoSocial: r.nomeRazaoSocial ?? "", descricao: r.descricao ?? "",
       tipoRecebimento: r.tipoRecebimento ?? "Pix",
-      clienteId: r.clienteId ?? null, centroCustoId: r.centroCustoId ?? null, contratoId: r.contratoId ?? null, projetoId: r.projetoId ?? null,
+      clienteId: r.clienteId ?? null, centroCustoId: r.centroCustoId ?? null, contratoId: r.contratoId ?? 0, projetoId: r.projetoId ?? 0,
       valorTotal: String(r.valorTotal ?? ""), valorEquipamento: String(r.valorEquipamento ?? ""),
       valorServico: String(r.valorServico ?? ""), juros: String(r.juros ?? "0"),
       desconto: String(r.desconto ?? "0"),
@@ -767,7 +767,7 @@ export default function Recebimentos() {
                     setForm(f => ({
                       ...f,
                       numeroContrato: numero,
-                      contratoId: contratoId ?? null,
+                      contratoId: contratoId ?? 0,
                       // Preenche CC automaticamente se o contrato tiver CC
                       centroCustoId: centroCustoId ?? f.centroCustoId,
                     }));
@@ -775,14 +775,13 @@ export default function Recebimentos() {
                 />
               </div>
               <div>
-                <Label>Projeto Vinculado</Label>
+                <Label>Projeto Vinculado <span className="text-red-500">*</span></Label>
                 <Select
-                  value={form.projetoId ? String(form.projetoId) : "nenhum"}
-                  onValueChange={v => setForm(f => ({ ...f, projetoId: v === "nenhum" ? null : Number(v) }))}
+                  value={form.projetoId ? String(form.projetoId) : ""}
+                  onValueChange={v => setForm(f => ({ ...f, projetoId: Number(v) }))}
                 >
-                  <SelectTrigger><SelectValue placeholder="Selecionar projeto (opcional)" /></SelectTrigger>
+                  <SelectTrigger className={!form.projetoId ? "border-orange-400" : ""}><SelectValue placeholder="Selecionar projeto (obrigatório)" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="nenhum">Nenhum</SelectItem>
                     {listaProjetos.map(p => (
                       <SelectItem key={p.id} value={String(p.id)}>
                         {p.numero ? `${p.numero} — ` : ""}{p.nome}

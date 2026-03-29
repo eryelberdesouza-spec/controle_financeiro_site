@@ -718,3 +718,24 @@
 - [x] Implementar mudança de status rápida em Projetos (igual ao Propostas)
 - [x] Corrigir geração automática de parcelas em Pagamentos (parcelas geradas ao criar/editar)
 - [x] Corrigir geração automática de parcelas em Recebimentos (parcelas geradas ao criar/editar)
+
+## Padronização de Vínculos com Projeto (v49)
+- [ ] Auditar schema: verificar campos projeto_id em contratos, pagamentos, recebimentos, OS
+- [ ] Auditar banco: identificar registros sem projeto_id (sinalizar como inconsistentes)
+- [ ] Schema: garantir projeto_id em contratos (já existe? tornar obrigatório)
+- [ ] Schema: garantir projeto_id em pagamentos (já existe? tornar obrigatório)
+- [ ] Schema: garantir projeto_id em recebimentos (já existe? tornar obrigatório)
+- [ ] Schema: garantir contrato_id em recebimentos (já existe? tornar obrigatório)
+- [ ] Schema: garantir projeto_id em ordens_servico (já existe? tornar obrigatório)
+- [ ] Schema: adicionar campo `inconsistente` (boolean) nas tabelas sem vínculo
+- [ ] Backend: validar projeto_id nas procedures de create/update de contratos
+- [ ] Backend: validar projeto_id e contrato_id nas procedures de create/update de recebimentos
+- [ ] Backend: validar projeto_id nas procedures de create/update de pagamentos
+- [ ] Backend: validar projeto_id nas procedures de create/update de OS
+- [ ] Backend: procedure para listar registros inconsistentes por módulo
+- [ ] Frontend: tornar campo Projeto obrigatório no formulário de Contratos
+- [ ] Frontend: tornar campo Projeto obrigatório no formulário de Pagamentos
+- [ ] Frontend: tornar campos Projeto e Contrato obrigatórios no formulário de Recebimentos
+- [ ] Frontend: tornar campo Projeto obrigatório no formulário de OS
+- [ ] Frontend: painel de inconsistências em Configurações mostrando registros sem vínculo
+- [ ] Frontend: botão para corrigir vínculo de registros inconsistentes

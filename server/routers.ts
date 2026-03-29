@@ -9,8 +9,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { eq, and, isNull } from "drizzle-orm";
-import { recebimentoParcelas, recebimentos, contratos, centrosCusto, pagamentos, projetos } from "../drizzle/schema";
+import { eq, and, isNull, sql } from "drizzle-orm";
+import { recebimentoParcelas, recebimentos, contratos, centrosCusto, pagamentos, projetos, ordensServico } from "../drizzle/schema";
 import {
   createCentroCusto,
   createCliente,
@@ -197,7 +197,7 @@ const pagamentosRouter = router({
       clienteId: z.number().nullable().optional(),
       centroCustoId: z.number().nullable().optional(),
       contratoId: z.number().nullable().optional(),
-      projetoId: z.number().nullable().optional(),
+      projetoId: z.number().min(1, "Selecione um projeto"),
       valor: z.string().min(1),
       valorEquipamento: z.string().optional().default("0"),
       valorServico: z.string().optional().default("0"),
@@ -313,8 +313,8 @@ const recebimentosRouter = router({
       tipoRecebimento: z.enum(TIPOS_RECEBIMENTO).default("Pix"),
       clienteId: z.number().nullable().optional(),
       centroCustoId: z.number().nullable().optional(),
-      contratoId: z.number().nullable().optional(),
-      projetoId: z.number().nullable().optional(),
+      projetoId: z.number().min(1, "Selecione um projeto"),
+      contratoId: z.number().min(1, "Selecione um contrato"),
       valorTotal: z.string().min(1),
       valorEquipamento: z.string().optional().default("0"),
       valorServico: z.string().optional().default("0"),
@@ -784,6 +784,114 @@ const anexosRouter = router({
     .mutation(({ input }) => deleteAnexo(input.id)),
 });
 
+// ─── Router de Inconsistências ─────────────────────────────────────────────
+const inconsistenciasRouter = router({
+  resumo: staffProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+    const [[pagRow], [recRow], [ctrRow], [osRow]] = await Promise.all([
+      db.execute<any>(sql`SELECT COUNT(*) as n FROM pagamentos WHERE inconsistente = TRUE`),
+      db.execute<any>(sql`SELECT COUNT(*) as n FROM recebimentos WHERE inconsistente = TRUE`),
+      db.execute<any>(sql`SELECT COUNT(*) as n FROM contratos WHERE inconsistente = TRUE`),
+      db.execute<any>(sql`SELECT COUNT(*) as n FROM ordens_servico WHERE inconsistente = TRUE`),
+    ]);
+    const nPag = Number((pagRow as any)[0]?.n ?? 0);
+    const nRec = Number((recRow as any)[0]?.n ?? 0);
+    const nCtr = Number((ctrRow as any)[0]?.n ?? 0);
+    const nOs = Number((osRow as any)[0]?.n ?? 0);
+    return { pagamentos: nPag, recebimentos: nRec, contratos: nCtr, ordensServico: nOs, total: nPag + nRec + nCtr + nOs };
+  }),
+  listPagamentos: staffProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+    return db.select({
+      id: pagamentos.id,
+      numeroControle: pagamentos.numeroControle,
+      nomeCompleto: pagamentos.nomeCompleto,
+      valor: pagamentos.valor,
+      dataPagamento: pagamentos.dataPagamento,
+      status: pagamentos.status,
+      motivoInconsistencia: pagamentos.motivoInconsistencia,
+    }).from(pagamentos).where(eq(pagamentos.inconsistente, true)).orderBy(pagamentos.dataPagamento);
+  }),
+  listRecebimentos: staffProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+    return db.select({
+      id: recebimentos.id,
+      numeroControle: recebimentos.numeroControle,
+      nomeRazaoSocial: recebimentos.nomeRazaoSocial,
+      valorTotal: recebimentos.valorTotal,
+      dataVencimento: recebimentos.dataVencimento,
+      status: recebimentos.status,
+      motivoInconsistencia: recebimentos.motivoInconsistencia,
+    }).from(recebimentos).where(eq(recebimentos.inconsistente, true)).orderBy(recebimentos.dataVencimento);
+  }),
+  listContratos: staffProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+    return db.select({
+      id: contratos.id,
+      numero: contratos.numero,
+      objeto: contratos.objeto,
+      valorTotal: contratos.valorTotal,
+      status: contratos.status,
+      motivoInconsistencia: contratos.motivoInconsistencia,
+    }).from(contratos).where(eq(contratos.inconsistente, true)).orderBy(contratos.numero);
+  }),
+  listOS: staffProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+    return db.select({
+      id: ordensServico.id,
+      numero: ordensServico.numero,
+      titulo: ordensServico.titulo,
+      status: ordensServico.status,
+      motivoInconsistencia: ordensServico.motivoInconsistencia,
+    }).from(ordensServico).where(eq(ordensServico.inconsistente, true)).orderBy(ordensServico.numero);
+  }),
+  corrigirPagamento: staffProcedure
+    .input(z.object({ id: z.number(), projetoId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      await db.update(pagamentos)
+        .set({ projetoId: input.projetoId, inconsistente: false, motivoInconsistencia: null })
+        .where(eq(pagamentos.id, input.id));
+      return { success: true };
+    }),
+  corrigirRecebimento: staffProcedure
+    .input(z.object({ id: z.number(), projetoId: z.number(), contratoId: z.number().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      await db.update(recebimentos)
+        .set({ projetoId: input.projetoId, contratoId: input.contratoId ?? null, inconsistente: false, motivoInconsistencia: null })
+        .where(eq(recebimentos.id, input.id));
+      return { success: true };
+    }),
+  corrigirContrato: staffProcedure
+    .input(z.object({ id: z.number(), projetoId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      await db.update(contratos)
+        .set({ projetoId: input.projetoId, inconsistente: false, motivoInconsistencia: null })
+        .where(eq(contratos.id, input.id));
+      return { success: true };
+    }),
+  corrigirOS: staffProcedure
+    .input(z.object({ id: z.number(), projetoId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      await db.update(ordensServico)
+        .set({ projetoId: input.projetoId, inconsistente: false, motivoInconsistencia: null })
+        .where(eq(ordensServico.id, input.id));
+      return { success: true };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -814,6 +922,14 @@ export const appRouter = router({
   anexos: anexosRouter,
   projetos: projetosRouter,
   propostas: propostasRouter,
+  inconsistencias: inconsistenciasRouter,
+  engenharia: router({
+    listContratos: staffProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: contratos.id, numero: contratos.numero, objeto: contratos.objeto }).from(contratos).orderBy(contratos.numero);
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -896,3 +896,9 @@
 - [x] Página MinhasOS — tela de campo para técnicos com OS do dia, botões Iniciar/Finalizar
 - [x] App.tsx atualizado com detecção mobile e rotas /menu-mobile e /minhas-os
 - [x] Interface desktop preservada sem alterações
+
+## Correção Redirecionamento Pós-Login (OAuth Fix)
+- [x] Corrigir const.ts: usar CANONICAL_ORIGIN fixo em vez de window.location.origin no redirectUri
+- [x] Corrigir oauth.ts: sempre usar redirectUri canônico na troca do token, com logs detalhados
+- [x] Adicionar rota /dashboard no App.tsx que redireciona para / (rota principal válida)
+- [x] Garantir que após login o usuário vai para / (Dashboard) sem erro 404

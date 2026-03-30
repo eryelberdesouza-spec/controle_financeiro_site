@@ -30,6 +30,7 @@ import OrcamentoProjeto from "./pages/OrcamentoProjeto";
 import Auditoria from "./pages/Auditoria";
 import MenuMobile from "./pages/MenuMobile";
 import MinhasOS from "./pages/MinhasOS";
+import { Redirect } from "wouter";
 
 // Wrapper que substitui o Dashboard pelo MobileDashboard em dispositivos móveis
 function HomeMobile() {
@@ -67,6 +68,8 @@ function Router() {
         {/* Rotas exclusivas mobile */}
         <Route path="/menu-mobile" component={MenuMobile} />
         <Route path="/minhas-os" component={MinhasOS} />
+        {/* /dashboard redireciona para / (rota principal do sistema) */}
+        <Route path="/dashboard">{() => <Redirect to="/" />}</Route>
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

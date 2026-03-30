@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Search, Pencil, Trash2, Users, Building2, Wrench, Hotel, Handshake, MoreHorizontal, AlertTriangle } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Building2, Wrench, Hotel, Handshake, MoreHorizontal, AlertTriangle, Archive, ArchiveRestore, Eye } from "lucide-react";
+import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import AnexosPanel from "@/components/AnexosPanel";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import MaskedInput from "@/components/MaskedInput";
 
 const TIPOS = ["Cliente", "Prestador de Serviço", "Fornecedor", "Hotel", "Parceiro", "Outro"] as const;
@@ -72,6 +74,7 @@ const emptyForm: FormData = {
 };
 
 export default function Clientes() {
+  const [, navigate] = useLocation();
   const { can } = usePermissions();
   const podeCriar = can.criar("clientes");
   const podeEditar = can.editar("clientes");
@@ -81,6 +84,7 @@ export default function Clientes() {
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [showArquivados, setShowArquivados] = useState(false);
   // Estado para controle de duplicidade
   const [duplicados, setDuplicados] = useState<Array<{ id: number; nome: string; tipo: string; cpfCnpj: string | null }>>([]);
   const [confirmandoDuplicidade, setConfirmandoDuplicidade] = useState(false);
@@ -100,6 +104,14 @@ export default function Clientes() {
 
   const deleteMutation = trpc.clientes.delete.useMutation({
     onSuccess: () => { toast.success("Cliente removido."); utils.clientes.list.invalidate(); setConfirmDeleteId(null); },
+    onError: (e) => toast.error(e.message),
+  });
+  const arquivarMutation = trpc.clientes.arquivar.useMutation({
+    onSuccess: () => { toast.success("Cliente arquivado."); utils.clientes.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const desarquivarMutation = trpc.clientes.desarquivar.useMutation({
+    onSuccess: () => { toast.success("Cliente restaurado."); utils.clientes.list.invalidate(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -181,12 +193,17 @@ export default function Clientes() {
     executarSalvar();
   };
 
-  const clientesFiltrados = clientes.filter(c =>
-    c.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    (c.cpfCnpj ?? "").includes(busca) ||
-    (c.email ?? "").toLowerCase().includes(busca.toLowerCase()) ||
-    (c.cidade ?? "").toLowerCase().includes(busca.toLowerCase())
-  );
+  const clientesFiltrados = clientes.filter(c => {
+    const statusOk = showArquivados
+      ? (c as any).statusRegistro === 'arquivado'
+      : ((c as any).statusRegistro ?? 'ativo') !== 'arquivado';
+    const buscaOk =
+      c.nome.toLowerCase().includes(busca.toLowerCase()) ||
+      (c.cpfCnpj ?? "").includes(busca) ||
+      (c.email ?? "").toLowerCase().includes(busca.toLowerCase()) ||
+      (c.cidade ?? "").toLowerCase().includes(busca.toLowerCase());
+    return statusOk && buscaOk;
+  });
 
   // Contagem por tipo
   const contagemTipo = TIPOS.reduce((acc, t) => {
@@ -224,15 +241,26 @@ export default function Clientes() {
         ))}
       </div>
 
-      {/* Busca */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nome, CPF/CNPJ, e-mail ou cidade..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          className="pl-9"
-        />
+      {/* Busca + Filtro arquivados */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, CPF/CNPJ, e-mail ou cidade..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button
+          variant={showArquivados ? "default" : "outline"}
+          size="sm"
+          className="gap-2"
+          onClick={() => setShowArquivados(v => !v)}
+        >
+          <Archive className="h-4 w-4" />
+          {showArquivados ? "Ver Ativos" : "Ver Arquivados"}
+        </Button>
       </div>
 
       {/* Tabela */}
@@ -277,10 +305,34 @@ export default function Clientes() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      {podeEditar && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700" title="Ver Detalhes" onClick={() => navigate(`/clientes/${c.id}`)}>
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      {podeEditar && (c as any).statusRegistro !== 'arquivado' && (
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => abrirEditar(c)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
+                      )}
+                      {podeEditar && (
+                        (c as any).statusRegistro === 'arquivado' ? (
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-8 w-8 text-green-600 hover:text-green-700"
+                            title="Restaurar"
+                            onClick={() => desarquivarMutation.mutate({ id: c.id })}
+                          >
+                            <ArchiveRestore className="h-3.5 w-3.5" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-8 w-8 text-orange-500 hover:text-orange-600"
+                            title="Arquivar"
+                            onClick={() => { if (confirm(`Arquivar "${c.nome}"?`)) arquivarMutation.mutate({ id: c.id }); }}
+                          >
+                            <Archive className="h-3.5 w-3.5" />
+                          </Button>
+                        )
                       )}
                       {podeExcluir && (
                         <Button
@@ -591,27 +643,16 @@ export default function Clientes() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de confirmação de exclusão */}
-      <Dialog open={!!confirmDeleteId} onOpenChange={(o) => { if (!o) setConfirmDeleteId(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Confirmar exclusão</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Tem certeza que deseja remover este cadastro? Esta ação não pode ser desfeita.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>Cancelar</Button>
-            <Button
-              variant="destructive"
-              onClick={() => confirmDeleteId && deleteMutation.mutate({ id: confirmDeleteId })}
-              disabled={deleteMutation.isPending}
-            >
-              Remover
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Dialog de confirmação de exclusão com senha master */}
+      <ConfirmDeleteDialog
+        open={!!confirmDeleteId}
+        onOpenChange={(o) => { if (!o) setConfirmDeleteId(null); }}
+        title="Excluir Cliente"
+        description="Esta ação não pode ser desfeita. O cliente e todos os dados vinculados serão removidos permanentemente."
+        requireMasterPassword
+        loading={deleteMutation.isPending}
+        onConfirm={() => { if (confirmDeleteId) deleteMutation.mutate({ id: confirmDeleteId }); }}
+      />
     </div>
     </DashboardLayout>
   );

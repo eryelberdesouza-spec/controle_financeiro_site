@@ -18,9 +18,10 @@ import { toast } from "sonner";
 import { EngenhariaImpressao, type ContratoParaImpressao, type OSParaImpressao, type MaterialParaImpressao, type TipoServicoParaImpressao } from "@/components/EngenhariaImpressao";
 import {
   Plus, Search, Edit2, Trash2, FileText, Wrench, Package, ClipboardList,
-  ChevronDown, ChevronUp, Eye, Link2, DollarSign, BarChart2, MapPin, Printer, CheckSquare, Calendar
+  ChevronDown, ChevronUp, Eye, Link2, DollarSign, BarChart2, MapPin, Printer, CheckSquare, Calendar, Archive, ArchiveRestore
 } from "lucide-react";
 import AnexosPanel from "@/components/AnexosPanel";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 // === Helpers ===
 const fmt = (v: string | number | null | undefined) =>
@@ -67,6 +68,7 @@ export function ContratosTab() {
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroCC, setFiltroCC] = useState("todos");
+  const [showArquivadosContratos, setShowArquivadosContratos] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [relatorioContratoId, setRelatorioContratoId] = useState<number | null>(null);
@@ -118,8 +120,17 @@ export function ContratosTab() {
     onSuccess: () => { utils.contratos.list.invalidate(); setShowForm(false); setEditId(null); toast.success("Contrato atualizado!"); },
     onError: (err) => toast.error(`Erro ao atualizar contrato: ${err.message}`),
   });
+  const [deleteContratoId, setDeleteContratoId] = useState<number | null>(null);
   const deleteMutation = trpc.contratos.delete.useMutation({
-    onSuccess: () => { utils.contratos.list.invalidate(); toast.success("Contrato removido."); }
+    onSuccess: () => { utils.contratos.list.invalidate(); toast.success("Contrato removido."); setDeleteContratoId(null); }
+  });
+  const arquivarContratoMutation = trpc.contratos.arquivar.useMutation({
+    onSuccess: () => { utils.contratos.list.invalidate(); toast.success("Contrato arquivado."); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const desarquivarContratoMutation = trpc.contratos.desarquivar.useMutation({
+    onSuccess: () => { utils.contratos.list.invalidate(); toast.success("Contrato restaurado."); },
+    onError: (e: any) => toast.error(e.message),
   });
   const mudarStatusMutation = trpc.contratos.mudarStatus.useMutation({
     onSuccess: () => { utils.contratos.list.invalidate(); toast.success("Status atualizado!"); },
@@ -144,6 +155,8 @@ export function ContratosTab() {
 
   const filtered = useMemo(() => {
     return contratos.filter(c => {
+      const statusRegistro = (c as any).statusRegistro ?? 'ativo';
+      const matchArquivado = showArquivadosContratos ? statusRegistro === 'arquivado' : statusRegistro !== 'arquivado';
       const matchBusca = !busca || c.numero.toLowerCase().includes(busca.toLowerCase()) ||
         c.objeto.toLowerCase().includes(busca.toLowerCase()) ||
         (c.clienteNome ?? "").toLowerCase().includes(busca.toLowerCase());
@@ -151,7 +164,7 @@ export function ContratosTab() {
       const matchTipo = filtroTipo === "todos" || c.tipo === filtroTipo;
       const matchCliente = !filtroCliente || (c.clienteNome ?? "").toLowerCase().includes(filtroCliente.toLowerCase());
       const matchCC = filtroCC === "todos" || String((c as any).centroCustoId ?? "") === filtroCC;
-      return matchBusca && matchStatus && matchTipo && matchCliente && matchCC;
+      return matchArquivado && matchBusca && matchStatus && matchTipo && matchCliente && matchCC;
     });
   }, [contratos, busca, filtroStatus, filtroTipo, filtroCliente, filtroCC]);
 
@@ -262,6 +275,15 @@ export function ContratosTab() {
           <Button variant="outline" onClick={() => setImpressaoContratos(filtered)} className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
             <Printer className="h-4 w-4" /> Imprimir Lista ({filtered.length})
           </Button>
+          <Button
+            variant={showArquivadosContratos ? "default" : "outline"}
+            size="sm"
+            className="gap-2"
+            onClick={() => setShowArquivadosContratos(v => !v)}
+          >
+            <Archive className="h-4 w-4" />
+            {showArquivadosContratos ? "Ver Ativos" : "Ver Arquivados"}
+          </Button>
           {podeCriar && <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo Contrato</Button>}
         </div>
       </div>
@@ -332,8 +354,15 @@ export function ContratosTab() {
                       <Button size="icon" variant="ghost" title="Relatório do Contrato" onClick={() => setRelatorioContratoId(c.id)}>
                         <BarChart2 className="h-4 w-4 text-blue-600" />
                       </Button>
-                      {podeEditar && <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Edit2 className="h-4 w-4" /></Button>}
-                      {podeExcluir && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Excluir contrato?")) deleteMutation.mutate({ id: c.id }); }}><Trash2 className="h-4 w-4" /></Button>}
+                      {podeEditar && (c as any).statusRegistro !== 'arquivado' && <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Edit2 className="h-4 w-4" /></Button>}
+                      {podeEditar && (
+                        (c as any).statusRegistro === 'arquivado' ? (
+                          <Button size="icon" variant="ghost" title="Restaurar" className="text-green-600" onClick={() => desarquivarContratoMutation.mutate({ id: c.id })}><ArchiveRestore className="h-4 w-4" /></Button>
+                        ) : (
+                          <Button size="icon" variant="ghost" title="Arquivar" className="text-orange-500" onClick={() => { if (confirm(`Arquivar contrato ${c.numero}?`)) arquivarContratoMutation.mutate({ id: c.id }); }}><Archive className="h-4 w-4" /></Button>
+                        )
+                      )}
+                      {podeExcluir && (c as any).statusRegistro !== 'arquivado' && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setDeleteContratoId(c.id)}><Trash2 className="h-4 w-4" /></Button>}
                     </div>
                   </div>
                 </CardContent>
@@ -934,6 +963,15 @@ export function ContratosTab() {
           dados={impressaoContratos}
         />
       )}
+      <ConfirmDeleteDialog
+        open={!!deleteContratoId}
+        onOpenChange={(o) => { if (!o) setDeleteContratoId(null); }}
+        title="Excluir Contrato"
+        description="Esta ação não pode ser desfeita. O contrato e todos os dados vinculados serão removidos permanentemente."
+        requireMasterPassword
+        loading={deleteMutation.isPending}
+        onConfirm={() => { if (deleteContratoId) deleteMutation.mutate({ id: deleteContratoId }); }}
+      />
     </div>
   );
 }

@@ -969,3 +969,39 @@
 - [x] Módulo "contratos" já existe na lista de MODULOS
 - [x] Módulo "dashboard" já existe com controle de visibilidade
 - [x] Página de Usuários já tem interface de permissões granulares por módulo
+
+## Blocos 4–11 (Implementação v3)
+
+### Bloco 4 – Arquivamento
+- [x] Adicionar botão "Arquivar" nas listagens de Clientes, Propostas, Contratos e Projetos
+- [x] Adicionar filtro "Mostrar arquivados" nas listagens
+- [x] Adicionar botão "Restaurar" nos registros arquivados
+
+### Bloco 5 – Exclusão com Senha Master
+- [x] Integrar ConfirmDeleteDialog em Clientes
+- [x] Integrar ConfirmDeleteDialog em Contratos
+- [x] Integrar ConfirmDeleteDialog em Projetos
+- [x] Integrar ConfirmDeleteDialog em Propostas
+
+### Bloco 6 – Visualização de Cliente
+- [x] Criar página /clientes/:id com dados completos (modo leitura)
+- [x] Exibir propostas, contratos e projetos vinculados
+- [x] Adicionar botão "Visualizar" na listagem de clientes
+
+### Bloco 7 – Telefone na Proposta (PDF)
+- [x] Confirmar e garantir telefone no PDF da proposta
+
+### Bloco 8 – Despesas Administrativas
+- [x] Corrigir bug: projetoId null quando tipo=Despesa Administrativa
+- [x] Validar centros de custo administrativos no banco
+
+### Bloco 9 – Usuários e Permissões
+- [x] Seleção de módulos visíveis no dashboard por usuário
+- [x] Multi-seleção de permissões por usuário
+
+### Bloco 10 – Motor de Contrato
+- [x] Interface de seleção de flags no formulário de contrato (dialog de conversão com 3 checkboxes)
+- [ ] Geração de texto dinâmico baseado nas flags (próxima iteração)
+
+### Bloco 11 – Fluxo Automático
+- [x] Ao aprovar proposta: criar contrato e projeto vinculados automaticamente

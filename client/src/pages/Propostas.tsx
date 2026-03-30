@@ -14,10 +14,11 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import {
   Plus, Search, Edit, Trash2, Copy, FileText, Eye, CheckCircle,
   XCircle, Send, Clock, AlertCircle, Printer, ChevronDown,
-  Link2, Package, Wrench, X, Settings, CreditCard
+  Link2, Package, Wrench, X, Settings, CreditCard, Archive, ArchiveRestore, ShieldAlert
 } from "lucide-react";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -566,6 +567,7 @@ export default function Propostas() {
   // Listagem
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [showArquivados, setShowArquivados] = useState(false);
   const { data: propostas = [], isLoading } = trpc.propostas.list.useQuery({
     search: search || undefined,
     status: filterStatus !== "todos" ? filterStatus : undefined,
@@ -577,6 +579,9 @@ export default function Propostas() {
   const [viewId, setViewId] = useState<number | null>(null);
   const [statusModalId, setStatusModalId] = useState<number | null>(null);
   const [pdfLoadingId, setPdfLoadingId] = useState<number | null>(null);
+  const [deletePropostaId, setDeletePropostaId] = useState<number | null>(null);
+  const [converterDialogId, setConverterDialogId] = useState<number | null>(null);
+  const [converterFlags, setConverterFlags] = useState({ flagFornecimentoMaterial: false, flagIncluiProjeto: false, flagIncluiHomologacao: false });
 
   // Formulário
   const [form, setForm] = useState(getEmptyForm());
@@ -609,6 +614,14 @@ export default function Propostas() {
   });
   const deleteMutation = trpc.propostas.delete.useMutation({
     onSuccess: () => { toast.success("Proposta excluída."); utils.propostas.list.invalidate(); },
+  });
+  const arquivarPropostaMutation = trpc.propostas.arquivar.useMutation({
+    onSuccess: () => { toast.success("Proposta arquivada."); utils.propostas.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const desarquivarPropostaMutation = trpc.propostas.desarquivar.useMutation({
+    onSuccess: () => { toast.success("Proposta restaurada."); utils.propostas.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
   });
   const duplicarMutation = trpc.propostas.duplicar.useMutation({
     onSuccess: (d) => { toast.success(`Proposta duplicada: ${(d as any).numero}`); utils.propostas.list.invalidate(); },
@@ -934,6 +947,15 @@ export default function Propostas() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant={showArquivados ? "default" : "outline"}
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => setShowArquivados(v => !v)}
+                  >
+                    <Archive className="h-4 w-4" />
+                    {showArquivados ? "Ver Ativas" : "Ver Arquivadas"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -1012,7 +1034,7 @@ export default function Propostas() {
                                   {/* Botão Converter em Contrato — só se aprovada/assinada e não convertida */}
                                   {!p.convertidaEmContrato && (p.status === "APROVADA" || p.status === "EM_CONTRATACAO" || p.zapsignStatus === "assinado") && (
                                     <Button variant="ghost" size="sm" title="Converter em Contrato" className="text-purple-600 hover:text-purple-800"
-                                      onClick={() => { if (confirm(`Converter proposta ${p.numero} em contrato? Recebimentos serão gerados automaticamente.`)) converterMutation.mutate({ propostaId: p.id }); }}
+                                      onClick={() => { setConverterFlags({ flagFornecimentoMaterial: false, flagIncluiProjeto: false, flagIncluiHomologacao: false }); setConverterDialogId(p.id); }}
                                       disabled={converterMutation.isPending}>
                                       <Link2 className="w-4 h-4" />
                                     </Button>
@@ -1023,7 +1045,14 @@ export default function Propostas() {
                                       <Link2 className="w-3 h-3" /> Contrato
                                     </span>
                                   )}
-                                  {!p.convertidaEmContrato && <Button variant="ghost" size="sm" title="Excluir" className="text-red-500 hover:text-red-700" onClick={() => { if (confirm("Excluir esta proposta?")) deleteMutation.mutate({ id: p.id }); }}><Trash2 className="w-4 h-4" /></Button>}
+                                  {!p.convertidaEmContrato && (
+                                    (p as any).statusRegistro === 'arquivado' ? (
+                                      <Button variant="ghost" size="sm" title="Restaurar" className="text-green-600 hover:text-green-700" onClick={() => desarquivarPropostaMutation.mutate({ id: p.id })}><ArchiveRestore className="w-4 h-4" /></Button>
+                                    ) : (
+                                      <Button variant="ghost" size="sm" title="Arquivar" className="text-orange-500 hover:text-orange-600" onClick={() => { if (confirm(`Arquivar proposta ${p.numero}?`)) arquivarPropostaMutation.mutate({ id: p.id }); }}><Archive className="w-4 h-4" /></Button>
+                                    )
+                                  )}
+                                  {!p.convertidaEmContrato && (p as any).statusRegistro !== 'arquivado' && <Button variant="ghost" size="sm" title="Excluir" className="text-red-500 hover:text-red-700" onClick={() => setDeletePropostaId(p.id)}><Trash2 className="w-4 h-4" /></Button>}
                                 </div>
                               </td>
                             </tr>
@@ -1553,6 +1582,77 @@ export default function Propostas() {
           </DialogContent>
         </Dialog>
       )}
+      <ConfirmDeleteDialog
+        open={!!deletePropostaId}
+        onOpenChange={(o) => { if (!o) setDeletePropostaId(null); }}
+        title="Excluir Proposta"
+        description="Esta ação não pode ser desfeita. A proposta e todos os dados vinculados serão removidos permanentemente."
+        requireMasterPassword
+        loading={deleteMutation.isPending}
+        onConfirm={() => { if (deletePropostaId) deleteMutation.mutate({ id: deletePropostaId }); }}
+      />
+
+      {/* Dialog Motor de Contrato — flags dinâmicas */}
+      <Dialog open={!!converterDialogId} onOpenChange={(o) => { if (!o) setConverterDialogId(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-purple-600" />
+              Motor de Contrato
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">Configure as cláusulas que serão incluídas no contrato gerado automaticamente.</p>
+            <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                  checked={converterFlags.flagFornecimentoMaterial}
+                  onChange={e => setConverterFlags(f => ({ ...f, flagFornecimentoMaterial: e.target.checked }))}
+                />
+                <div>
+                  <p className="text-sm font-medium">Fornecimento de Material</p>
+                  <p className="text-xs text-muted-foreground">Inclui cláusulas de fornecimento e responsabilidade sobre equipamentos. Se desmarcado, inclui cláusula de responsabilidade do cliente.</p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                  checked={converterFlags.flagIncluiProjeto}
+                  onChange={e => setConverterFlags(f => ({ ...f, flagIncluiProjeto: e.target.checked }))}
+                />
+                <div>
+                  <p className="text-sm font-medium">Inclui Projeto Elétrico (ART)</p>
+                  <p className="text-xs text-muted-foreground">Inclui bloco de ART e projeto elétrico no escopo do contrato.</p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                  checked={converterFlags.flagIncluiHomologacao}
+                  onChange={e => setConverterFlags(f => ({ ...f, flagIncluiHomologacao: e.target.checked }))}
+                />
+                <div>
+                  <p className="text-sm font-medium">Inclui Homologação (Concessionária)</p>
+                  <p className="text-xs text-muted-foreground">Inclui bloco de homologação junto à concessionária de energia.</p>
+                </div>
+              </label>
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <Button variant="outline" onClick={() => setConverterDialogId(null)}>Cancelar</Button>
+              <Button
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+                disabled={converterMutation.isPending}
+                onClick={() => {
+                  if (converterDialogId) {
+                    converterMutation.mutate({ propostaId: converterDialogId, ...converterFlags });
+                    setConverterDialogId(null);
+                  }
+                }}
+              >
+                {converterMutation.isPending ? "Gerando..." : "Gerar Contrato"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

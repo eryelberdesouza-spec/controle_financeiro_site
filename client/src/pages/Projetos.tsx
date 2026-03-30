@@ -14,12 +14,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  Plus, Search, Edit2, Trash2, Eye, FolderOpen, TrendingUp,
+  Plus, Search, Edit2, Trash2, Eye, FolderOpen, TrendingUp, Archive, ArchiveRestore,
   Calendar, MapPin, User, DollarSign, ClipboardList, Building2,
   CheckCircle, Clock, AlertTriangle, XCircle, Loader2, ChevronDown, BarChart3,
   ArrowRight, GitBranch, Lock, CheckCircle2, ChevronRight
 } from "lucide-react";
 import { useLocation } from "wouter";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -520,6 +521,7 @@ export default function Projetos() {
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroTipo, setFiltroTipo] = useState("todos");
+  const [showArquivadosProjetos, setShowArquivadosProjetos] = useState(false);
 
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<number | null>(null);
@@ -566,12 +568,22 @@ export default function Projetos() {
     onError: (e) => toast.error(`Erro ao atualizar projeto: ${e.message}`),
   });
 
+  const [deleteProjetoId, setDeleteProjetoId] = useState<number | null>(null);
   const deleteMutation = trpc.projetos.delete.useMutation({
     onSuccess: () => {
       toast.success("Projeto excluído.");
       utils.projetos.list.invalidate();
+      setDeleteProjetoId(null);
     },
     onError: (e) => toast.error(`Erro ao excluir: ${e.message}`),
+  });
+  const arquivarProjetoMutation = trpc.projetos.arquivar.useMutation({
+    onSuccess: () => { toast.success("Projeto arquivado."); utils.projetos.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const desarquivarProjetoMutation = trpc.projetos.desarquivar.useMutation({
+    onSuccess: () => { toast.success("Projeto restaurado."); utils.projetos.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
   });
 
   const mudarStatusMutation = trpc.projetos.mudarStatus.useMutation({
@@ -640,13 +652,15 @@ export default function Projetos() {
 
   // Filtros
   const projetosFiltrados = projetos.filter((p) => {
+    const statusRegistro = (p as any).statusRegistro ?? 'ativo';
+    const matchArquivado = showArquivadosProjetos ? statusRegistro === 'arquivado' : statusRegistro !== 'arquivado';
     const matchBusca = !busca ||
       p.nome.toLowerCase().includes(busca.toLowerCase()) ||
       p.numero.toLowerCase().includes(busca.toLowerCase()) ||
       (p.clienteNome ?? "").toLowerCase().includes(busca.toLowerCase());
     const matchStatus = filtroStatus === "todos" || p.statusOperacional === filtroStatus;
     const matchTipo = filtroTipo === "todos" || p.tipoProjeto === filtroTipo;
-    return matchBusca && matchStatus && matchTipo;
+    return matchArquivado && matchBusca && matchStatus && matchTipo;
   });
 
   const isAdmin = user?.role === "admin";
@@ -722,6 +736,15 @@ export default function Projetos() {
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant={showArquivadosProjetos ? "default" : "outline"}
+          size="sm"
+          className="gap-2"
+          onClick={() => setShowArquivadosProjetos(v => !v)}
+        >
+          <Archive className="h-4 w-4" />
+          {showArquivadosProjetos ? "Ver Ativos" : "Ver Arquivados"}
+        </Button>
       </div>
 
       {/* Tabela */}
@@ -807,21 +830,28 @@ export default function Projetos() {
                         >
                           <BarChart3 className="w-4 h-4 text-green-600" />
                         </Button>
-                        <Button
-                          size="sm" variant="ghost"
-                          onClick={() => abrirEditar(p)}
-                          title="Editar"
-                        >
-                          <Edit2 className="w-4 h-4 text-amber-500" />
-                        </Button>
-                        {isAdmin && (
+                        {(p as any).statusRegistro !== 'arquivado' && (
                           <Button
                             size="sm" variant="ghost"
-                            onClick={() => {
-                              if (confirm(`Excluir o projeto "${p.nome}"?`)) {
-                                deleteMutation.mutate({ id: p.id });
-                              }
-                            }}
+                            onClick={() => abrirEditar(p)}
+                            title="Editar"
+                          >
+                            <Edit2 className="w-4 h-4 text-amber-500" />
+                          </Button>
+                        )}
+                        {(p as any).statusRegistro === 'arquivado' ? (
+                          <Button size="sm" variant="ghost" title="Restaurar" onClick={() => desarquivarProjetoMutation.mutate({ id: p.id })}>
+                            <ArchiveRestore className="w-4 h-4 text-green-600" />
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="ghost" title="Arquivar" onClick={() => { if (confirm(`Arquivar o projeto "${p.nome}"?`)) arquivarProjetoMutation.mutate({ id: p.id }); }}>
+                            <Archive className="w-4 h-4 text-orange-500" />
+                          </Button>
+                        )}
+                        {isAdmin && (p as any).statusRegistro !== 'arquivado' && (
+                          <Button
+                            size="sm" variant="ghost"
+                            onClick={() => setDeleteProjetoId(p.id)}
                             title="Excluir"
                           >
                             <Trash2 className="w-4 h-4 text-red-500" />
@@ -995,6 +1025,15 @@ export default function Projetos() {
           {painelId && <PainelProjeto projetoId={painelId} onClose={() => setPainelId(null)} />}
         </DialogContent>
       </Dialog>
+      <ConfirmDeleteDialog
+        open={!!deleteProjetoId}
+        onOpenChange={(o) => { if (!o) setDeleteProjetoId(null); }}
+        title="Excluir Projeto"
+        description="Esta ação não pode ser desfeita. O projeto e todos os dados vinculados serão removidos permanentemente."
+        requireMasterPassword
+        loading={deleteMutation.isPending}
+        onConfirm={() => { if (deleteProjetoId) deleteMutation.mutate({ id: deleteProjetoId }); }}
+      />
     </div>
   );
 }

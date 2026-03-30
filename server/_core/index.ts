@@ -40,6 +40,22 @@ async function startServer() {
   // Em produção (Manus), a aplicação fica atrás de um proxy reverso
   app.set("trust proxy", 1);
 
+  // 1b. Redirecionamento de domínio personalizado para domínio OAuth autorizado
+  // O domínio financedash.company não está registrado como redirect URI no OAuth do Manus.
+  // Redireciona permanentemente para o domínio autorizado para garantir login funcional.
+  const AUTHORIZED_DOMAIN = "atomtech-financeiro.manus.space";
+  const CUSTOM_DOMAINS = ["financedash.company", "www.financedash.company"];
+  app.use((req: any, res: any, next: any) => {
+    const host = (req.hostname || req.headers.host || "").toLowerCase();
+    const isCustomDomain = CUSTOM_DOMAINS.some(d => host === d || host.endsWith("." + d));
+    if (isCustomDomain && process.env.NODE_ENV !== "development") {
+      const targetUrl = `https://${AUTHORIZED_DOMAIN}${req.originalUrl}`;
+      console.log(`[Domain Redirect] ${host} -> ${AUTHORIZED_DOMAIN}`);
+      return res.redirect(301, targetUrl);
+    }
+    next();
+  });
+
   // 2. Segurança: Helmet + CORS + Rate Limit global
   applySecurityMiddleware(app);
 

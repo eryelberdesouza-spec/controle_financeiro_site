@@ -128,9 +128,11 @@ function gerarPDFProposta(p: any) {
     `<div style="margin-bottom:14px;"><div style="font-weight:700;color:#166534;margin-bottom:4px;">${i + 1}. ${inf.titulo}</div><div style="color:#374151;line-height:1.6;">${inf.conteudo}</div></div>`
   ).join("");
 
+  // Total sempre calculado como soma dos itens (nunca valor fixo sem itens)
   const subtotalVal = (p.itens ?? []).reduce((acc: number, it: any) => acc + (parseFloat(it.valorSubtotal) || 0), 0);
   const descontoVal = parseFloat(p.descontoValor ?? "0");
-  const totalVal = parseFloat(p.valorTotal ?? "0") || (subtotalVal - descontoVal);
+  // Se há itens, usa subtotal - desconto. Se não há itens, total é 0 (consistência)
+  const totalVal = (p.itens ?? []).length > 0 ? Math.max(0, subtotalVal - descontoVal) : 0;
 
   // Formata o texto "Sobre Nós" com parágrafos
   const sobreNosFormatado = (p.sobreNosTexto ?? SOBRE_NOS_PADRAO)
@@ -574,6 +576,7 @@ export default function Propostas() {
   const [editId, setEditId] = useState<number | null>(null);
   const [viewId, setViewId] = useState<number | null>(null);
   const [statusModalId, setStatusModalId] = useState<number | null>(null);
+  const [pdfLoadingId, setPdfLoadingId] = useState<number | null>(null);
 
   // Formulário
   const [form, setForm] = useState(getEmptyForm());
@@ -688,6 +691,26 @@ export default function Propostas() {
     setSheetOpen(false);
     setEditId(null);
     setViewId(null);
+  }
+
+  // Busca dados completos da proposta e gera o PDF
+  async function handleGerarPDF(propostaId: number) {
+    setPdfLoadingId(propostaId);
+    try {
+      const dados = await utils.propostas.getById.fetch({ id: propostaId });
+      // Verificação de consistência
+      const subtotalItens = (dados.itens ?? []).reduce((acc: number, it: any) => acc + (parseFloat(it.valorSubtotal) || 0), 0);
+      const totalSalvo = parseFloat(dados.valorTotal ?? "0");
+      if (dados.itens.length === 0 && totalSalvo > 0) {
+        toast.warning("Inconsistência: proposta tem valor total mas sem itens. O PDF será gerado com total R$ 0,00.");
+        console.warn(`[PDF] Proposta ${dados.numero}: total=${totalSalvo} mas itens=[]. Usando subtotal=0.`);
+      }
+      gerarPDFProposta(dados);
+    } catch (e: any) {
+      toast.error("Erro ao carregar dados da proposta para PDF: " + (e?.message ?? "Tente novamente"));
+    } finally {
+      setPdfLoadingId(null);
+    }
   }
 
   // Abre formulário automaticamente quando navegar com ?novo=1
@@ -815,8 +838,20 @@ export default function Propostas() {
     if (!form.clienteNome.trim()) { toast.error("Informe o nome do cliente"); return; }
     // Validações para novas propostas (não bloqueia edições de propostas antigas)
     if (!editId) {
+      // Exige telefone OU email para novas propostas
+      if (!form.clienteTelefone.trim() && !form.clienteEmail.trim()) {
+        toast.error("Informe pelo menos o telefone ou e-mail do cliente");
+        return;
+      }
       if (!form.escopoDetalhado.trim()) { toast.error("Preencha o Escopo do Projeto antes de criar a proposta"); return; }
-      if (itens.filter((it) => it.descricao.trim()).length === 0) { toast.error("Adicione pelo menos 1 item na proposta"); return; }
+      const itensValidos = itens.filter((it) => it.descricao.trim());
+      if (itensValidos.length === 0) { toast.error("Adicione pelo menos 1 item na proposta"); return; }
+      // Verifica consistência: total deve bater com soma dos itens
+      const subtotalItens = itensValidos.reduce((acc, it) => acc + (parseFloat(it.valorSubtotal) || 0), 0);
+      if (subtotalItens === 0 && total > 0) {
+        toast.error("Inconsistência: o total não corresponde aos itens. Verifique os valores.");
+        return;
+      }
       if (pagamentosOpcoes.filter((pg) => pg.formaPagamentoId || pg.textoCustomizado).length === 0) { toast.error("Defina pelo menos 1 condição de pagamento"); return; }
     }
     const payload = {
@@ -951,7 +986,9 @@ export default function Propostas() {
                                 <div className="flex items-center justify-center gap-1">
                                   <Button variant="ghost" size="sm" title="Visualizar" onClick={() => openView(p.id)}><Eye className="w-4 h-4" /></Button>
                                   {!p.convertidaEmContrato && <Button variant="ghost" size="sm" title="Editar" onClick={() => openEdit(p.id)}><Edit className="w-4 h-4" /></Button>}
-                                  <Button variant="ghost" size="sm" title="Imprimir PDF" onClick={() => gerarPDFProposta(p)}><Printer className="w-4 h-4" /></Button>
+                                  <Button variant="ghost" size="sm" title="Imprimir PDF" onClick={() => handleGerarPDF(p.id)} disabled={pdfLoadingId === p.id}>
+                                    {pdfLoadingId === p.id ? <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" /> : <Printer className="w-4 h-4" />}
+                                  </Button>
                                   <Button variant="ghost" size="sm" title="Duplicar" onClick={() => duplicarMutation.mutate({ id: p.id })}><Copy className="w-4 h-4" /></Button>
                                   {!p.convertidaEmContrato && <Button variant="ghost" size="sm" title="Mudar Status" onClick={() => setStatusModalId(p.id)}><ChevronDown className="w-4 h-4" /></Button>}
                                   {/* Botão Enviar para Assinatura — só se não enviado/assinado e não convertido */}
@@ -1475,7 +1512,7 @@ export default function Propostas() {
             <div className="flex justify-between pt-4 border-t pb-6">
               <div className="flex gap-2">
                 {(editId || viewId) && propostaDetalhes && (
-                  <Button variant="outline" onClick={() => gerarPDFProposta(propostaDetalhes)} className="gap-2">
+                  <Button variant="outline" onClick={() => handleGerarPDF(propostaDetalhes!.id)} disabled={pdfLoadingId === propostaDetalhes?.id} className="gap-2">
                     <Printer className="w-4 h-4" /> Gerar PDF
                   </Button>
                 )}

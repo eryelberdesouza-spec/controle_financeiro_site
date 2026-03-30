@@ -446,12 +446,16 @@ export default function Pagamentos() {
     const { dataPrimeiroVencimento: _d, ...restForm } = form;
     const payload = {
       ...restForm,
+      // Converter 0 para null em foreign keys para evitar violação de constraint
+      projetoId: restForm.projetoId && restForm.projetoId > 0 ? restForm.projetoId : null,
+      clienteId: restForm.clienteId && restForm.clienteId > 0 ? restForm.clienteId : null,
+      centroCustoId: restForm.centroCustoId && restForm.centroCustoId > 0 ? restForm.centroCustoId : null,
       categoriaCusto: form.categoriaCusto as any || undefined,
       dataPagamento: form.dataPagamento ? new Date(form.dataPagamento + "T12:00:00") : new Date(),
       quantidadeParcelas: form.parcelado ? form.quantidadeParcelas : 1,
     };
-    if (editId) updateMutation.mutate({ id: editId, ...payload });
-    else createMutation.mutate(payload);
+    if (editId) updateMutation.mutate({ id: editId, ...payload as any });
+    else createMutation.mutate(payload as any);
   };
 
   const handleEdit = (p: any) => {

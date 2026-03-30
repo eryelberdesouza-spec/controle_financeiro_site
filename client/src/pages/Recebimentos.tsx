@@ -466,12 +466,17 @@ export default function Recebimentos() {
     const { parcelado: _parcelado, dataPrimeiroVencimento: _dataPrimeiroVencimento, ...formFields } = form;
     const payload = {
       ...formFields,
+      // Converter 0 para null em foreign keys para evitar violação de constraint
+      contratoId: formFields.contratoId && formFields.contratoId > 0 ? formFields.contratoId : null,
+      projetoId: formFields.projetoId && formFields.projetoId > 0 ? formFields.projetoId : null,
+      clienteId: formFields.clienteId && formFields.clienteId > 0 ? formFields.clienteId : null,
+      centroCustoId: formFields.centroCustoId && formFields.centroCustoId > 0 ? formFields.centroCustoId : null,
       dataVencimento: dataVencimentoFinal,
       dataRecebimento: form.dataRecebimento ? new Date(form.dataRecebimento + "T12:00:00") : undefined,
       quantidadeParcelas: form.parcelado ? form.quantidadeParcelas : 1,
     };
     if (editId) updateMutation.mutate({ id: editId, ...payload });
-    else createMutation.mutate(payload);
+    else createMutation.mutate(payload as any);
   };
 
   const handleEdit = (r: any) => {

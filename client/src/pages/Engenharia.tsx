@@ -1825,14 +1825,26 @@ function TiposServicoTab() {
   const [form, setForm] = useState({ codigo: "", nome: "", descricao: "", unidade: "", valorUnitario: "" });
   const [impressaoTipos, setImpressaoTipos] = useState<TipoServicoParaImpressao[] | null>(null);
 
+  // Busca o próximo código automático SERV-NNNN
+  const { data: nextCodigoServico } = trpc.tiposServico.nextCodigo.useQuery(undefined, {
+    enabled: showForm && !editId,
+    staleTime: 0,
+  });
+  // Preenche o código automaticamente quando o valor chegar do servidor
+  useEffect(() => {
+    if (nextCodigoServico && showForm && !editId) {
+      setForm(p => ({ ...p, codigo: nextCodigoServico }));
+    }
+  }, [nextCodigoServico, showForm, editId]);
+
   const createMutation = trpc.tiposServico.create.useMutation({
-    onSuccess: () => { utils.tiposServico.list.invalidate(); setShowForm(false); toast.success("Tipo de serviço criado!"); }
+    onSuccess: () => { utils.tiposServico.list.invalidate(); utils.tiposServico.nextCodigo.invalidate(); setShowForm(false); toast.success("Tipo de serviço criado!"); }
   });
   const updateMutation = trpc.tiposServico.update.useMutation({
     onSuccess: () => { utils.tiposServico.list.invalidate(); setShowForm(false); setEditId(null); toast.success("Tipo de serviço atualizado!"); }
   });
   const deleteMutation = trpc.tiposServico.delete.useMutation({
-    onSuccess: () => { utils.tiposServico.list.invalidate(); toast.success("Tipo de serviço removido."); }
+    onSuccess: () => { utils.tiposServico.list.invalidate(); utils.tiposServico.nextCodigo.invalidate(); toast.success("Tipo de serviço removido."); }
   });
 
   const filtered = tipos.filter(t =>
@@ -1903,7 +1915,16 @@ function TiposServicoTab() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editId ? "Editar Tipo de Serviço" : "Novo Tipo de Serviço"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-2">
-            <div className="space-y-1"><Label>Código *</Label><Input value={form.codigo} onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))} placeholder="Ex: CONS-001" /></div>
+            <div className="space-y-1">
+              <Label>Código *</Label>
+              <Input
+                value={form.codigo}
+                onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))}
+                placeholder={!editId ? (nextCodigoServico ?? "Gerando...") : ""}
+                className="font-mono"
+              />
+              {!editId && <p className="text-xs text-muted-foreground">Gerado automaticamente — editável</p>}
+            </div>
             <div className="space-y-1"><Label>Nome *</Label><Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} /></div>
             <div className="space-y-1"><Label>Unidade</Label><Input value={form.unidade} onChange={e => setForm(p => ({ ...p, unidade: e.target.value }))} placeholder="Ex: hora, m², un" /></div>
             <div className="space-y-1"><Label>Valor Unitário (R$)</Label><Input type="number" min="0" step="0.01" value={form.valorUnitario} onChange={e => setForm(p => ({ ...p, valorUnitario: e.target.value }))} /></div>
@@ -2104,7 +2125,16 @@ function MateriaisTab() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editId ? "Editar Material" : "Novo Material"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-2">
-            <div className="space-y-1"><Label>Código *</Label><Input value={form.codigo} onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))} placeholder="Ex: MAT-001" /></div>
+            <div className="space-y-1">
+              <Label>Código *</Label>
+              <Input
+                value={form.codigo}
+                onChange={e => setForm(p => ({ ...p, codigo: e.target.value }))}
+                placeholder={!editId ? (nextCodigo ?? "Gerando...") : ""}
+                className="font-mono"
+              />
+              {!editId && <p className="text-xs text-muted-foreground">Gerado automaticamente — editável</p>}
+            </div>
             <div className="space-y-1"><Label>Nome *</Label><Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} /></div>
             <div className="space-y-1"><Label>Unidade</Label><Input value={form.unidade} onChange={e => setForm(p => ({ ...p, unidade: e.target.value }))} placeholder="Ex: un, kg, m" /></div>
             <div className="space-y-1"><Label>Estoque Inicial</Label><Input type="number" min="0" step="0.01" value={form.estoque} onChange={e => setForm(p => ({ ...p, estoque: e.target.value }))} /></div>

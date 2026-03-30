@@ -29,6 +29,26 @@ export const tiposServicoRouter = router({
       return d.select().from(tiposServico).where(cond).orderBy(tiposServico.codigo);
     }),
 
+  // Retorna o próximo código automático no formato SERV-NNNN iniciando em SERV-0001
+  nextCodigo: protectedProcedure.query(async () => {
+    const d = await getDb();
+    if (!d) return 'SERV-0001';
+    const rows = await d.select({ codigo: tiposServico.codigo }).from(tiposServico);
+    let maxNum = 0;
+    for (const row of rows) {
+      if (!row.codigo) continue;
+      // Extrai o sequencial de qualquer formato (SERV-0001, SERV-001, SERV-1, etc.)
+      const match = row.codigo.match(/(\d+)\s*$/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    }
+    // Garante que o próximo seja pelo menos 1
+    const next = Math.max(maxNum + 1, 1);
+    return `SERV-${String(next).padStart(4, '0')}`;
+  }),
+
   create: protectedProcedure
     .input(z.object({
       codigo: z.string().min(1).max(30),
@@ -89,10 +109,10 @@ export const materiaisRouter = router({
       return d.select().from(materiais).where(cond).orderBy(materiais.codigo);
     }),
 
-  // Retorna o próximo código automático no formato MAT-NNNN
+  // Retorna o próximo código automático no formato MAT-NNNN iniciando em MAT-0005
   nextCodigo: protectedProcedure.query(async () => {
     const d = await getDb();
-    if (!d) return 'MAT-0001';
+    if (!d) return 'MAT-0005';
     const rows = await d.select({ codigo: materiais.codigo }).from(materiais);
     let maxNum = 0;
     for (const row of rows) {
@@ -104,7 +124,8 @@ export const materiaisRouter = router({
         if (n > maxNum) maxNum = n;
       }
     }
-    const next = maxNum + 1;
+    // Garante que o próximo seja pelo menos 5 (inicia em MAT-0005)
+    const next = Math.max(maxNum + 1, 5);
     return `MAT-${String(next).padStart(4, '0')}`;
   }),
 

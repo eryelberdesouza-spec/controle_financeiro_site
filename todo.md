@@ -846,3 +846,9 @@
 - [x] Frontend: bloqueio de edição de proposta convertida (somente leitura)
 - [x] Secrets: ZAPSIGN_API_TOKEN configurado e validado
 - [x] 72 testes passando, 0 erros TypeScript
+
+## Numeração Automática de Serviços e Materiais (30/03/2026)
+- [x] Backend: procedure `tiposServico.nextCodigo` — gera SERV-XXXX sequencial iniciando em SERV-0001
+- [x] Backend: corrigir `materiais.nextCodigo` — iniciar em MAT-0005 (mínimo 5)
+- [x] Frontend: ao abrir formulário de novo Tipo de Serviço, preencher código automaticamente via nextCodigo
+- [x] Frontend: ao abrir formulário de novo Material, garantir que nextCodigo inicia em MAT-0005

@@ -4,6 +4,9 @@ import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 
+// Domínio canônico registrado no Manus OAuth — deve ser sempre usado no exchangeCodeForToken
+const CANONICAL_CALLBACK_URL = "https://atomtech-financeiro.manus.space/api/oauth/callback";
+
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
   return typeof value === "string" ? value : undefined;
@@ -20,7 +23,10 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     try {
-      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
+      // Sempre usa o state canônico para garantir que o redirectUri bate com o registrado no OAuth
+      // independente de qual domínio o usuário acessou (financedash.company, www.financedash.company, etc.)
+      const canonicalState = btoa(CANONICAL_CALLBACK_URL);
+      const tokenResponse = await sdk.exchangeCodeForToken(code, canonicalState);
       const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
 
       if (!userInfo.openId) {

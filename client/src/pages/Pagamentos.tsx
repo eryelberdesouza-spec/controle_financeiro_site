@@ -16,6 +16,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer, Building2, CheckSquare } from "lucide-react";
+import MaskedInput from "@/components/MaskedInput";
 import { ComprovanteViewer, type ComprovantePagamento } from "@/components/ComprovanteViewer";
 import { ClienteSelect, CentroCustoSelect } from "@/components/ClienteCentroCustoSelect";
 import { useState, useEffect } from "react";
@@ -187,6 +188,8 @@ export default function Pagamentos() {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<FormData>(defaultForm);
+  // Estado separado para tipo de despesa (não inferir pelo projetoId=0 que é ambiguo)
+  const [tipoDespesa, setTipoDespesa] = useState<"projeto" | "administrativo">("administrativo");
   const [parcelas, setParcelas] = useState<ParcelaLocal[]>([]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
@@ -211,6 +214,7 @@ export default function Pagamentos() {
       setEditId(null);
       setForm({ ...defaultForm });
       setParcelas([]);
+      setTipoDespesa("administrativo");
       setOpen(true);
       // Remove o parâmetro da URL sem recarregar a página
       window.history.replaceState({}, "", window.location.pathname);
@@ -463,11 +467,12 @@ export default function Pagamentos() {
     // detecte parcelas antigas do pagamento anterior
     setParcelas([]);
     setEditId(p.id);
+    const projetoIdValue = p.projetoId ?? 0;
     setForm({
       numeroControle: p.numeroControle ?? "", nomeCompleto: p.nomeCompleto ?? "",
       cpf: p.cpf ?? "", banco: p.banco ?? "", tipoPix: p.tipoPix ?? "CPF",
       chavePix: p.chavePix ?? "", tipoServico: p.tipoServico ?? "",
-      centroCusto: p.centroCusto ?? "", clienteId: p.clienteId ?? null, centroCustoId: p.centroCustoId ?? null, contratoId: p.contratoId ?? null, projetoId: p.projetoId ?? 0, categoriaCusto: p.categoriaCusto ?? "", valor: String(p.valor ?? ""),
+      centroCusto: p.centroCusto ?? "", clienteId: p.clienteId ?? null, centroCustoId: p.centroCustoId ?? null, contratoId: p.contratoId ?? null, projetoId: projetoIdValue, categoriaCusto: p.categoriaCusto ?? "", valor: String(p.valor ?? ""),
       valorEquipamento: String(p.valorEquipamento ?? ""),
       valorServico: String(p.valorServico ?? ""),
       dataPagamento: p.dataPagamento ? new Date(p.dataPagamento).toISOString().split("T")[0] : "",
@@ -477,6 +482,8 @@ export default function Pagamentos() {
       quantidadeParcelas: p.quantidadeParcelas ?? 2,
       dataPrimeiroVencimento: "",
     });
+    // Restaurar tipo de despesa com base no projetoId do registro
+    setTipoDespesa(projetoIdValue > 0 ? "projeto" : "administrativo");
     setOpen(true);
   };
 
@@ -715,7 +722,7 @@ export default function Pagamentos() {
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto p-0">
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto p-0">
           <SheetHeader className="px-6 py-4 border-b bg-muted/30 sticky top-0 z-10">
             <SheetTitle>{editId ? "Editar Pagamento" : "Novo Pagamento"}</SheetTitle>
           </SheetHeader>
@@ -756,8 +763,8 @@ export default function Pagamentos() {
                 <Input value={form.nomeCompleto} onChange={e => setForm(f => ({ ...f, nomeCompleto: e.target.value }))} placeholder="Nome do beneficiário" required />
               </div>
               <div>
-                <Label>CPF</Label>
-                <Input value={form.cpf} onChange={e => setForm(f => ({ ...f, cpf: e.target.value }))} placeholder="000.000.000-00" />
+                <Label>CPF / CNPJ</Label>
+                <Input value={form.cpf} onChange={e => setForm(f => ({ ...f, cpf: e.target.value }))} placeholder="000.000.000-00 ou 00.000.000/0000-00" />
               </div>
               <div>
                 <Label>Banco</Label>
@@ -812,10 +819,16 @@ export default function Pagamentos() {
               <div>
                 <Label>Tipo de Despesa</Label>
                 <Select
-                  value={form.projetoId ? "projeto" : "administrativo"}
+                  value={tipoDespesa}
                   onValueChange={v => {
-                    if (v === "administrativo") setForm(f => ({ ...f, projetoId: 0, contratoId: null }));
-                    else setForm(f => ({ ...f, projetoId: 0 }));
+                    const tipo = v as "projeto" | "administrativo";
+                    setTipoDespesa(tipo);
+                    if (tipo === "administrativo") {
+                      setForm(f => ({ ...f, projetoId: 0 }));
+                    } else {
+                      // Ao mudar para "projeto", limpar projetoId para forçar seleção
+                      setForm(f => ({ ...f, projetoId: 0 }));
+                    }
                   }}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -825,22 +838,31 @@ export default function Pagamentos() {
                   </SelectContent>
                 </Select>
               </div>
-              {(form.projetoId > 0 || !form.centroCustoId) && (
+              {tipoDespesa === "projeto" && (
               <div>
-                <Label>Projeto Vinculado {!form.centroCustoId && <span className="text-red-500">*</span>}</Label>
+                <Label>Projeto Vinculado <span className="text-red-500">*</span></Label>
                 <Select
                   value={form.projetoId ? String(form.projetoId) : ""}
                   onValueChange={v => setForm(f => ({ ...f, projetoId: Number(v) }))}
                 >
-                  <SelectTrigger className={!form.projetoId && !form.centroCustoId ? "border-orange-400" : ""}><SelectValue placeholder="Selecionar projeto..." /></SelectTrigger>
+                  <SelectTrigger className={!form.projetoId ? "border-orange-400" : ""}>
+                    <SelectValue placeholder="Selecionar projeto..." />
+                  </SelectTrigger>
                   <SelectContent>
-                    {listaProjetos.map(p => (
-                      <SelectItem key={p.id} value={String(p.id)}>
-                        {p.numero ? `${p.numero} — ` : ""}{p.nome}
-                      </SelectItem>
-                    ))}
+                    {listaProjetos.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">Nenhum projeto encontrado</div>
+                    ) : (
+                      listaProjetos.map(p => (
+                        <SelectItem key={p.id} value={String(p.id)}>
+                          {p.numero ? `${p.numero} — ` : ""}{p.nome}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                {!form.projetoId && (
+                  <p className="text-xs text-orange-600 mt-1">Selecione o projeto vinculado a esta despesa.</p>
+                )}
               </div>
               )}
               <div>

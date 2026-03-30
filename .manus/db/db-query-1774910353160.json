@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `error_log` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `nivel` enum('info','warn','error','critical') NOT NULL DEFAULT 'error',\n  `origem` varchar(100) NOT NULL,\n  `acao` varchar(200),\n  `mensagem` text NOT NULL,\n  `stack` text,\n  `usuarioId` int,\n  `usuarioNome` varchar(200),\n  `contexto` text,\n  `ip` varchar(50),\n  `createdAt` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `error_log_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3uWnMYqJSMV9zcU.root --database eCW2qMCc4P3oBzxQMhj7Zi --execute CREATE TABLE IF NOT EXISTS `error_log` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `nivel` enum('info','warn','error','critical') NOT NULL DEFAULT 'error',\n  `origem` varchar(100) NOT NULL,\n  `acao` varchar(200),\n  `mensagem` text NOT NULL,\n  `stack` text,\n  `usuarioId` int,\n  `usuarioNome` varchar(200),\n  `contexto` text,\n  `ip` varchar(50),\n  `createdAt` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `error_log_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 613
+}

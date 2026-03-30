@@ -3,6 +3,7 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { logError } from "../errorLogger";
 
 // Domínio canônico registrado no Manus OAuth como redirect URI autorizado.
 // Este valor DEVE corresponder exatamente ao que foi cadastrado no painel OAuth do Manus.
@@ -34,6 +35,14 @@ export function registerOAuthRoutes(app: Express) {
     // Se o OAuth server retornou um erro
     if (error) {
       console.error("[OAuth Callback] OAuth server returned error:", { error, errorDescription });
+      await logError({
+        nivel: "error",
+        origem: "login",
+        acao: "oauth_callback",
+        mensagem: `OAuth server retornou erro: ${error} - ${errorDescription ?? ""}`,
+        ip: req.ip,
+        contexto: { error, errorDescription },
+      });
       res.status(400).json({ error, error_description: errorDescription });
       return;
     }
@@ -99,6 +108,18 @@ export function registerOAuthRoutes(app: Express) {
         status: err?.response?.status,
         data: err?.response?.data,
         stack: err?.stack?.substring(0, 500),
+      });
+      await logError({
+        nivel: "critical",
+        origem: "login",
+        acao: "oauth_token_exchange",
+        mensagem: err?.message ?? "Falha na troca de token OAuth",
+        stack: err?.stack,
+        ip: req.ip,
+        contexto: {
+          status: err?.response?.status,
+          oauthError: err?.response?.data,
+        },
       });
       res.status(500).json({
         error: "OAuth callback failed",

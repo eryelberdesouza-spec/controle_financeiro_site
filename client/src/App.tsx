@@ -29,6 +29,7 @@ import PropostasConfig from "./pages/PropostasConfig";
 import Inconsistencias from "./pages/Inconsistencias";
 import OrcamentoProjeto from "./pages/OrcamentoProjeto";
 import Auditoria from "./pages/Auditoria";
+import LogsErros from "./pages/LogsErros";
 import MenuMobile from "./pages/MenuMobile";
 import MinhasOS from "./pages/MinhasOS";
 import { Redirect } from "wouter";
@@ -67,6 +68,7 @@ function Router() {
         <Route path="/inconsistencias" component={Inconsistencias} />
         <Route path="/projetos/:id/orcamento" component={OrcamentoProjeto} />
         <Route path="/auditoria" component={Auditoria} />
+        <Route path="/logs-erros" component={LogsErros} />
         {/* Rotas exclusivas mobile */}
         <Route path="/menu-mobile" component={MenuMobile} />
         <Route path="/minhas-os" component={MinhasOS} />

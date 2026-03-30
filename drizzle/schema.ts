@@ -873,3 +873,28 @@ export const auditLog = mysqlTable("audit_log", {
 });
 export type AuditLog = typeof auditLog.$inferSelect;
 export type InsertAuditLog = typeof auditLog.$inferInsert;
+
+// ─── LOG DE ERROS DO SISTEMA ──────────────────────────────────────────────────
+export const errorLog = mysqlTable("error_log", {
+  id: int("id").autoincrement().primaryKey(),
+  // Nível de severidade
+  nivel: mysqlEnum("nivel", ["info", "warn", "error", "critical"]).notNull().default("error"),
+  // Origem do erro (ex: "login", "api", "backend", "frontend")
+  origem: varchar("origem", { length: 100 }).notNull(),
+  // Ação que causou o erro
+  acao: varchar("acao", { length: 200 }),
+  // Mensagem de erro
+  mensagem: text("mensagem").notNull(),
+  // Stack trace (opcional)
+  stack: text("stack"),
+  // Usuário relacionado (opcional)
+  usuarioId: int("usuarioId"),
+  usuarioNome: varchar("usuarioNome", { length: 200 }),
+  // Dados adicionais de contexto (JSON)
+  contexto: text("contexto"),
+  // IP do cliente (opcional)
+  ip: varchar("ip", { length: 50 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ErrorLog = typeof errorLog.$inferSelect;
+export type InsertErrorLog = typeof errorLog.$inferInsert;

@@ -354,7 +354,7 @@ export default function Clientes() {
 
       {/* Dialog de cadastro / edição */}
       <Dialog open={dialogAberto} onOpenChange={(o) => { if (!o) fecharDialog(); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editandoId ? "Editar Cadastro" : "Novo Cadastro"}</DialogTitle>
           </DialogHeader>

@@ -676,7 +676,7 @@ export function ContratosTab() {
       </Dialog>
 
       <Sheet open={showForm} onOpenChange={v => { setShowForm(v); if (!v) setEditId(null); }}>
-        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto p-0">
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto p-0">
           <SheetHeader className="px-6 py-4 border-b bg-muted/30 sticky top-0 z-10">
             <SheetTitle>{editId ? "Editar Contrato" : "Novo Contrato"}</SheetTitle>
           </SheetHeader>
@@ -1384,7 +1384,7 @@ function OrdensServicoTab() {
       </Dialog>
 
       <Sheet open={showForm} onOpenChange={v => { setShowForm(v); if (!v) { setEditId(null); setItens([]); } }}>
-        <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto p-0">
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto p-0">
           <SheetHeader className="px-6 py-4 border-b bg-muted/30 sticky top-0 z-10">
             <SheetTitle>{editId ? "Editar OS" : "Nova Ordem de Serviço"}</SheetTitle>
           </SheetHeader>

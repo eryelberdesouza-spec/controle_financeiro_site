@@ -1005,3 +1005,39 @@
 
 ### Bloco 11 – Fluxo Automático
 - [x] Ao aprovar proposta: criar contrato e projeto vinculados automaticamente
+
+## Correções e Melhorias v4 (30/03/2026)
+
+### Bloco 1 – Erro de Acesso / Sessão
+- [x] Corrigir localStorage obsoleto no useAuth.ts (limpar ao logout e ao detectar sessão inválida)
+- [x] Garantir que logout limpa localStorage e sessionStorage completamente
+- [x] Adicionar retry automático de autenticação após cookie inválido ser limpo
+- [x] Testar fluxo de login/logout em múltiplos acessos consecutivos
+
+### Bloco 2 – Interface de Senha Master
+- [x] Adicionar aba "Segurança" na página de Configurações
+- [x] Formulário para definir/alterar senha master (campo senha + confirmação)
+- [x] Exibir status: "Senha master configurada" ou "Não configurada"
+- [x] Integrar com procedure config.setMasterPassword e config.hasMasterPassword
+
+### Bloco 3 – Despesas com Projeto (Bug)
+- [x] Corrigir lógica de exibição do select de projeto em Pagamentos
+- [x] Usar estado separado tipoDespesa ("projeto" | "administrativo") em vez de inferir pelo projetoId
+- [x] Garantir que ao selecionar "Vinculada a Projeto" o dropdown de projetos aparece imediatamente
+- [x] Garantir que projetos ativos são carregados corretamente
+
+### Bloco 4 – Melhorias de UX (Modais e Tooltips)
+- [x] Aumentar largura padrão dos modais/sheets em todas as páginas
+- [x] Adicionar tooltip em textos truncados nas tabelas (title attribute)
+- [x] Aplicar overflow: hidden + text-overflow: ellipsis + tooltip nos campos de listagem
+
+### Bloco 5 – Padronização de Inputs (Máscaras)
+- [x] Garantir que MaskedInput já existente está aplicado em todos os formulários relevantes
+- [x] Validação: não permitir salvar CPF/CNPJ inválido
+- [x] Salvar apenas dígitos no banco, exibir formatado no frontend
+
+### Bloco 6 – Log de Erros Estruturado
+- [x] Criar tabela error_log no schema (nivel, origem, acao, mensagem, stack, usuarioId, contexto, ip)
+- [x] Backend: helper logError() e withErrorLog() para erros de login, falhas de API, exceções
+- [x] Backend: integrar log em falhas de autenticação (oauth.ts)
+- [x] Frontend: página de Logs do Sistema (somente admin) com filtros por nível/origem/data

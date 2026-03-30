@@ -239,6 +239,13 @@
       "when": 1774902974449,
       "tag": "0033_tan_leech",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1774910324771,
+      "tag": "0034_sticky_ravenous",
+      "breakpoints": true
     }
   ]
 }

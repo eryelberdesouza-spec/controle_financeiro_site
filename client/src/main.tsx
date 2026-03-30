@@ -8,15 +8,34 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Não retentar em erros de autenticação
+      retry: (failureCount, error) => {
+        if (error instanceof TRPCClientError && error.message === UNAUTHED_ERR_MSG) {
+          return false;
+        }
+        return failureCount < 2;
+      },
+    },
+  },
+});
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
 
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
-
   if (!isUnauthorized) return;
+
+  // Limpar dados obsoletos de sessão antes de redirecionar
+  try {
+    localStorage.removeItem("manus-runtime-user-info");
+    sessionStorage.clear();
+  } catch {
+    // Ignorar erros de storage em modo privado
+  }
 
   window.location.href = getLoginUrl();
 };

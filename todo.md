@@ -902,3 +902,70 @@
 - [x] Corrigir oauth.ts: sempre usar redirectUri canônico na troca do token, com logs detalhados
 - [x] Adicionar rota /dashboard no App.tsx que redireciona para / (rota principal válida)
 - [x] Garantir que após login o usuário vai para / (Dashboard) sem erro 404
+
+## Plano de Evolução v2 — 11 Implementações
+
+### 1. Correção Crítica de Login
+- [x] Investigar e corrigir erro recorrente ao acessar o sistema (login/inicial)
+
+### 2. Máscaras de Dados
+- [x] Criar componente MaskedInput reutilizável (telefone, CPF, CNPJ, CEP)
+- [x] Aplicar máscara telefone (XX) 9XXXX-XXXX em clientes, propostas e pagamentos
+- [x] Aplicar máscara CPF XXX.XXX.XXX-XX em clientes e pagamentos
+- [x] Aplicar máscara CNPJ XX.XXX.XXX/XXXX-XX em clientes e empresa_config
+- [x] Aplicar máscara CEP XX.XXX-XXX em clientes e contratos
+
+### 3. Status Global (ativo/arquivado/excluído)
+- [x] Adicionar campo statusRegistro enum(ativo, arquivado, excluido) na tabela clientes
+- [x] Adicionar campo statusRegistro enum(ativo, arquivado, excluido) na tabela propostas
+- [x] Adicionar campo statusRegistro enum(ativo, arquivado, excluido) na tabela contratos
+- [x] Adicionar campo statusRegistro enum(ativo, arquivado, excluido) na tabela projetos
+- [x] Adicionar campo deletedAt (soft delete) nas 4 tabelas acima
+- [x] Rodar migração do banco (SQL direto)
+
+### 4. Arquivamento
+- [x] Criar procedure tRPC arquivarCliente / desarquivarCliente
+- [x] Criar procedure tRPC arquivarProposta / desarquivarProposta
+- [x] Criar procedure tRPC arquivarContrato / desarquivarContrato
+- [x] Criar procedure tRPC arquivarProjeto / desarquivarProjeto
+- [ ] Adicionar botão "Arquivar" nas listagens de clientes, propostas, contratos e projetos
+- [ ] Adicionar filtro "Mostrar arquivados" nas listagens
+
+### 5. Senha Master para Exclusão
+- [x] Adicionar campo masterPasswordHash na tabela empresa_config
+- [x] Criar procedure tRPC para verificar senha master
+- [x] Criar componente ConfirmDeleteDialog com campo de senha master
+- [ ] Substituir todos os dialogs de exclusão crítica pelo novo componente
+
+### 6. Visualização de Cliente (modo leitura)
+- [x] Criar página /clientes/:id com dados completos do cliente
+- [x] Exibir histórico de propostas vinculadas ao cliente
+- [x] Exibir histórico de contratos vinculados ao cliente
+- [x] Exibir histórico de projetos vinculados ao cliente
+- [ ] Adicionar botão "Ver Detalhes" na listagem de clientes
+
+### 7. Telefone na Proposta (PDF)
+- [x] Incluir campo telefone do cliente no PDF gerado da proposta (já existia)
+
+### 8. Despesas Sem Projeto (Administrativas)
+- [x] Tornar projetoId opcional em pagamentos (tipo administrativo)
+- [x] Criar centros de custo padrão: Administrativo, Escritório, Combustível, Energia, Água, Telefonia
+- [x] Atualizar formulário de pagamentos: seletor Tipo de Despesa (Projeto vs Administrativo)
+
+### 9. Motor de Contrato com Flags Dinâmicas
+- [x] Adicionar campos flags no schema de contratos: flagFornecimentoMaterial, flagIncluiProjeto, flagIncluiHomologacao
+- [x] Flags passadas ao converterEmContrato e salvas no banco
+- [ ] Criar interface de configuração das flags no formulário de contrato
+- [ ] Gerar texto do contrato dinamicamente baseado nas flags ativas
+
+### 10. Fluxo Automático Proposta → Contrato → Projeto
+- [x] Ao aprovar proposta: gerar contrato automaticamente com dados da proposta
+- [x] Ao aprovar proposta: criar projeto automaticamente vinculado ao contrato
+- [x] Dialog de confirmação do fluxo automático já existia
+- [x] Auditoria do fluxo automático já existia
+
+### 11. Permissões de Usuário (Múltiplas + Dashboard)
+- [x] Módulo "propostas" já existe na lista de MODULOS
+- [x] Módulo "contratos" já existe na lista de MODULOS
+- [x] Módulo "dashboard" já existe com controle de visibilidade
+- [x] Página de Usuários já tem interface de permissões granulares por módulo

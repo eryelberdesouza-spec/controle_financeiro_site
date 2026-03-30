@@ -57,6 +57,9 @@ export const projetos = mysqlTable("projetos", {
   observacoes: text("observacoes"),
   // Indica se o projeto exige orçamento antes da execução (false para projetos antigos)
   exigeOrcamento: boolean("exigeOrcamento").default(false).notNull(),
+  // Status global do registro (soft delete e arquivamento)
+  statusRegistro: mysqlEnum("statusRegistro", ["ativo", "arquivado", "excluido"]).default("ativo").notNull(),
+  deletedAt: timestamp("deletedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -131,6 +134,9 @@ export const clientes = mysqlTable("clientes", {
   conta: varchar("conta", { length: 30 }),
   tipoConta: mysqlEnum("tipoConta", ["corrente", "poupanca", "pagamento"]),
   ativo: boolean("ativo").default(true).notNull(),
+  // Status global do registro (soft delete e arquivamento)
+  statusRegistro: mysqlEnum("statusRegistro", ["ativo", "arquivado", "excluido"]).default("ativo").notNull(),
+  deletedAt: timestamp("deletedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -231,6 +237,8 @@ export const empresaConfig = mysqlTable("empresa_config", {
   endereco: text("endereco"),
   logoUrl: text("logoUrl"),
   corPrimaria: varchar("corPrimaria", { length: 7 }).default("#2563eb"),
+  // Senha master para exclusão de registros críticos (hash bcrypt)
+  masterPasswordHash: varchar("masterPasswordHash", { length: 255 }),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
@@ -387,6 +395,13 @@ export const contratos = mysqlTable("contratos", {
   // Sinaliza registros sem vínculo com projeto (legados)
   inconsistente: boolean("inconsistente").default(false).notNull(),
   motivoInconsistencia: varchar("motivoInconsistencia", { length: 500 }),
+  // Flags do Motor de Contrato — controlam seções geradas dinamicamente
+  flagFornecimentoMaterial: boolean("flagFornecimentoMaterial").default(false).notNull(),
+  flagIncluiProjeto: boolean("flagIncluiProjeto").default(false).notNull(),
+  flagIncluiHomologacao: boolean("flagIncluiHomologacao").default(false).notNull(),
+  // Status global do registro (soft delete e arquivamento)
+  statusRegistro: mysqlEnum("statusRegistro", ["ativo", "arquivado", "excluido"]).default("ativo").notNull(),
+  deletedAt: timestamp("deletedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -524,6 +539,8 @@ export const MODULOS = [
   { id: "engenharia_materiais", label: "Materiais e Tipos de Serviço", grupo: "Engenharia" },
   { id: "extrato_cliente", label: "Extrato por Cliente", grupo: "Financeiro" },
   { id: "projetos", label: "Projetos", grupo: "Engenharia" },
+  { id: "propostas", label: "Propostas", grupo: "Engenharia" },
+  { id: "contratos", label: "Contratos", grupo: "Engenharia" },
 ] as const;
 export type ModuloId = typeof MODULOS[number]["id"];
 
@@ -728,6 +745,9 @@ export const propostas = mysqlTable("propostas", {
   observacoes: text("observacoes"),
   // Controle de conversão em contrato
   convertidaEmContrato: boolean("convertidaEmContrato").default(false).notNull(),
+  // Status global do registro (soft delete e arquivamento)
+  statusRegistro: mysqlEnum("statusRegistro", ["ativo", "arquivado", "excluido"]).default("ativo").notNull(),
+  deletedAt: timestamp("deletedAt"),
   // ZapSign — assinatura digital
   zapsignDocId: varchar("zapsignDocId", { length: 100 }),
   zapsignSignerToken: varchar("zapsignSignerToken", { length: 255 }),

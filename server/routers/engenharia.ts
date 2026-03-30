@@ -594,6 +594,24 @@ export const contratosRouter = router({
 
       return { gerados: recebimentosGerados.length };
     }),
+
+  arquivar: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      await db.update(contratos).set({ statusRegistro: 'arquivado' }).where(eq(contratos.id, input.id));
+      return { success: true };
+    }),
+
+  desarquivar: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      await db.update(contratos).set({ statusRegistro: 'ativo' }).where(eq(contratos.id, input.id));
+      return { success: true };
+    }),
 });
 
 // === Ordens de Serviço ===

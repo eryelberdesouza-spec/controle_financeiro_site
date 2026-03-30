@@ -523,4 +523,22 @@ export const projetosRouter = router({
       await db.update(projetos).set(set).where(eq(projetos.id, input.id));
       return { success: true };
     }),
+
+  arquivar: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      await db.update(projetos).set({ statusRegistro: 'arquivado' }).where(eq(projetos.id, input.id));
+      return { success: true };
+    }),
+
+  desarquivar: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      await db.update(projetos).set({ statusRegistro: 'ativo' }).where(eq(projetos.id, input.id));
+      return { success: true };
+    }),
 });

@@ -743,6 +743,71 @@ const clientesRouter = router({
       await requirePermission(user.id, user.role, "clientes", "podeExcluir");
       return deleteCliente(input.id);
     }),
+  arquivar: staffProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      const { clientes } = await import('../drizzle/schema');
+      await db.update(clientes).set({ statusRegistro: 'arquivado' }).where(eq(clientes.id, input.id));
+      return { success: true };
+    }),
+  desarquivar: staffProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      const { clientes } = await import('../drizzle/schema');
+      await db.update(clientes).set({ statusRegistro: 'ativo' }).where(eq(clientes.id, input.id));
+      return { success: true };
+    }),
+  getById: staffProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = await import('./db');
+      return db.getClienteById(input.id);
+    }),
+  getDetalhado: staffProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      const { clientes, propostas, contratos, projetos } = await import('../drizzle/schema');
+      const [cliente] = await db.select().from(clientes).where(eq(clientes.id, input.id)).limit(1);
+      if (!cliente) throw new TRPCError({ code: 'NOT_FOUND', message: 'Cliente não encontrado' });
+      const [propostasCliente, contratosCliente, projetosCliente] = await Promise.all([
+        db.select({
+          id: propostas.id,
+          numero: propostas.numero,
+          status: propostas.status,
+          valorTotal: propostas.valorTotal,
+          dataGeracao: propostas.dataGeracao,
+          dataValidade: propostas.dataValidade,
+          statusRegistro: propostas.statusRegistro,
+        }).from(propostas).where(eq(propostas.clienteId, input.id)).orderBy(propostas.id),
+        db.select({
+          id: contratos.id,
+          numero: contratos.numero,
+          objeto: contratos.objeto,
+          status: contratos.status,
+          valorTotal: contratos.valorTotal,
+          dataInicio: contratos.dataInicio,
+          dataFim: contratos.dataFim,
+          statusRegistro: contratos.statusRegistro,
+        }).from(contratos).where(eq(contratos.clienteId, input.id)).orderBy(contratos.id),
+        db.select({
+          id: projetos.id,
+          numero: projetos.numero,
+          nome: projetos.nome,
+          statusOperacional: projetos.statusOperacional,
+          valorContratado: projetos.valorContratado,
+          dataInicioPrevista: projetos.dataInicioPrevista,
+          dataFimPrevista: projetos.dataFimPrevista,
+          statusRegistro: projetos.statusRegistro,
+        }).from(projetos).where(eq(projetos.clienteId, input.id)).orderBy(projetos.id),
+      ]);
+      return { cliente, propostas: propostasCliente, contratos: contratosCliente, projetos: projetosCliente };
+    }),
   extrato: staffProcedure
     .input(z.object({ clienteId: z.number() }))
     .query(({ input }) => getExtratoCliente(input.clienteId)),
@@ -888,6 +953,38 @@ const empresaRouter = router({
       corPrimaria: z.string().optional(),
     }))
     .mutation(({ input }) => upsertEmpresaConfig(input)),
+});
+
+// Router de configurações gerais (senha master, etc.)
+const configRouter = router({
+  /** Verifica se a senha master fornecida é válida */
+  verifyMasterPassword: staffProcedure
+    .input(z.object({ password: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const bcrypt = await import('bcryptjs');
+      const config = await getEmpresaConfig();
+      if (!config?.masterPasswordHash) {
+        // Sem senha master configurada: aceitar qualquer valor (modo permissivo)
+        return { valid: true };
+      }
+      const valid = await bcrypt.compare(input.password, config.masterPasswordHash);
+      return { valid };
+    }),
+  /** Define ou altera a senha master (somente admin) */
+  setMasterPassword: adminProcedure
+    .input(z.object({ password: z.string().min(4, 'Mínimo 4 caracteres') }))
+    .mutation(async ({ input }) => {
+      const bcrypt = await import('bcryptjs');
+      const hash = await bcrypt.hash(input.password, 10);
+      await upsertEmpresaConfig({ masterPasswordHash: hash } as any);
+      return { success: true };
+    }),
+  /** Verifica se a senha master está configurada */
+  hasMasterPassword: staffProcedure
+    .query(async () => {
+      const config = await getEmpresaConfig();
+      return { configured: !!config?.masterPasswordHash };
+    }),
 });
 
 const parcelaSchema = z.object({
@@ -1159,6 +1256,7 @@ export const appRouter = router({
   auditoria: auditoriaRouter,
   workflow: workflowRouter,
   conversao: conversaoRouter,
+  config: configRouter,
   engenharia: router({
     listContratos: staffProcedure.query(async () => {
       const db = await getDb();

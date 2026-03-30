@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Plus, Search, Pencil, Trash2, Users, Building2, Wrench, Hotel, Handshake, MoreHorizontal, AlertTriangle } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import AnexosPanel from "@/components/AnexosPanel";
+import MaskedInput from "@/components/MaskedInput";
 
 const TIPOS = ["Cliente", "Prestador de Serviço", "Fornecedor", "Hotel", "Parceiro", "Outro"] as const;
 type Tipo = typeof TIPOS[number];
@@ -351,9 +352,10 @@ export default function Clientes() {
             {/* CPF/CNPJ */}
             <div className="space-y-1.5">
               <Label>{form.tipoPessoa === "PF" ? "CPF" : "CNPJ"}</Label>
-              <Input
+              <MaskedInput
+                mask={form.tipoPessoa === "PF" ? "cpf" : "cnpj"}
                 value={form.cpfCnpj}
-                onChange={(e) => setForm(f => ({ ...f, cpfCnpj: e.target.value }))}
+                onChange={(v) => setForm(f => ({ ...f, cpfCnpj: v }))}
                 placeholder={form.tipoPessoa === "PF" ? "000.000.000-00" : "00.000.000/0001-00"}
               />
             </div>
@@ -390,17 +392,19 @@ export default function Clientes() {
             {/* Telefone e Celular */}
             <div className="space-y-1.5">
               <Label>Telefone</Label>
-              <Input
+              <MaskedInput
+                mask="telefone"
                 value={form.telefone}
-                onChange={(e) => setForm(f => ({ ...f, telefone: e.target.value }))}
+                onChange={(v) => setForm(f => ({ ...f, telefone: v }))}
                 placeholder="(61) 3333-3333"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Celular / WhatsApp</Label>
-              <Input
+              <MaskedInput
+                mask="telefone"
                 value={form.celular}
-                onChange={(e) => setForm(f => ({ ...f, celular: e.target.value }))}
+                onChange={(v) => setForm(f => ({ ...f, celular: v }))}
                 placeholder="(61) 99999-9999"
               />
             </div>

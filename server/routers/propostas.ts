@@ -647,4 +647,22 @@ export const propostasRouter = router({
       await db.update(infoImportantesPadrao).set({ ativo: false }).where(eq(infoImportantesPadrao.id, input.id));
       return { success: true };
     }),
+
+  arquivar: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      await db.update(propostas).set({ statusRegistro: 'arquivado' }).where(eq(propostas.id, input.id));
+      return { success: true };
+    }),
+
+  desarquivar: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB indisponível' });
+      await db.update(propostas).set({ statusRegistro: 'ativo' }).where(eq(propostas.id, input.id));
+      return { success: true };
+    }),
 });

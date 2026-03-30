@@ -810,12 +810,29 @@ export default function Pagamentos() {
                 </Select>
               </div>
               <div>
-                <Label>Projeto Vinculado <span className="text-red-500">*</span></Label>
+                <Label>Tipo de Despesa</Label>
+                <Select
+                  value={form.projetoId ? "projeto" : "administrativo"}
+                  onValueChange={v => {
+                    if (v === "administrativo") setForm(f => ({ ...f, projetoId: 0, contratoId: null }));
+                    else setForm(f => ({ ...f, projetoId: 0 }));
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="projeto">📁 Vinculada a Projeto</SelectItem>
+                    <SelectItem value="administrativo">🏢 Despesa Administrativa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(form.projetoId > 0 || !form.centroCustoId) && (
+              <div>
+                <Label>Projeto Vinculado {!form.centroCustoId && <span className="text-red-500">*</span>}</Label>
                 <Select
                   value={form.projetoId ? String(form.projetoId) : ""}
                   onValueChange={v => setForm(f => ({ ...f, projetoId: Number(v) }))}
                 >
-                  <SelectTrigger className={!form.projetoId ? "border-orange-400" : ""}><SelectValue placeholder="Selecionar projeto (obrigatório)" /></SelectTrigger>
+                  <SelectTrigger className={!form.projetoId && !form.centroCustoId ? "border-orange-400" : ""}><SelectValue placeholder="Selecionar projeto..." /></SelectTrigger>
                   <SelectContent>
                     {listaProjetos.map(p => (
                       <SelectItem key={p.id} value={String(p.id)}>
@@ -825,6 +842,7 @@ export default function Pagamentos() {
                   </SelectContent>
                 </Select>
               </div>
+              )}
               <div>
                 <Label>Categoria de Custo {form.projetoId ? <span className="text-red-500">*</span> : <span className="text-muted-foreground text-xs">(recomendado)</span>}</Label>
                 <Select

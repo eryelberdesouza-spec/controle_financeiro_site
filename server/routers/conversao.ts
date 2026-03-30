@@ -103,6 +103,10 @@ export const conversaoRouter = router({
       criarNovoProjeto: z.boolean().default(false),
       nomeNovoProjeto: z.string().optional(),
       tipoContrato: z.enum(["prestacao_servico", "fornecimento", "locacao", "misto"]).default("prestacao_servico"),
+      // Flags do Motor de Contrato
+      flagFornecimentoMaterial: z.boolean().default(false),
+      flagIncluiProjeto: z.boolean().default(false),
+      flagIncluiHomologacao: z.boolean().default(false),
       // Dados de faturamento
       gerarRecebimentos: z.boolean().default(true),
       numeroParcelas: z.number().min(1).max(60).default(1),
@@ -172,11 +176,13 @@ export const conversaoRouter = router({
         ?? itens.map(i => i.descricao).join("; ")
         ?? `Contrato gerado da proposta ${proposta.numero}`;
 
-      // ── Inserir contrato ─────────────────────────────────────────────────────
+           // ── Inserir contrato ─────────────────────────────────────────────
       const [contratoResult] = await db.execute(sql`
         INSERT INTO contratos (
           numero, objeto, tipo, status, clienteId, projetoId, valorTotal,
-          descricao, observacoes, propostaOrigemId, origemDescricao, createdBy
+          descricao, observacoes, propostaOrigemId, origemDescricao,
+          flagFornecimentoMaterial, flagIncluiProjeto, flagIncluiHomologacao,
+          createdBy
         ) VALUES (
           ${numeroContrato},
           ${objetoContrato},
@@ -189,6 +195,9 @@ export const conversaoRouter = router({
           ${proposta.observacoes ?? null},
           ${input.propostaId},
           ${`Gerado automaticamente da proposta ${proposta.numero}`},
+          ${input.flagFornecimentoMaterial ? 1 : 0},
+          ${input.flagIncluiProjeto ? 1 : 0},
+          ${input.flagIncluiHomologacao ? 1 : 0},
           ${ctx.user.id}
         )
       `);

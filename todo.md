@@ -860,3 +860,16 @@
 - [x] Dashboard: KPIs de projetos com botão "Abrir" por projeto
 - [x] Sidebar: seção de atalhos rápidos (+ Novo Projeto, + Novo Contrato, + Nova Proposta)
 - [x] Padrão visual: verde para ação principal, neutro para navegação
+
+## Redesenho Dashboard Orientado a Ações (30/03/2026)
+- [x] Dashboard: Bloco 1 — Ações Rápidas (Nova Proposta, Novo Projeto, Novo Contrato, Nova OS, Lançar Receita, Lançar Custo)
+- [x] Dashboard: Bloco 2 — Alertas Operacionais (Recebimentos Atrasados, Pagamentos Pendentes, OS sem conclusão)
+- [x] Dashboard: Bloco 3 — Financeiro com KPIs e botões Ver Cobranças / Ver Pagamentos
+- [x] Dashboard: Bloco 4 — Alertas de Vencimento (7 dias) com botões Pagar/Cobrar por item
+- [x] Dashboard: Bloco 5 — Projetos com cards por projeto em execução e botão Abrir Projeto
+- [x] Dashboard: Bloco 6 — Operação (OS abertas, concluídas, paradas) com botão Nova OS
+- [x] Dashboard: Ações Prioritárias com botão Resolver e navegação direta
+- [x] Dashboard: KPIs detalhados por projeto em tabela com botão Abrir
+- [x] Dashboard: Gráficos (histórico 6 meses, fluxo líquido, centro de custo, composição)
+- [x] Dashboard: Configuração de widgets e tema de cor (admin)
+- [x] 72 testes passando, 0 erros TypeScript

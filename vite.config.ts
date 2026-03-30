@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { VitePWA } from "vite-plugin-pwa";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -150,7 +151,52 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const pwaPlugin = VitePWA({
+  registerType: "autoUpdate",
+  includeAssets: ["favicon.ico"],
+  manifest: {
+    name: "SIGECO — Gestão de Engenharia",
+    short_name: "SIGECO",
+    description: "Sistema Integrado de Gestão de Engenharia, Contratos e Operações",
+    theme_color: "#1a5c2e",
+    background_color: "#ffffff",
+    display: "standalone",
+    orientation: "portrait",
+    scope: "/",
+    start_url: "/",
+    icons: [
+      {
+        src: "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/icon-192x192_ff32b52e.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any maskable",
+      },
+      {
+        src: "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/icon-512x512_7ca4bd3c.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any maskable",
+      },
+    ],
+  },
+  workbox: {
+    maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB — bundle do app é ~2.8 MB
+    globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+    runtimeCaching: [
+      {
+        urlPattern: /^\/api\/trpc\//,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "api-cache",
+          expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+        },
+      },
+    ],
+  },
+  devOptions: { enabled: false },
+});
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), pwaPlugin];
 
 export default defineConfig({
   plugins,

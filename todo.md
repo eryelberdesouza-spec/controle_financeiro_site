@@ -873,3 +873,26 @@
 - [x] Dashboard: Gráficos (histórico 6 meses, fluxo líquido, centro de custo, composição)
 - [x] Dashboard: Configuração de widgets e tema de cor (admin)
 - [x] 72 testes passando, 0 erros TypeScript
+
+## PWA + Interface Mobile (30/03/2026)
+- [ ] PWA: manifest.json com name, short_name, icons 192px e 512px, display standalone
+- [ ] PWA: service worker com cache básico (vite-plugin-pwa)
+- [ ] PWA: meta tags Apple (apple-touch-icon, apple-mobile-web-app-capable)
+- [ ] Mobile: hook useMobile para detecção de dispositivo
+- [ ] Mobile: BottomNavigation com 5 abas (Dashboard, Projetos, OS, Financeiro, Menu)
+- [ ] Mobile: Dashboard Mobile simplificado (Ações Rápidas, Alertas, Resumo)
+- [ ] Mobile: Tela de campo para técnicos (Minhas OS do dia)
+- [ ] Mobile: Botões mínimo 48px, espaçamento adequado
+- [ ] Desktop: sidebar mantida com atalhos rápidos
+
+## PWA + Interface Mobile (30/03/2026)
+- [x] manifest.json com ícones 192px e 512px, theme_color verde
+- [x] Meta tags PWA (apple-mobile-web-app-capable, theme-color, apple-touch-icon)
+- [x] vite-plugin-pwa instalado e configurado com service worker e cache
+- [x] Hook useMobile para detecção de dispositivo (< 768px)
+- [x] Componente BottomNavigation com 5 abas (Dashboard, Projetos, OS, Financeiro, Menu)
+- [x] MobileDashboard com 3 blocos: Ações Rápidas, Alertas, Resumo Financeiro
+- [x] Página MenuMobile com todos os links do sistema organizados por seção
+- [x] Página MinhasOS — tela de campo para técnicos com OS do dia, botões Iniciar/Finalizar
+- [x] App.tsx atualizado com detecção mobile e rotas /menu-mobile e /minhas-os
+- [x] Interface desktop preservada sem alterações

@@ -19,6 +19,7 @@ import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers,
 import { ComprovanteViewer, type ComprovantePagamento } from "@/components/ComprovanteViewer";
 import { ClienteSelect, CentroCustoSelect } from "@/components/ClienteCentroCustoSelect";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 
 const BANCOS = [
@@ -201,6 +202,20 @@ export default function Pagamentos() {
   const utils = trpc.useUtils();
   const { data: listaContratos = [] } = trpc.contratos.list.useQuery();
   const { data: listaProjetos = [] } = trpc.projetos.list.useQuery();
+  const [location, setLocation] = useLocation();
+
+  // Abre formulário automaticamente quando navegar com ?novo=1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("novo") === "1" && podeCriar) {
+      setEditId(null);
+      setForm({ ...defaultForm });
+      setParcelas([]);
+      setOpen(true);
+      // Remove o parâmetro da URL sem recarregar a página
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const handleImprimirUnico = (p: any) => {
     setComprovanteRegistros([{

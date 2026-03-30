@@ -533,6 +533,17 @@ export default function Projetos() {
     }
   }, [modalAberto, editando, nextNumeroData]);
 
+  // Abre formulário automaticamente quando navegar com ?novo=1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("novo") === "1") {
+      setEditando(null);
+      setForm(FORM_VAZIO);
+      setModalAberto(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   const createMutation = trpc.projetos.create.useMutation({
     onSuccess: () => {
       toast.success("Projeto criado com sucesso!");

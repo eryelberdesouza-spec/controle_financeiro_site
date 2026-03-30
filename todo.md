@@ -852,3 +852,11 @@
 - [x] Backend: corrigir `materiais.nextCodigo` — iniciar em MAT-0005 (mínimo 5)
 - [x] Frontend: ao abrir formulário de novo Tipo de Serviço, preencher código automaticamente via nextCodigo
 - [x] Frontend: ao abrir formulário de novo Material, garantir que nextCodigo inicia em MAT-0005
+
+## Melhorias de Usabilidade — Ações Rápidas e Navegação Intuitiva
+- [x] Dashboard: barra de ações rápidas (Nova Proposta, Novo Projeto, Novo Contrato, Nova OS, Novo Lançamento)
+- [x] Dashboard: botões contextuais nos blocos de alertas (Cobrar, Ver Pagamentos, Ver Recebimentos)
+- [x] Dashboard: alertas de vencimento com botão de ação direta
+- [x] Dashboard: KPIs de projetos com botão "Abrir" por projeto
+- [x] Sidebar: seção de atalhos rápidos (+ Novo Projeto, + Novo Contrato, + Nova Proposta)
+- [x] Padrão visual: verde para ação principal, neutro para navegação

@@ -10,7 +10,8 @@ import {
   ArrowDownCircle, ArrowUpCircle, TrendingUp, Wallet,
   AlertTriangle, CheckCircle2, Clock, CalendarDays, Bell, BellRing,
   Settings, X, Eye, EyeOff, FolderOpen, Target, Zap, ChevronRight,
-  TrendingDown, BarChart3, AlertCircle,
+  TrendingDown, BarChart3, AlertCircle, Plus, ClipboardList, FileText,
+  HardHat, DollarSign, FolderKanban, ExternalLink, CreditCard,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -253,6 +254,79 @@ export default function Home() {
           </div>
         </div>
 
+        {/* ===== BARRA DE AÇÕES RÁPIDAS ===== */}
+        <div className="rounded-xl border bg-gradient-to-r from-primary/5 via-background to-primary/5 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Ações Rápidas</span>
+            <span className="text-xs text-muted-foreground ml-1">— crie em 1 clique</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {can.criar("engenharia_contratos") && (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                onClick={() => setLocation("/propostas?novo=1")}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Nova Proposta
+              </Button>
+            )}
+            {can.criar("projetos") && (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                onClick={() => setLocation("/projetos?novo=1")}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Novo Projeto
+              </Button>
+            )}
+            {can.criar("engenharia_contratos") && (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                onClick={() => setLocation("/contratos?novo=1")}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Novo Contrato
+              </Button>
+            )}
+            {can.criar("engenharia_os") && (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                onClick={() => setLocation("/engenharia?novaOS=1")}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Nova OS
+              </Button>
+            )}
+            {can.criar("pagamentos") && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-blue-300 text-blue-700 hover:bg-blue-50 shadow-sm"
+                onClick={() => setLocation("/pagamentos?novo=1")}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Novo Pagamento
+              </Button>
+            )}
+            {can.criar("recebimentos") && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-purple-300 text-purple-700 hover:bg-purple-50 shadow-sm"
+                onClick={() => setLocation("/recebimentos?novo=1")}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Novo Recebimento
+              </Button>
+            )}
+          </div>
+        </div>
+
         {/* Painel de Configuração do Dashboard (admin only) */}
         {isAdmin && showConfig && (
           <Card className="border-primary/30 bg-primary/5">
@@ -396,6 +470,7 @@ export default function Home() {
                 label="Recebimentos Atrasados"
                 value={formatCurrency(stats?.recebimentos?.totalAtrasado)}
                 bg="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                action={{ label: "Cobrar", onClick: () => setLocation("/recebimentos"), color: "border-red-400 text-red-700 hover:bg-red-100" }}
               />
             )}
             {podePagamentos && (
@@ -404,6 +479,7 @@ export default function Home() {
                 label="Compras e Pagamentos Pendentes"
                 value={formatCurrency(stats?.pagamentos?.totalPendente)}
                 bg="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                action={{ label: "Ver", onClick: () => setLocation("/pagamentos"), color: "border-yellow-500 text-yellow-700 hover:bg-yellow-100" }}
               />
             )}
             {podeRecebimentos && (
@@ -412,6 +488,7 @@ export default function Home() {
                 label="Recebimentos Confirmados"
                 value={formatCurrency(stats?.recebimentos?.totalRecebido)}
                 bg="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                action={{ label: "Ver", onClick: () => setLocation("/recebimentos"), color: "border-green-500 text-green-700 hover:bg-green-100" }}
               />
             )}
           </div>
@@ -448,7 +525,7 @@ export default function Home() {
                               ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
                               : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
                           }`}>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="font-medium truncate">{p.nomeCompleto}</p>
                               <p className="text-xs text-muted-foreground">
                                 {p.numeroControle && <span className="mr-2">{p.numeroControle}</span>}
@@ -459,9 +536,18 @@ export default function Home() {
                                 )}
                               </p>
                             </div>
-                            <span className="font-semibold text-red-600 dark:text-red-400 ml-3 shrink-0">
-                              {formatCurrency(p.valor)}
-                            </span>
+                            <div className="flex items-center gap-2 ml-3 shrink-0">
+                              <span className="font-semibold text-red-600 dark:text-red-400">
+                                {formatCurrency(p.valor)}
+                              </span>
+                              <button
+                                onClick={() => setLocation("/pagamentos")}
+                                className="text-xs font-semibold px-2 py-0.5 rounded border border-red-300 text-red-700 hover:bg-red-100 transition-colors"
+                                title="Ver pagamento"
+                              >
+                                Pagar
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -485,7 +571,7 @@ export default function Home() {
                               ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
                               : "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800"
                           }`}>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="font-medium truncate">{r.nomeRazaoSocial}</p>
                               <p className="text-xs text-muted-foreground">
                                 {r.numeroControle && <span className="mr-2">{r.numeroControle}</span>}
@@ -496,9 +582,18 @@ export default function Home() {
                                 )}
                               </p>
                             </div>
-                            <span className="font-semibold text-purple-600 dark:text-purple-400 ml-3 shrink-0">
-                              {formatCurrency(r.valorTotal)}
-                            </span>
+                            <div className="flex items-center gap-2 ml-3 shrink-0">
+                              <span className="font-semibold text-purple-600 dark:text-purple-400">
+                                {formatCurrency(r.valorTotal)}
+                              </span>
+                              <button
+                                onClick={() => setLocation("/recebimentos")}
+                                className="text-xs font-semibold px-2 py-0.5 rounded border border-purple-300 text-purple-700 hover:bg-purple-100 transition-colors"
+                                title="Ver recebimento"
+                              >
+                                Cobrar
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -754,6 +849,7 @@ export default function Home() {
                           <th className="text-right px-4 py-2 font-medium text-muted-foreground">Margem</th>
                           <th className="text-right px-4 py-2 font-medium text-muted-foreground">Desvio</th>
                           <th className="text-center px-4 py-2 font-medium text-muted-foreground">OS</th>
+                          <th className="text-center px-4 py-2 font-medium text-muted-foreground">Ação</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -795,6 +891,15 @@ export default function Home() {
                             </td>
                             <td className="px-4 py-2 text-center text-xs text-muted-foreground">
                               {p.osConcluidasCount}/{p.totalOs}
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              <button
+                                onClick={() => setLocation("/projetos")}
+                                className="text-xs font-semibold px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors inline-flex items-center gap-1"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Abrir
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -874,14 +979,24 @@ function KpiCard({ icon, label, value, sub, accent, valueColor, loading }: {
   );
 }
 
-function AlertCard({ icon, label, value, bg }: { icon: React.ReactNode; label: string; value: string; bg: string }) {
+function AlertCard({ icon, label, value, bg, action }: { icon: React.ReactNode; label: string; value: string; bg: string; action?: { label: string; onClick: () => void; color?: string } }) {
   return (
     <div className={`flex items-center justify-between p-3 rounded-lg border ${bg}`}>
       <div className="flex items-center gap-2">
         {icon}
         <span className="text-sm text-foreground">{label}</span>
       </div>
-      <span className="text-sm font-bold text-foreground">{value}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-bold text-foreground">{value}</span>
+        {action && (
+          <button
+            onClick={action.onClick}
+            className={`text-xs font-semibold px-2 py-1 rounded-md border transition-colors ${action.color ?? "border-current text-current hover:bg-black/5"}`}
+          >
+            {action.label}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

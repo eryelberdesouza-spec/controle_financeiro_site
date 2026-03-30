@@ -90,6 +90,16 @@ export function ContratosTab() {
     enderecoBairro: "", enderecoCidade: "", enderecoEstado: "", enderecoCep: "",
   });
 
+  // Abre formulário automaticamente quando navegar com ?novo=1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("novo") === "1" && podeCriar) {
+      setEditId(null);
+      setShowForm(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   // Estado para geração automática de recebimentos
   const [gerarRec, setGerarRec] = useState(false);
   const [numParcelas, setNumParcelas] = useState(1);
@@ -2178,6 +2188,16 @@ export default function Engenharia() {
   const { data: contratos = [] } = trpc.contratos.list.useQuery();
   const { data: ordens = [] } = trpc.ordensServico.list.useQuery();
 
+  // Detectar ?novaOS=1 para selecionar aba de OS
+  const defaultTab = (() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("novaOS") === "1") {
+      window.history.replaceState({}, "", window.location.pathname);
+      return "ordens";
+    }
+    return "contratos";
+  })();
+
   const stats = useMemo(() => ({
     contratosAtivos: contratos.filter(c => c.status === "ativo").length,
     osAbertas: ordens.filter(o => o.status === "planejada" || o.status === "autorizada").length,
@@ -2241,7 +2261,7 @@ export default function Engenharia() {
       </div>
 
       {/* Abas */}
-      <Tabs defaultValue="contratos">
+      <Tabs defaultValue={defaultTab}>
         <TabsList className="grid grid-cols-5 w-full max-w-3xl">
           <TabsTrigger value="contratos" className="flex items-center gap-1.5">
             <FileText className="h-4 w-4" />Contratos

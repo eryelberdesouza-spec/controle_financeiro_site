@@ -23,7 +23,7 @@ import {
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { usePermissions } from "@/hooks/usePermissions";
-import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList, AlertTriangle, Shield, GitBranch } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList, AlertTriangle, Shield, GitBranch, Plus, Zap } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -209,7 +209,41 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
+          <SidebarContent className="gap-0 overflow-y-auto">
+            {/* Atalhos Rápidos — só exibe quando sidebar expandida */}
+            {!isCollapsed && (
+              <div className="px-3 pt-3 pb-1">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                  <Zap className="h-3 w-3" /> Criar Novo
+                </p>
+                <div className="flex flex-col gap-1">
+                  {can.criar("engenharia_contratos") && (
+                    <button
+                      onClick={() => setLocation("/propostas?novo=1")}
+                      className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-md text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-colors font-medium w-full text-left"
+                    >
+                      <Plus className="h-3 w-3 shrink-0" /> Nova Proposta
+                    </button>
+                  )}
+                  {can.criar("projetos") && (
+                    <button
+                      onClick={() => setLocation("/projetos?novo=1")}
+                      className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-md text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-colors font-medium w-full text-left"
+                    >
+                      <Plus className="h-3 w-3 shrink-0" /> Novo Projeto
+                    </button>
+                  )}
+                  {can.criar("engenharia_contratos") && (
+                    <button
+                      onClick={() => setLocation("/contratos?novo=1")}
+                      className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-md text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-colors font-medium w-full text-left"
+                    >
+                      <Plus className="h-3 w-3 shrink-0" /> Novo Contrato
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             <SidebarMenu className="px-2 py-1">
               {menuItems.filter(item => {
                 // Itens somente admin

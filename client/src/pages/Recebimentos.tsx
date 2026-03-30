@@ -18,6 +18,7 @@ import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers,
 import { ComprovanteViewer, type ComprovanteRecebimento } from "@/components/ComprovanteViewer";
 import { ClienteSelect, CentroCustoSelect, ContratoSelect } from "@/components/ClienteCentroCustoSelect";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 
 const TIPOS_RECEBIMENTO = ["Pix", "Boleto", "Transferência", "Cartão de Crédito", "Cartão de Débito", "Dinheiro", "Outro"] as const;
@@ -242,6 +243,19 @@ export default function Recebimentos() {
   const [atribuirCCOpen, setAtribuirCCOpen] = useState(false);
   const [atribuirCCId, setAtribuirCCId] = useState<number | null>(null);
   const utils = trpc.useUtils();
+  const [, setLocation] = useLocation();
+
+  // Abre formulário automaticamente quando navegar com ?novo=1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("novo") === "1" && podeCriar) {
+      setEditId(null);
+      setForm({ ...defaultForm });
+      setParcelas([]);
+      setOpen(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const toComprovante = (r: any): ComprovanteRecebimento => ({
     id: r.id,

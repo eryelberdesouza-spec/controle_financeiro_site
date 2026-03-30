@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import {
   Plus, Search, Edit, Trash2, Copy, FileText, Eye, CheckCircle,
   XCircle, Send, Clock, AlertCircle, Printer, ChevronDown,
@@ -555,6 +556,7 @@ function InfosImportantes() {
 
 export default function Propostas() {
   const utils = trpc.useUtils();
+  const [, setLocation] = useLocation();
 
   // Abas da página principal
   const [activeTab, setActiveTab] = useState("propostas");
@@ -687,6 +689,15 @@ export default function Propostas() {
     setEditId(null);
     setViewId(null);
   }
+
+  // Abre formulário automaticamente quando navegar com ?novo=1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("novo") === "1") {
+      openCreate();
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   // Carregar dados ao editar
   useEffect(() => {

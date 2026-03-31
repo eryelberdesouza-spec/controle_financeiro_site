@@ -20,10 +20,9 @@ export async function createContext(
     // Authentication is optional for public procedures.
     user = null;
 
-    // Se havia um cookie de sessão mas ele é inválido/expirado,
-    // limpar o cookie automaticamente para evitar loop de bloqueio.
-    // O navegador ficaria preso enviando o cookie corrompido em todas
-    // as requisições sem conseguir acessar o sistema.
+    // Bloco 3: Se havia um cookie de sessão mas ele é inválido/expirado,
+    // destruir o cookie imediatamente com as MESMAS opções usadas no set.
+    // Sem isso, o browser fica preso enviando o cookie corrompido em loop.
     const cookieHeader = opts.req.headers.cookie;
     if (cookieHeader && cookieHeader.includes(COOKIE_NAME)) {
       opts.res.clearCookie(COOKIE_NAME, {
@@ -31,8 +30,14 @@ export async function createContext(
         path: "/",
         sameSite: "none",
         secure: true,
+        maxAge: 0,
+        expires: new Date(0),
       });
-      console.log("[Auth] Cleared invalid/expired session cookie");
+      console.warn("[Auth] Sessão inválida/expirada detectada — cookie destruído:", {
+        ip: opts.req.ip,
+        url: opts.req.originalUrl,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

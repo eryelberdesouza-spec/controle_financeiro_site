@@ -98,7 +98,20 @@ export function registerOAuthRoutes(app: Express) {
       });
 
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+      // Bloco 1: Sempre limpar cookie anterior antes de setar novo JWT.
+      // Garante que sessões antigas nunca persistem após novo login.
+      res.clearCookie(COOKIE_NAME, { ...cookieOptions });
+
+      // Bloco 4: Evitar cache do callback OAuth — sessão inconsistente com cache.
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+
+      // Bloco 1: Setar novo cookie com maxAge de 1 dia (86400s) em vez de 1 ano.
+      // Sessões curtas reduzem risco de token roubado permanecer válido.
+      const ONE_DAY_MS = 1000 * 60 * 60 * 24;
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_DAY_MS });
 
       console.log("[OAuth Callback] Login successful, redirecting to /");
       res.redirect(302, "/");

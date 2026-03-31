@@ -1285,7 +1285,15 @@ export const appRouter = router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      // Bloco 2: clearCookie com as mesmas opções usadas no set.
+      // path:"/" é obrigatório — sem ele o browser não remove o cookie.
+      // maxAge:0 e expires no passado garantem remoção imediata.
+      ctx.res.clearCookie(COOKIE_NAME, {
+        ...cookieOptions,
+        path: "/",
+        maxAge: 0,
+        expires: new Date(0),
+      });
       return { success: true } as const;
     }),
   }),

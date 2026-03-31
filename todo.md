@@ -1070,3 +1070,28 @@
 ### Bloco 6 – Log de Erro nas Operações de Exclusão
 - [x] Integrar logError() nas falhas de exclusão/arquivamento de recebimentos
 - [x] Registrar: query, id do registro, usuário, timestamp
+
+## Reforço de Autenticação OAuth/JWT (31/03/2026)
+
+### Bloco 1 – Reset de Cookie no Callback OAuth
+- [x] clearCookie antes de setar novo JWT no /api/oauth/callback
+- [x] maxAge de 1 dia (86400s) no novo cookie
+
+### Bloco 2 – Rota de Logout Real
+- [x] Verificar se trpc.auth.logout existe e limpa cookie corretamente
+- [x] Garantir path:"/", maxAge:0 e expires:new Date(0) no clearCookie do logout
+
+### Bloco 3 – Middleware JWT com Destrução de Cookie Inválido
+- [x] Token inválido → clearCookie com maxAge:0 + expires:new Date(0)
+- [x] Usuário não fica preso com cookie corrompidoo
+
+### Bloco 4 – Cache-Control no Callback OAuth
+- [x] Adicionar Cache-Control: no-store, Pragma: no-cache, Expires: 0 no callback
+
+### Bloco 5 – credentials:include no tRPC
+- [x] Confirmado: credentials:"include" já estava implementado no main.tsx linha 67
+
+### Bloco 6 – Debug de Cookies
+- [x] Cookie se chama app_session_id (não auth_token)
+- [x] Validade reduzida de 1 ano para 1 dia
+- [x] Testes atualizados para refletir maxAge:0 no logout

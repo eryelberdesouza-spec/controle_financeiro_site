@@ -30,6 +30,9 @@ import {
   deletePagamentoParcelas,
   deleteConvite,
   deleteRecebimento,
+  arquivarRecebimento,
+  restaurarRecebimento,
+  moverVinculoRecebimento,
   deleteRecebimentoParcelas,
   deleteUser,
   getDashboardHistoricoMensal,
@@ -337,6 +340,7 @@ const recebimentosRouter = router({
       clienteId: z.number().optional(),
       dataInicio: z.date().optional(),
       dataFim: z.date().optional(),
+      statusRegistro: z.enum(["ativo", "arquivado", "excluido"]).optional(),
     }).optional())
     .query(({ input }) => listRecebimentos(input)),
 
@@ -450,9 +454,61 @@ const recebimentosRouter = router({
         usuarioNome: ctx.user.name ?? undefined,
         descricao: `Recebimento #${input.id} excluído`,
       });
-      return deleteRecebimento(input.id);
+      const resultado = await deleteRecebimento(input.id, ctx.user.id);
+      if (!resultado.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: resultado.message });
+      }
+      return resultado;
     }),
-
+  arquivar: staffProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = ctx.user as any;
+      await requirePermission(user.id, user.role, "recebimentos", "podeEditar");
+      const resultado = await arquivarRecebimento(input.id);
+      if (!resultado.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: resultado.message });
+      }
+      await registrarAuditoria({
+        entidade: "recebimento",
+        entidadeId: input.id,
+        acao: "arquivamento",
+        usuarioId: ctx.user.id,
+        usuarioNome: ctx.user.name ?? undefined,
+        descricao: `Recebimento #${input.id} arquivado`,
+      });
+      return resultado;
+    }),
+  restaurar: staffProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = ctx.user as any;
+      await requirePermission(user.id, user.role, "recebimentos", "podeEditar");
+      const resultado = await restaurarRecebimento(input.id);
+      if (!resultado.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: resultado.message });
+      }
+      await registrarAuditoria({
+        entidade: "recebimento",
+        entidadeId: input.id,
+        acao: "restauracao",
+        usuarioId: ctx.user.id,
+        usuarioNome: ctx.user.name ?? undefined,
+        descricao: `Recebimento #${input.id} restaurado`,
+      });
+      return resultado;
+    }),
+  moverVinculo: staffProcedure
+    .input(z.object({ recebimentoId: z.number(), projetoIdCorreto: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = ctx.user as any;
+      await requirePermission(user.id, user.role, "recebimentos", "podeEditar");
+      const resultado = await moverVinculoRecebimento(input.recebimentoId, input.projetoIdCorreto);
+      if (!resultado.success) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: resultado.message });
+      }
+      return resultado;
+    }),
   stats: staffProcedure.query(() => getRecebimentosStats()),
 
   // Retorna o próximo número de controle sugerido (ex: REC-2026-157)

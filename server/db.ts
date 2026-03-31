@@ -233,10 +233,13 @@ export async function getPagamentosStats() {
 
 // ==================== RECEBIMENTOS ====================
 
-export async function listRecebimentos(filters?: { status?: string; tipoRecebimento?: string; centroCustoId?: number; clienteId?: number; dataInicio?: Date; dataFim?: Date }) {
+export async function listRecebimentos(filters?: { status?: string; tipoRecebimento?: string; centroCustoId?: number; clienteId?: number; dataInicio?: Date; dataFim?: Date; statusRegistro?: "ativo" | "arquivado" | "excluido" }) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
+  // Por padrão, mostrar apenas registros ativos (não arquivados nem excluídos)
+  const srFiltro = filters?.statusRegistro ?? "ativo";
+  conditions.push(eq(recebimentos.statusRegistro, srFiltro));
   if (filters?.status) conditions.push(eq(recebimentos.status, filters.status as any));
   if (filters?.tipoRecebimento) conditions.push(eq(recebimentos.tipoRecebimento, filters.tipoRecebimento as any));
   if (filters?.centroCustoId) conditions.push(eq(recebimentos.centroCustoId, filters.centroCustoId));
@@ -257,6 +260,7 @@ export async function listRecebimentos(filters?: { status?: string; tipoRecebime
     dataVencimento: recebimentos.dataVencimento,
     dataRecebimento: recebimentos.dataRecebimento,
     status: recebimentos.status,
+    statusRegistro: recebimentos.statusRegistro,
     tipoRecebimento: recebimentos.tipoRecebimento,
     centroCustoId: recebimentos.centroCustoId,
     centroCustoNome: centrosCusto.nome,
@@ -266,13 +270,15 @@ export async function listRecebimentos(filters?: { status?: string; tipoRecebime
     parcelaAtual: recebimentos.parcelaAtual,
     observacao: recebimentos.observacao,
     geradoAutomaticamente: recebimentos.geradoAutomaticamente,
+    projetoId: recebimentos.projetoId,
+    contratoId: recebimentos.contratoId,
     createdAt: recebimentos.createdAt,
     updatedAt: recebimentos.updatedAt,
   })
     .from(recebimentos)
     .leftJoin(clientes, eq(recebimentos.clienteId, clientes.id))
     .leftJoin(centrosCusto, eq(recebimentos.centroCustoId, centrosCusto.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .where(and(...conditions))
     .orderBy(desc(recebimentos.dataVencimento));
 }
 
@@ -295,10 +301,102 @@ export async function updateRecebimento(id: number, data: Partial<InsertRecebime
   return db.update(recebimentos).set(data).where(eq(recebimentos.id, id));
 }
 
-export async function deleteRecebimento(id: number) {
+/**
+ * Soft delete: marca o recebimento como 'excluido' em vez de remover fisicamente.
+ * Valida vínculos com projetos antes de excluir.
+ * Retorna { success, message } em vez de lançar exceção para erros de vínculo.
+ */
+export async function deleteRecebimento(id: number, usuarioId?: number): Promise<{ success: boolean; message: string }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.delete(recebimentos).where(eq(recebimentos.id, id));
+  try {
+    // Buscar o registro para verificar vínculos
+    const rec = await db.select({ id: recebimentos.id, projetoId: recebimentos.projetoId, contratoId: recebimentos.contratoId, statusRegistro: recebimentos.statusRegistro }).from(recebimentos).where(eq(recebimentos.id, id)).limit(1);
+    if (!rec[0]) return { success: false, message: "Registro não encontrado." };
+    // Bloquear se vinculado a projeto ou contrato
+    if (rec[0].projetoId || rec[0].contratoId) {
+      // Registrar tentativa bloqueada no log de erros
+      const { logError } = await import("./errorLogger");
+      await logError({
+        nivel: "warn",
+        origem: "recebimentos",
+        acao: "exclusao_bloqueada",
+        mensagem: `Tentativa de excluir recebimento #${id} bloqueada por vínculo com projeto/contrato`,
+        usuarioId,
+        contexto: { recebimentoId: id, projetoId: rec[0].projetoId, contratoId: rec[0].contratoId },
+      });
+      return {
+        success: false,
+        message: "Este registro está vinculado a um projeto e não pode ser excluído. Utilize a opção Arquivar.",
+      };
+    }
+    // Soft delete: atualizar statusRegistro para 'excluido'
+    await db.update(recebimentos).set({
+      statusRegistro: "excluido",
+      deletedAt: new Date(),
+    }).where(eq(recebimentos.id, id));
+    return { success: true, message: "Registro excluído com sucesso." };
+  } catch (err: any) {
+    // Capturar erros de FK ou SQL sem quebrar a aplicação
+    const msg = err?.sqlMessage ?? err?.message ?? "Erro desconhecido";
+    // Registrar erro no log estruturado
+    const { logError } = await import("./errorLogger");
+    await logError({
+      nivel: "error",
+      origem: "recebimentos",
+      acao: "exclusao",
+      mensagem: msg,
+      stack: err?.stack,
+      usuarioId,
+      contexto: { recebimentoId: id, query: "UPDATE recebimentos SET statusRegistro=excluido" },
+    });
+    if (msg.includes("foreign key") || msg.includes("constraint")) {
+      return { success: false, message: "Não foi possível excluir o registro pois ele possui vínculos." };
+    }
+    return { success: false, message: "Não foi possível excluir o registro. Tente novamente." };
+  }
+}
+
+/**
+ * Arquiva um recebimento (status = 'arquivado') sem excluir fisicamente.
+ */
+export async function arquivarRecebimento(id: number): Promise<{ success: boolean; message: string }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.update(recebimentos).set({ statusRegistro: "arquivado" }).where(eq(recebimentos.id, id));
+    return { success: true, message: "Registro arquivado com sucesso." };
+  } catch (err: any) {
+    return { success: false, message: "Não foi possível arquivar o registro." };
+  }
+}
+
+/**
+ * Restaura um recebimento arquivado para status 'ativo'.
+ */
+export async function restaurarRecebimento(id: number): Promise<{ success: boolean; message: string }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.update(recebimentos).set({ statusRegistro: "ativo", deletedAt: null }).where(eq(recebimentos.id, id));
+    return { success: true, message: "Registro restaurado com sucesso." };
+  } catch (err: any) {
+    return { success: false, message: "Não foi possível restaurar o registro." };
+  }
+}
+
+/**
+ * Move o vínculo de recebimentos de um projeto para outro (correção operacional de duplicatas).
+ */
+export async function moverVinculoRecebimento(recebimentoId: number, projetoIdCorreto: number): Promise<{ success: boolean; message: string }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.update(recebimentos).set({ projetoId: projetoIdCorreto }).where(eq(recebimentos.id, recebimentoId));
+    return { success: true, message: "Vínculo atualizado com sucesso." };
+  } catch (err: any) {
+    return { success: false, message: "Não foi possível mover o vínculo." };
+  }
 }
 
 export async function getRecebimentosStats() {

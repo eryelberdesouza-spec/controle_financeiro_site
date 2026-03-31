@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer, Building2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download, ChevronDown, ChevronUp, Layers, Printer, Building2, Archive, RotateCcw } from "lucide-react";
 import { ComprovanteViewer, type ComprovanteRecebimento } from "@/components/ComprovanteViewer";
 import { ClienteSelect, CentroCustoSelect, ContratoSelect } from "@/components/ClienteCentroCustoSelect";
 import { useState, useEffect } from "react";
@@ -242,6 +242,7 @@ export default function Recebimentos() {
   const [comprovanteRegistros, setComprovanteRegistros] = useState<ComprovanteRecebimento[]>([]);
   const [atribuirCCOpen, setAtribuirCCOpen] = useState(false);
   const [atribuirCCId, setAtribuirCCId] = useState<number | null>(null);
+  const [mostrarArquivados, setMostrarArquivados] = useState(false);
   const utils = trpc.useUtils();
   const [, setLocation] = useLocation();
 
@@ -297,7 +298,9 @@ export default function Recebimentos() {
     setSelecionados(selecionados.size === filtered.length ? new Set() : new Set(filtered.map(r => r.id)));
   };
 
-  const { data: recebimentos = [], isLoading } = trpc.recebimentos.list.useQuery();
+  const { data: recebimentos = [], isLoading } = trpc.recebimentos.list.useQuery(
+    mostrarArquivados ? { statusRegistro: "arquivado" } : undefined
+  );
   const { data: nextNumeroControle } = trpc.recebimentos.nextNumeroControle.useQuery(undefined, {
     staleTime: 0,
     refetchOnMount: true,
@@ -408,7 +411,17 @@ export default function Recebimentos() {
   });
 
   const deleteMutation = trpc.recebimentos.delete.useMutation({
-    onSuccess: () => { utils.recebimentos.list.invalidate(); utils.dashboard.stats.invalidate(); toast.success("Recebimento removido!"); },
+    onSuccess: () => { utils.recebimentos.list.invalidate(); utils.dashboard.stats.invalidate(); toast.success("Recebimento excluído!"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const arquivarMutation = trpc.recebimentos.arquivar.useMutation({
+    onSuccess: () => { utils.recebimentos.list.invalidate(); utils.dashboard.stats.invalidate(); toast.success("Recebimento arquivado!"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const restaurarMutation = trpc.recebimentos.restaurar.useMutation({
+    onSuccess: () => { utils.recebimentos.list.invalidate(); utils.dashboard.stats.invalidate(); toast.success("Recebimento restaurado!"); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -599,6 +612,15 @@ export default function Recebimentos() {
             className="w-[150px]"
             title="Data final"
           />
+          <Button
+            variant={mostrarArquivados ? "default" : "outline"}
+            size="sm"
+            onClick={() => setMostrarArquivados(!mostrarArquivados)}
+            className="gap-1.5"
+          >
+            <Archive className="h-3.5 w-3.5" />
+            {mostrarArquivados ? "Ver Ativos" : "Ver Arquivados"}
+          </Button>
           {(filterCC !== "todos" || filterDataInicio || filterDataFim) && (
             <Button variant="ghost" size="sm" onClick={() => { setFilterCC("todos"); setFilterDataInicio(""); setFilterDataFim(""); }} className="text-muted-foreground">
               Limpar filtros
@@ -725,9 +747,21 @@ export default function Recebimentos() {
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
                               )}
-                              {podeExcluir && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
-                                  onClick={() => { if (confirm("Remover este recebimento?")) deleteMutation.mutate({ id: r.id }); }}>
+                              {podeEditar && !mostrarArquivados && (
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-orange-600 hover:text-orange-700" title="Arquivar recebimento"
+                                  onClick={() => { if (confirm("Arquivar este recebimento? Ele não aparecerá na listagem principal.")) arquivarMutation.mutate({ id: r.id }); }}>
+                                  <Archive className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              {podeEditar && mostrarArquivados && (
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700" title="Restaurar recebimento"
+                                  onClick={() => restaurarMutation.mutate({ id: r.id })}>
+                                  <RotateCcw className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              {podeExcluir && !mostrarArquivados && (
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Excluir recebimento"
+                                  onClick={() => { if (confirm("Excluir este recebimento? Esta ação não pode ser desfeita.")) deleteMutation.mutate({ id: r.id }); }}>
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               )}

@@ -1041,3 +1041,32 @@
 - [x] Backend: helper logError() e withErrorLog() para erros de login, falhas de API, exceções
 - [x] Backend: integrar log em falhas de autenticação (oauth.ts)
 - [x] Frontend: página de Logs do Sistema (somente admin) com filtros por nível/origem/data
+
+## Soft Delete e Arquivamento de Recebimentos (31/03/2026)
+
+### Bloco 1 – Remover DELETE Físico de Recebimentos
+- [x] Substituir DELETE físico por UPDATE status='excluido' + deleted_at no backend
+- [x] Garantir que nenhuma procedure usa DELETE real em recebimentos
+
+### Bloco 2 – Tratamento de Erro no Backend
+- [x] Envolver operações de exclusão em try/catch
+- [x] Retornar mensagem controlada em caso de falha de vínculo ou SQL
+
+### Bloco 3 – Validação de Vínculos Antes da Exclusão
+- [x] Verificar se recebimento está vinculado a projeto antes de excluir
+- [x] Bloquear exclusão e sugerir arquivamento quando houver vínculo
+
+### Bloco 4 – Implementar Arquivamento Real (status ENUM)
+- [x] Adicionar campo statusRegistro ENUM('ativo','arquivado','excluido') ao schema de recebimentos
+- [x] Adicionar campo deletedAt ao schema de recebimentos
+- [x] Migrar banco de dados (ALTER TABLE via SQL direto)
+- [x] Filtrar listagem para mostrar apenas statusRegistro='ativo' por padrão
+- [x] Adicionar botão "Ver Arquivados" / "Ver Ativos" na listagem
+
+### Bloco 5 – Correção Operacional (duplicatas)
+- [x] Criar procedure moverVinculo para mover vínculo de recebimento de um projeto para outro
+- [x] Garantir que arquivar projeto duplicado funciona sem excluir registros
+
+### Bloco 6 – Log de Erro nas Operações de Exclusão
+- [x] Integrar logError() nas falhas de exclusão/arquivamento de recebimentos
+- [x] Registrar: query, id do registro, usuário, timestamp

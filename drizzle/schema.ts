@@ -220,6 +220,9 @@ export const recebimentos = mysqlTable("recebimentos", {
   // Sinaliza registros sem vínculo com projeto/contrato (legados)
   inconsistente: boolean("inconsistente").default(false).notNull(),
   motivoInconsistencia: varchar("motivoInconsistencia", { length: 500 }),
+  // Status global do registro (soft delete e arquivamento)
+  statusRegistro: mysqlEnum("statusRegistro", ["ativo", "arquivado", "excluido"]).default("ativo").notNull(),
+  deletedAt: timestamp("deletedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy").references(() => users.id),
@@ -857,7 +860,7 @@ export const auditLog = mysqlTable("audit_log", {
   // ID do registro afetado
   entidadeId: int("entidadeId"),
   // Ação realizada
-  acao: mysqlEnum("acao", ["criacao", "edicao", "exclusao", "atualizar_status", "converter_em_contrato", "enviar_para_assinatura", "webhook_zapsign"]).notNull(),
+  acao: mysqlEnum("acao", ["criacao", "edicao", "exclusao", "arquivamento", "restauracao", "atualizar_status", "converter_em_contrato", "enviar_para_assinatura", "webhook_zapsign"]).notNull(),
   // Usuário que realizou a ação
   usuarioId: int("usuarioId").references(() => users.id),
   usuarioNome: varchar("usuarioNome", { length: 200 }),

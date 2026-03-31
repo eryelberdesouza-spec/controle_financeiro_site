@@ -1,0 +1,3 @@
+ALTER TABLE `audit_log` MODIFY COLUMN `acao` enum('criacao','edicao','exclusao','arquivamento','restauracao','atualizar_status','converter_em_contrato','enviar_para_assinatura','webhook_zapsign') NOT NULL;--> statement-breakpoint
+ALTER TABLE `recebimentos` ADD `statusRegistro` enum('ativo','arquivado','excluido') DEFAULT 'ativo' NOT NULL;--> statement-breakpoint
+ALTER TABLE `recebimentos` ADD `deletedAt` timestamp;

@@ -1095,3 +1095,11 @@
 - [x] Cookie se chama app_session_id (não auth_token)
 - [x] Validade reduzida de 1 ano para 1 dia
 - [x] Testes atualizados para refletir maxAge:0 no logout
+
+## Fix Definitivo de Autenticação OAuth/JWT (31/03/2026)
+
+- [x] Callback OAuth: clearCookie + sameSite:lax + Cache-Control:no-store
+- [x] Rota Express GET+POST /api/logout com clearCookie
+- [x] context.ts: clearCookie com opções idênticas ao set (sameSite:lax)
+- [x] useAuth.ts: logout usa /api/logout como fallback + clearLocalSession antes do redirect
+- [x] Testes atualizados para sameSite:lax (72 passando)

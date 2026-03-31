@@ -15,6 +15,23 @@ function clearLocalSession() {
   }
 }
 
+/**
+ * Faz logout via rota Express /api/logout (POST).
+ * Usado como fallback quando o cliente tRPC não consegue chamar a mutation
+ * (ex: sessão já corrompida, erro de rede, cookie inválido).
+ */
+async function logoutViaExpressRoute(): Promise<void> {
+  try {
+    await fetch("/api/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // Ignorar erros de rede — o cookie será destruído pelo servidor
+    // na próxima requisição via context.ts (clearSessionCookie)
+  }
+}
+
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
   redirectPath?: string;
@@ -23,6 +40,7 @@ type UseAuthOptions = {
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
     options ?? {};
+
   const utils = trpc.useUtils();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
@@ -33,25 +51,23 @@ export function useAuth(options?: UseAuthOptions) {
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       utils.auth.me.setData(undefined, null);
-      // Limpar dados de sessão do navegador ao fazer logout
       clearLocalSession();
     },
   });
 
   const logout = useCallback(async () => {
+    // Limpar dados locais imediatamente (não esperar resposta do servidor)
+    clearLocalSession();
+    utils.auth.me.setData(undefined, null);
+
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
-      if (
-        error instanceof TRPCClientError &&
-        error.data?.code === "UNAUTHORIZED"
-      ) {
-        // Mesmo com erro UNAUTHORIZED, limpar sessão local
-        clearLocalSession();
-        return;
-      }
-      throw error;
+      // Se o tRPC falhar (sessão já inválida), usar rota Express como fallback
+      console.warn("[Auth] tRPC logout falhou, usando fallback /api/logout:", error);
+      await logoutViaExpressRoute();
     } finally {
+      // Garantir limpeza e invalidação independente do resultado
       clearLocalSession();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
@@ -70,6 +86,7 @@ export function useAuth(options?: UseAuthOptions) {
       // Usuário não autenticado: limpar dados obsoletos do storage
       clearLocalSession();
     }
+
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,
@@ -84,6 +101,7 @@ export function useAuth(options?: UseAuthOptions) {
     logoutMutation.isPending,
   ]);
 
+  // Redirecionar para login quando não autenticado (token expirado ou inválido)
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
     if (meQuery.isLoading || logoutMutation.isPending) return;
@@ -91,6 +109,8 @@ export function useAuth(options?: UseAuthOptions) {
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
 
+    // Limpar dados locais antes de redirecionar para evitar estado obsoleto
+    clearLocalSession();
     window.location.href = redirectPath;
   }, [
     redirectOnUnauthenticated,

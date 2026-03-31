@@ -1,7 +1,7 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
-import { getSessionCookieOptions } from "./cookies";
+import { getSessionCookieOptions, clearSessionCookie } from "./cookies";
 import { sdk } from "./sdk";
 import { logError } from "../errorLogger";
 
@@ -9,12 +9,17 @@ import { logError } from "../errorLogger";
 // Este valor DEVE corresponder exatamente ao que foi cadastrado no painel OAuth do Manus.
 const CANONICAL_REDIRECT_URI = "https://atomtech-financeiro.manus.space/api/oauth/callback";
 
+// Validade da sessão: 1 dia.
+// Sessões curtas reduzem risco de token roubado permanecer válido.
+const ONE_DAY_MS = 1000 * 60 * 60 * 24;
+
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
   return typeof value === "string" ? value : undefined;
 }
 
 export function registerOAuthRoutes(app: Express) {
+  // ─── /api/oauth/callback ──────────────────────────────────────────────────
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
@@ -31,6 +36,11 @@ export function registerOAuthRoutes(app: Express) {
       errorDescription: errorDescription || "none",
       fullUrl: `${req.protocol}://${req.headers.host}${req.originalUrl}`,
     });
+
+    // Evitar cache do callback — sessão inconsistente com cache
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
 
     // Se o OAuth server retornou um erro
     if (error) {
@@ -54,9 +64,8 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     // Decodificar o state para diagnóstico
-    let decodedState = "";
     try {
-      decodedState = atob(state);
+      const decodedState = atob(state);
       console.log("[OAuth Callback] Decoded state (redirectUri from state):", decodedState);
     } catch (e) {
       console.error("[OAuth Callback] Failed to decode state:", state);
@@ -66,10 +75,8 @@ export function registerOAuthRoutes(app: Express) {
     // O state pode conter o domínio personalizado (financedash.company) se o usuário
     // acessou por lá antes do redirecionamento 301. O servidor OAuth do Manus exige
     // que o redirectUri na troca do token corresponda ao que foi enviado no início do fluxo.
-    // Por isso, forçamos o valor canônico tanto no início (client/src/const.ts) quanto aqui.
     const canonicalState = btoa(CANONICAL_REDIRECT_URI);
     console.log("[OAuth Callback] Using canonical redirectUri:", CANONICAL_REDIRECT_URI);
-    console.log("[OAuth Callback] Canonical state (base64):", canonicalState);
 
     try {
       const tokenResponse = await sdk.exchangeCodeForToken(code, canonicalState);
@@ -97,20 +104,12 @@ export function registerOAuthRoutes(app: Express) {
         expiresInMs: ONE_YEAR_MS,
       });
 
-      const cookieOptions = getSessionCookieOptions(req);
-
-      // Bloco 1: Sempre limpar cookie anterior antes de setar novo JWT.
+      // Destruir qualquer cookie anterior antes de criar novo JWT.
       // Garante que sessões antigas nunca persistem após novo login.
-      res.clearCookie(COOKIE_NAME, { ...cookieOptions });
+      clearSessionCookie(req, res);
 
-      // Bloco 4: Evitar cache do callback OAuth — sessão inconsistente com cache.
-      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
-
-      // Bloco 1: Setar novo cookie com maxAge de 1 dia (86400s) em vez de 1 ano.
-      // Sessões curtas reduzem risco de token roubado permanecer válido.
-      const ONE_DAY_MS = 1000 * 60 * 60 * 24;
+      // Setar novo cookie com sameSite:lax (via getSessionCookieOptions).
+      const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_DAY_MS });
 
       console.log("[OAuth Callback] Login successful, redirecting to /");
@@ -141,4 +140,17 @@ export function registerOAuthRoutes(app: Express) {
       });
     }
   });
+
+  // ─── /api/logout ─────────────────────────────────────────────────────────
+  // Rota Express pura (GET + POST) para logout.
+  // Permite que o frontend faça logout via fetch simples ou redirecionamento,
+  // sem depender do cliente tRPC (útil quando a sessão já está corrompida).
+  const handleLogout = (req: Request, res: Response) => {
+    clearSessionCookie(req, res);
+    console.log("[Logout] Sessão encerrada:", { ip: req.ip, method: req.method });
+    res.status(200).json({ success: true });
+  };
+
+  app.get("/api/logout", handleLogout);
+  app.post("/api/logout", handleLogout);
 }

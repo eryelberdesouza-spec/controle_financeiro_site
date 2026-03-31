@@ -2,6 +2,7 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import { COOKIE_NAME } from "@shared/const";
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
+import { clearSessionCookie } from "./cookies";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -17,23 +18,17 @@ export async function createContext(
   try {
     user = await sdk.authenticateRequest(opts.req);
   } catch (error) {
-    // Authentication is optional for public procedures.
+    // Autenticação é opcional para procedures públicas.
     user = null;
 
-    // Bloco 3: Se havia um cookie de sessão mas ele é inválido/expirado,
-    // destruir o cookie imediatamente com as MESMAS opções usadas no set.
-    // Sem isso, o browser fica preso enviando o cookie corrompido em loop.
+    // Se havia um cookie de sessão mas ele é inválido/expirado,
+    // destruí-lo imediatamente usando clearSessionCookie (mesmas opções do set).
+    // Sem isso, o browser fica preso enviando o cookie corrompido em loop
+    // e o usuário precisa limpar o cache manualmente para conseguir logar.
     const cookieHeader = opts.req.headers.cookie;
     if (cookieHeader && cookieHeader.includes(COOKIE_NAME)) {
-      opts.res.clearCookie(COOKIE_NAME, {
-        httpOnly: true,
-        path: "/",
-        sameSite: "none",
-        secure: true,
-        maxAge: 0,
-        expires: new Date(0),
-      });
-      console.warn("[Auth] Sessão inválida/expirada detectada — cookie destruído:", {
+      clearSessionCookie(opts.req as any, opts.res as any);
+      console.warn("[Auth] Sessão inválida/expirada — cookie destruído:", {
         ip: opts.req.ip,
         url: opts.req.originalUrl,
         error: error instanceof Error ? error.message : String(error),

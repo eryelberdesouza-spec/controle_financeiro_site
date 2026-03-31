@@ -10,7 +10,7 @@ import { errorLogsRouter } from "./routers/errorLogs";
 import { listAnexos, createAnexo, deleteAnexo, type AnexoModulo } from "./db.anexos";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
+import { getSessionCookieOptions, clearSessionCookie } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
@@ -1284,16 +1284,8 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      // Bloco 2: clearCookie com as mesmas opções usadas no set.
-      // path:"/" é obrigatório — sem ele o browser não remove o cookie.
-      // maxAge:0 e expires no passado garantem remoção imediata.
-      ctx.res.clearCookie(COOKIE_NAME, {
-        ...cookieOptions,
-        path: "/",
-        maxAge: 0,
-        expires: new Date(0),
-      });
+      // Usar clearSessionCookie para garantir opções idênticas ao set (sameSite:lax).
+      clearSessionCookie(ctx.req, ctx.res);
       return { success: true } as const;
     }),
   }),

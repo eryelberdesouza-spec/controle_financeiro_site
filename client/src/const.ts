@@ -2,33 +2,47 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
 // Domínio canônico registrado como redirect URI autorizado no Manus OAuth.
 // NUNCA usar window.location.origin aqui, pois o domínio personalizado
-// (financedash.company) não está na lista de URIs autorizados do OAuth.
+// (financedash.company) pode não estar na lista de URIs autorizados do OAuth.
 const CANONICAL_ORIGIN = "https://atomtech-financeiro.manus.space";
 
 /**
  * Gera a URL de login OAuth.
  *
- * O campo `state` é usado pelo servidor de callback para saber para onde
- * redirecionar o usuário APÓS o login bem-sucedido.
+ * ARQUITETURA DO FLUXO OAuth:
+ * 1. `redirectUri` = URL do callback registrada no Manus OAuth (usada na troca do código)
+ * 2. `state` = btoa(redirectUri) — o SDK do Manus decodifica o state para extrair o redirectUri
+ *    na troca de token. NÃO alterar este valor.
+ * 3. `returnTo` = parâmetro extra na URL do callback para indicar para onde redirecionar
+ *    o usuário APÓS o login (ex: "https://financedash.company"). Passado via query string
+ *    no redirectUri para que o callback o receba como req.query.returnTo.
  *
- * IMPORTANTE: o `state` deve conter o ORIGIN do frontend (não a URL do callback).
- * O servidor OAuth devolve o state intacto ao callback, e o callback usa esse
- * valor para construir o redirect final para o usuário.
- *
- * O `redirectUri` é a URL do callback registrada no Manus OAuth — usada apenas
- * para a troca do código de autorização pelo token de acesso.
+ * IMPORTANTE: o state DEVE conter btoa(redirectUri) para que o SDK funcione corretamente.
+ * O destino pós-login é controlado pelo parâmetro `returnTo`, não pelo `state`.
  */
 export const getLoginUrl = (returnPath?: string) => {
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;
   const appId = import.meta.env.VITE_APP_ID;
 
-  // redirectUri: URL do callback registrada no OAuth (usada na troca do código)
-  const redirectUri = `${CANONICAL_ORIGIN}/api/oauth/callback`;
+  // Determinar o domínio de origem do usuário (para redirecionar de volta após login)
+  // Usa window.location.origin para suportar tanto atomtech-financeiro.manus.space
+  // quanto financedash.company sem hardcoding
+  const currentOrigin = typeof window !== "undefined"
+    ? window.location.origin
+    : CANONICAL_ORIGIN;
 
-  // state: origin do frontend + caminho de retorno (usado pelo callback para redirecionar após login)
-  // NÃO usar a URL do callback como state — isso causaria loop infinito
-  const returnTo = returnPath ? `${CANONICAL_ORIGIN}${returnPath}` : CANONICAL_ORIGIN;
-  const state = btoa(returnTo);
+  // Construir o returnTo com o origin atual do usuário
+  const returnToPath = returnPath || "/";
+  const returnTo = `${currentOrigin}${returnToPath}`;
+
+  // redirectUri: URL do callback canônica registrada no OAuth
+  // Incluir returnTo como query param para que o callback saiba para onde redirecionar
+  const callbackBase = `${CANONICAL_ORIGIN}/api/oauth/callback`;
+  const callbackUrl = new URL(callbackBase);
+  callbackUrl.searchParams.set("returnTo", returnTo);
+  const redirectUri = callbackUrl.toString();
+
+  // state: btoa(redirectUri) — necessário para o SDK do Manus trocar o código pelo token
+  const state = btoa(redirectUri);
 
   const url = new URL(`${oauthPortalUrl}/app-auth`);
   url.searchParams.set("appId", appId);

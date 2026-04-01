@@ -9,6 +9,13 @@ import { logError } from "../errorLogger";
 // Este valor DEVE corresponder exatamente ao que foi cadastrado no painel OAuth do Manus.
 const CANONICAL_REDIRECT_URI = "https://atomtech-financeiro.manus.space/api/oauth/callback";
 
+// Domínios autorizados para redirecionamento pós-login (evitar open redirect)
+const ALLOWED_RETURN_ORIGINS = [
+  "https://atomtech-financeiro.manus.space",
+  "https://financedash.company",
+  "https://www.financedash.company",
+];
+
 // Validade da sessão: 8 horas (duração de um expediente).
 // Sessões curtas reduzem risco de token roubado permanecer válido.
 // Não misturar maxAge com expires — usar apenas maxAge para evitar conflito.
@@ -26,16 +33,17 @@ export function registerOAuthRoutes(app: Express) {
     const state = getQueryParam(req, "state");
     const error = getQueryParam(req, "error");
     const errorDescription = getQueryParam(req, "error_description");
+    // returnTo é um parâmetro opcional passado pelo getLoginUrl para indicar
+    // para onde redirecionar após o login (ex: "https://financedash.company")
+    const returnTo = getQueryParam(req, "returnTo");
 
     // Log completo para diagnóstico
     console.log("[OAuth Callback] Received request:", {
       host: req.hostname,
-      headers_host: req.headers.host,
       code: code ? `${code.substring(0, 10)}...` : "MISSING",
       state: state ? `${state.substring(0, 20)}...` : "MISSING",
+      returnTo: returnTo || "not set",
       error: error || "none",
-      errorDescription: errorDescription || "none",
-      fullUrl: `${req.protocol}://${req.headers.host}${req.originalUrl}`,
     });
 
     // Evitar cache do callback — sessão inconsistente com cache
@@ -64,24 +72,12 @@ export function registerOAuthRoutes(app: Express) {
       return;
     }
 
-    // Decodificar o state para diagnóstico
+    // O state contém btoa(redirectUri) — necessário para a troca de token com o servidor OAuth.
+    // O SDK decodifica o state para extrair o redirectUri usado na troca.
+    // IMPORTANTE: usar o state original recebido do OAuth server, não um state construído aqui.
     try {
-      const decodedState = atob(state);
-      console.log("[OAuth Callback] Decoded state (redirectUri from state):", decodedState);
-    } catch (e) {
-      console.error("[OAuth Callback] Failed to decode state:", state);
-    }
-
-    // SEMPRE usar o redirectUri canônico na troca do token.
-    // O state pode conter o domínio personalizado (financedash.company) se o usuário
-    // acessou por lá antes do redirecionamento 301. O servidor OAuth do Manus exige
-    // que o redirectUri na troca do token corresponda ao que foi enviado no início do fluxo.
-    const canonicalState = btoa(CANONICAL_REDIRECT_URI);
-    console.log("[OAuth Callback] Using canonical redirectUri:", CANONICAL_REDIRECT_URI);
-
-    try {
-      const tokenResponse = await sdk.exchangeCodeForToken(code, canonicalState);
-      console.log("[OAuth Callback] Token exchange successful, accessToken length:", tokenResponse.accessToken?.length);
+      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
+      console.log("[OAuth Callback] Token exchange successful");
 
       const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
       console.log("[OAuth Callback] Got user info:", { openId: userInfo.openId, name: userInfo.name });
@@ -115,28 +111,24 @@ export function registerOAuthRoutes(app: Express) {
       // Não passar expires junto com maxAge para evitar conflito de validade.
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
 
-      // Extrair o destino final do state (origin do frontend enviado pelo getLoginUrl)
-      // O state contém btoa(origin) — decodificar para obter a URL de destino
+      // Determinar para onde redirecionar após o login.
+      // Prioridade: 1) parâmetro returnTo (passado pelo getLoginUrl), 2) "/"
       let redirectTarget = "/";
-      try {
-        const decodedTarget = atob(state);
-        // Validar que o destino é uma URL do nosso domínio (segurança: evitar open redirect)
-        const allowedOrigins = [
-          "https://atomtech-financeiro.manus.space",
-          "https://financedash.company",
-          "https://www.financedash.company",
-        ];
-        const targetUrl = new URL(decodedTarget);
-        const targetOrigin = `${targetUrl.protocol}//${targetUrl.host}`;
-        if (allowedOrigins.includes(targetOrigin)) {
-          // Redirecionar para o caminho correto dentro do domínio autorizado
-          redirectTarget = targetUrl.pathname || "/";
-        } else {
-          console.warn("[OAuth Callback] State origin não autorizado, redirecionando para /:", targetOrigin);
+      if (returnTo) {
+        try {
+          const targetUrl = new URL(returnTo);
+          const targetOrigin = `${targetUrl.protocol}//${targetUrl.host}`;
+          if (ALLOWED_RETURN_ORIGINS.includes(targetOrigin)) {
+            // Redirecionar para o caminho dentro do domínio autorizado
+            redirectTarget = targetUrl.pathname || "/";
+          } else {
+            console.warn("[OAuth Callback] returnTo origin não autorizado, usando /:", targetOrigin);
+          }
+        } catch (e) {
+          console.warn("[OAuth Callback] returnTo inválido, usando /:", returnTo);
         }
-      } catch (e) {
-        console.warn("[OAuth Callback] Não foi possível decodificar state para redirect, usando /:", state);
       }
+
       console.log("[OAuth Callback] Login successful, redirecting to:", redirectTarget);
       res.redirect(302, redirectTarget);
     } catch (err: any) {
@@ -144,7 +136,6 @@ export function registerOAuthRoutes(app: Express) {
         message: err?.message,
         status: err?.response?.status,
         data: err?.response?.data,
-        stack: err?.stack?.substring(0, 500),
       });
       await logError({
         nivel: "critical",

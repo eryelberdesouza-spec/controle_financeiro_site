@@ -1120,3 +1120,9 @@
 
 - [x] Corrigir state OAuth: usar btoa(origin) em vez de btoa(redirectUri) no getLoginUrl
 - [x] Corrigir oauth.ts: após login, redirecionar para origin extraído do state com validação de open redirect
+
+## Correção de Autenticação v8 (01/04/2026)
+
+- [x] Corrigir state OAuth: state=btoa(redirectUri) para SDK, returnTo como query param separado para redirect pós-login
+- [x] Corrigir 404 no domínio financedash.company: getLoginUrl usa window.location.origin para returnTo
+- [x] Corrigir loop de login: oauth.ts usa state original do servidor OAuth na troca de token (não um state construído localmente)

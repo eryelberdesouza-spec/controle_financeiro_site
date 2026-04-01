@@ -9,9 +9,10 @@ import { logError } from "../errorLogger";
 // Este valor DEVE corresponder exatamente ao que foi cadastrado no painel OAuth do Manus.
 const CANONICAL_REDIRECT_URI = "https://atomtech-financeiro.manus.space/api/oauth/callback";
 
-// Validade da sessão: 1 dia.
+// Validade da sessão: 8 horas (duração de um expediente).
 // Sessões curtas reduzem risco de token roubado permanecer válido.
-const ONE_DAY_MS = 1000 * 60 * 60 * 24;
+// Não misturar maxAge com expires — usar apenas maxAge para evitar conflito.
+const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 8; // 8 horas
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -110,7 +111,9 @@ export function registerOAuthRoutes(app: Express) {
 
       // Setar novo cookie com sameSite:lax (via getSessionCookieOptions).
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_DAY_MS });
+      // maxAge em milissegundos (Express converte para segundos internamente).
+      // Não passar expires junto com maxAge para evitar conflito de validade.
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
 
       console.log("[OAuth Callback] Login successful, redirecting to /");
       res.redirect(302, "/");

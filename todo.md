@@ -1103,3 +1103,9 @@
 - [x] context.ts: clearCookie com opções idênticas ao set (sameSite:lax)
 - [x] useAuth.ts: logout usa /api/logout como fallback + clearLocalSession antes do redirect
 - [x] Testes atualizados para sameSite:lax (72 passando)
+
+## Correção de Autenticação v5 (01/04/2026)
+
+- [x] Backend: retornar 401 real no middleware JWT Express (não depender do tRPC)
+- [x] Frontend: interceptar 401 globalmente no cliente tRPC e redirecionar para login
+- [x] Corrigir maxAge do cookie para 8h sem expires misturado

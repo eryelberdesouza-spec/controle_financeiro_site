@@ -1109,3 +1109,9 @@
 - [x] Backend: retornar 401 real no middleware JWT Express (não depender do tRPC)
 - [x] Frontend: interceptar 401 globalmente no cliente tRPC e redirecionar para login
 - [x] Corrigir maxAge do cookie para 8h sem expires misturado
+
+## Correção de Autenticação v6 (01/04/2026)
+
+- [x] Remover middleware Express JWT do index.ts (causava bloqueio em sessões válidas)
+- [x] Restaurar fluxo original: tRPC + protectedProcedure tratam autenticação
+- [x] Manter clearCookie no context.ts para destruir cookies inválidos

@@ -12,9 +12,6 @@ import {
   apiRateLimit,
   authRateLimit,
 } from "./security";
-import { COOKIE_NAME } from "@shared/const";
-import { clearSessionCookie } from "./cookies";
-import { sdk } from "./sdk";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -33,49 +30,6 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
     }
   }
   throw new Error(`No available port found starting from ${startPort}`);
-}
-
-/**
- * Middleware Express de validação JWT.
- *
- * Aplicado APENAS nas rotas /api/trpc protegidas (não em /api/oauth/callback nem /api/logout).
- * Se o cookie de sessão existir mas o JWT for inválido/expirado:
- *   1. Destrói o cookie imediatamente (clearSessionCookie)
- *   2. Retorna HTTP 401 real — não depende do tRPC para resolver
- *
- * Isso garante que o frontend receba um 401 HTTP real e possa redirecionar para login
- * sem ficar em estado travado.
- *
- * Rotas públicas (sem cookie ou com cookie válido) passam normalmente via next().
- */
-async function jwtValidationMiddleware(
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
-): Promise<void> {
-  const cookieHeader = req.headers.cookie;
-
-  // Se não há cookie de sessão, deixar passar (procedure pública ou não autenticada)
-  if (!cookieHeader || !cookieHeader.includes(COOKIE_NAME)) {
-    next();
-    return;
-  }
-
-  try {
-    // Tentar autenticar — se passar, o usuário está autenticado
-    await sdk.authenticateRequest(req);
-    next();
-  } catch {
-    // Cookie existe mas JWT é inválido/expirado
-    // 1. Destruir cookie para não ficar em loop
-    clearSessionCookie(req, res);
-    console.warn("[Auth Middleware] Cookie inválido/expirado — destruído e retornando 401:", {
-      ip: req.ip,
-      url: req.originalUrl,
-    });
-    // 2. Retornar 401 real (não tRPC, não JSON de erro tRPC)
-    res.status(401).json({ error: "Sessão inválida", code: "UNAUTHORIZED" });
-  }
 }
 
 async function startServer() {
@@ -118,12 +72,7 @@ async function startServer() {
   // 6. OAuth callback + rota /api/logout
   registerOAuthRoutes(app);
 
-  // 7. Middleware JWT para rotas tRPC protegidas
-  // Aplicado ANTES do tRPC para garantir 401 HTTP real quando sessão é inválida.
-  // Não aplicar em /api/oauth/* nem /api/logout (já tratados acima).
-  app.use("/api/trpc", jwtValidationMiddleware);
-
-  // 8. tRPC API
+  // 7. tRPC API
   app.use(
     "/api/trpc",
     createExpressMiddleware({

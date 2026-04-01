@@ -115,8 +115,30 @@ export function registerOAuthRoutes(app: Express) {
       // Não passar expires junto com maxAge para evitar conflito de validade.
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
 
-      console.log("[OAuth Callback] Login successful, redirecting to /");
-      res.redirect(302, "/");
+      // Extrair o destino final do state (origin do frontend enviado pelo getLoginUrl)
+      // O state contém btoa(origin) — decodificar para obter a URL de destino
+      let redirectTarget = "/";
+      try {
+        const decodedTarget = atob(state);
+        // Validar que o destino é uma URL do nosso domínio (segurança: evitar open redirect)
+        const allowedOrigins = [
+          "https://atomtech-financeiro.manus.space",
+          "https://financedash.company",
+          "https://www.financedash.company",
+        ];
+        const targetUrl = new URL(decodedTarget);
+        const targetOrigin = `${targetUrl.protocol}//${targetUrl.host}`;
+        if (allowedOrigins.includes(targetOrigin)) {
+          // Redirecionar para o caminho correto dentro do domínio autorizado
+          redirectTarget = targetUrl.pathname || "/";
+        } else {
+          console.warn("[OAuth Callback] State origin não autorizado, redirecionando para /:", targetOrigin);
+        }
+      } catch (e) {
+        console.warn("[OAuth Callback] Não foi possível decodificar state para redirect, usando /:", state);
+      }
+      console.log("[OAuth Callback] Login successful, redirecting to:", redirectTarget);
+      res.redirect(302, redirectTarget);
     } catch (err: any) {
       console.error("[OAuth Callback] Token exchange failed:", {
         message: err?.message,

@@ -1115,3 +1115,8 @@
 - [x] Remover middleware Express JWT do index.ts (causava bloqueio em sessões válidas)
 - [x] Restaurar fluxo original: tRPC + protectedProcedure tratam autenticação
 - [x] Manter clearCookie no context.ts para destruir cookies inválidos
+
+## Correção de Autenticação v7 (01/04/2026)
+
+- [x] Corrigir state OAuth: usar btoa(origin) em vez de btoa(redirectUri) no getLoginUrl
+- [x] Corrigir oauth.ts: após login, redirecionar para origin extraído do state com validação de open redirect

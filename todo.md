@@ -1130,3 +1130,7 @@
 ## Correção de Autenticação v9 (01/04/2026)
 
 - [x] Corrigir redirect do callback OAuth para URL absoluta (sem ?code= na URL final), usando req.hostname para suportar múltiplos domínios
+
+## Correção de Autenticação v10 (01/04/2026)
+
+- [x] Corrigir redirectUri OAuth: usar URL limpa sem ?returnTo= para que code e state cheguem diretamente no callback

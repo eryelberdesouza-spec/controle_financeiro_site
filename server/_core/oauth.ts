@@ -111,26 +111,21 @@ export function registerOAuthRoutes(app: Express) {
       // Não passar expires junto com maxAge para evitar conflito de validade.
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
 
-      // Determinar para onde redirecionar após o login.
-      // Prioridade: 1) parâmetro returnTo (passado pelo getLoginUrl), 2) "/"
-      let redirectTarget = "/";
-      if (returnTo) {
-        try {
-          const targetUrl = new URL(returnTo);
-          const targetOrigin = `${targetUrl.protocol}//${targetUrl.host}`;
-          if (ALLOWED_RETURN_ORIGINS.includes(targetOrigin)) {
-            // Redirecionar para o caminho dentro do domínio autorizado
-            redirectTarget = targetUrl.pathname || "/";
-          } else {
-            console.warn("[OAuth Callback] returnTo origin não autorizado, usando /:", targetOrigin);
-          }
-        } catch (e) {
-          console.warn("[OAuth Callback] returnTo inválido, usando /:", returnTo);
-        }
-      }
+      // Redirecionar para a raiz do frontend usando URL absoluta.
+      // IMPORTANTE: usar URL absoluta (não relativa) para garantir que o browser
+      // não preserve o ?code=... da URL atual no redirect.
+      // O returnTo é ignorado intencionalmente: o Manus OAuth não preserva
+      // query params do redirectUri ao redirecionar, então o parâmetro nunca chega.
+      // Usar o origin do host atual para suportar tanto atomtech-financeiro.manus.space
+      // quanto financedash.company sem hardcoding.
+      const requestOrigin = `${req.protocol}://${req.hostname}`;
+      const isAllowedOrigin = ALLOWED_RETURN_ORIGINS.includes(requestOrigin);
+      const finalRedirect = isAllowedOrigin
+        ? `${requestOrigin}/`
+        : `${CANONICAL_REDIRECT_URI.replace("/api/oauth/callback", "/")}`;
 
-      console.log("[OAuth Callback] Login successful, redirecting to:", redirectTarget);
-      res.redirect(302, redirectTarget);
+      console.log("[OAuth Callback] Login successful, redirecting to:", finalRedirect);
+      res.redirect(302, finalRedirect);
     } catch (err: any) {
       console.error("[OAuth Callback] Token exchange failed:", {
         message: err?.message,

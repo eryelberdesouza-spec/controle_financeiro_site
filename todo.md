@@ -1126,3 +1126,7 @@
 - [x] Corrigir state OAuth: state=btoa(redirectUri) para SDK, returnTo como query param separado para redirect pós-login
 - [x] Corrigir 404 no domínio financedash.company: getLoginUrl usa window.location.origin para returnTo
 - [x] Corrigir loop de login: oauth.ts usa state original do servidor OAuth na troca de token (não um state construído localmente)
+
+## Correção de Autenticação v9 (01/04/2026)
+
+- [x] Corrigir redirect do callback OAuth para URL absoluta (sem ?code= na URL final), usando req.hostname para suportar múltiplos domínios

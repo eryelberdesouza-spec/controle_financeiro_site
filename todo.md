@@ -1134,3 +1134,10 @@
 ## Correção de Autenticação v10 (01/04/2026)
 
 - [x] Corrigir redirectUri OAuth: usar URL limpa sem ?returnTo= para que code e state cheguem diretamente no callback
+
+## Correção de Autenticação v11 (01/04/2026)
+
+- [x] Remover returnTo completamente do fluxo OAuth
+- [x] Manter state = btoa(CANONICAL_REDIRECT_URI) conforme exigido pelo SDK do Manus
+- [x] Redirect fixo para "/" após login (URL absoluta baseada no hostname)
+- [x] Logout limpa cookie + sessionStorage + localStorage

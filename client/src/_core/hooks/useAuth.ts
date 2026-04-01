@@ -1,6 +1,5 @@
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
 const USER_INFO_KEY = "manus-runtime-user-info";
@@ -34,13 +33,12 @@ async function logoutViaExpressRoute(): Promise<void> {
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
-  redirectPath?: string;
 };
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
-    options ?? {};
+  const { redirectOnUnauthenticated = false } = options ?? {};
 
+  const loginUrl = getLoginUrl();
   const utils = trpc.useUtils();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
@@ -62,9 +60,8 @@ export function useAuth(options?: UseAuthOptions) {
 
     try {
       await logoutMutation.mutateAsync();
-    } catch (error: unknown) {
+    } catch {
       // Se o tRPC falhar (sessão já inválida), usar rota Express como fallback
-      console.warn("[Auth] tRPC logout falhou, usando fallback /api/logout:", error);
       await logoutViaExpressRoute();
     } finally {
       // Garantir limpeza e invalidação independente do resultado
@@ -107,14 +104,13 @@ export function useAuth(options?: UseAuthOptions) {
     if (meQuery.isLoading || logoutMutation.isPending) return;
     if (state.user) return;
     if (typeof window === "undefined") return;
-    if (window.location.pathname === redirectPath) return;
 
     // Limpar dados locais antes de redirecionar para evitar estado obsoleto
     clearLocalSession();
-    window.location.href = redirectPath;
+    window.location.href = loginUrl;
   }, [
     redirectOnUnauthenticated,
-    redirectPath,
+    loginUrl,
     logoutMutation.isPending,
     meQuery.isLoading,
     state.user,
@@ -124,5 +120,6 @@ export function useAuth(options?: UseAuthOptions) {
     ...state,
     refresh: () => meQuery.refetch(),
     logout,
+    getLoginUrl,
   };
 }

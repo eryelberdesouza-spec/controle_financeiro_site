@@ -1141,3 +1141,10 @@
 - [x] Manter state = btoa(CANONICAL_REDIRECT_URI) conforme exigido pelo SDK do Manus
 - [x] Redirect fixo para "/" após login (URL absoluta baseada no hostname)
 - [x] Logout limpa cookie + sessionStorage + localStorage
+
+## Correção de Autenticação v12 (01/04/2026)
+
+- [x] Corrigir sdk.ts: aceitar redirectUri como parâmetro direto (não mais atob(state))
+- [x] Reescrever oauth.ts: state ignorado na troca de token, redirectUri fixo, redirect para /
+- [x] Reescrever const.ts: getLoginUrl com state = crypto.randomUUID()
+- [x] Remover toda lógica de returnTo, redirect dinâmico e reaproveitamento de state

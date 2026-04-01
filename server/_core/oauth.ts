@@ -1,4 +1,4 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions, clearSessionCookie } from "./cookies";
@@ -6,23 +6,17 @@ import { sdk } from "./sdk";
 import { logError } from "../errorLogger";
 
 /**
- * URI de callback registrada no Manus OAuth (correspondência exata obrigatória).
- * O SDK do Manus decodifica o state (btoa(redirectUri)) para usar nesta troca.
+ * URI de callback registrada no Manus OAuth.
+ * DEVE ser exatamente igual ao valor cadastrado no painel OAuth — sem query params.
+ * O Manus OAuth valida o redirectUri por correspondência exata.
+ *
+ * Este valor é passado diretamente para exchangeCodeForToken.
+ * O state recebido no callback é ignorado na troca de token (é apenas CSRF).
  */
 const CANONICAL_REDIRECT_URI =
   "https://atomtech-financeiro.manus.space/api/oauth/callback";
 
-/**
- * Domínios autorizados para redirecionamento pós-login.
- * Usado para evitar open redirect — apenas estes origins são aceitos.
- */
-const ALLOWED_ORIGINS = [
-  "https://atomtech-financeiro.manus.space",
-  "https://financedash.company",
-  "https://www.financedash.company",
-];
-
-/** Duração da sessão: 8 horas (um expediente de trabalho). */
+/** Duração da sessão: 8 horas. */
 const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 8;
 
 function getQueryParam(req: Request, key: string): string | undefined {
@@ -30,22 +24,10 @@ function getQueryParam(req: Request, key: string): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-/**
- * Determina o origin do request para o redirect pós-login.
- * Usa o hostname do request para suportar múltiplos domínios.
- * Se o origin não estiver na lista de permitidos, usa o canônico.
- */
-function getPostLoginRedirect(req: Request): string {
-  const origin = `${req.protocol}://${req.hostname}`;
-  return ALLOWED_ORIGINS.includes(origin)
-    ? `${origin}/`
-    : `https://atomtech-financeiro.manus.space/`;
-}
-
 export function registerOAuthRoutes(app: Express) {
   // ─── GET /api/oauth/callback ──────────────────────────────────────────────
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
-    // Evitar cache do callback — sessão inconsistente com cache
+    // Sem cache — evita sessão inconsistente
     res.setHeader(
       "Cache-Control",
       "no-store, no-cache, must-revalidate, proxy-revalidate"
@@ -54,16 +36,14 @@ export function registerOAuthRoutes(app: Express) {
     res.setHeader("Expires", "0");
 
     const code = getQueryParam(req, "code");
-    const state = getQueryParam(req, "state");
     const error = getQueryParam(req, "error");
     const errorDescription = getQueryParam(req, "error_description");
+    // state é recebido mas ignorado na troca de token — é apenas CSRF
+    // O redirectUri canônico é usado diretamente na troca
 
     // Se o OAuth server retornou um erro explícito
     if (error) {
-      console.error("[OAuth] Erro retornado pelo servidor OAuth:", {
-        error,
-        errorDescription,
-      });
+      console.error("[OAuth] Erro do servidor OAuth:", { error, errorDescription });
       await logError({
         nivel: "error",
         origem: "login",
@@ -76,20 +56,22 @@ export function registerOAuthRoutes(app: Express) {
       return;
     }
 
-    if (!code || !state) {
-      console.error("[OAuth] Parâmetros ausentes no callback:", {
-        hasCode: !!code,
-        hasState: !!state,
+    if (!code) {
+      console.error("[OAuth] Parâmetro 'code' ausente no callback:", {
         query: req.query,
       });
-      res.status(400).json({ error: "code e state são obrigatórios" });
+      res.status(400).json({ error: "code é obrigatório" });
       return;
     }
 
     try {
-      // O state = btoa(redirectUri) — o SDK decodifica para extrair o redirectUri
-      // usado na troca de token. NUNCA alterar este comportamento.
-      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
+      // Troca o código pelo token usando o redirectUri canônico diretamente.
+      // O state NÃO é usado aqui — o SDK foi corrigido para aceitar redirectUri.
+      const tokenResponse = await sdk.exchangeCodeForToken(
+        code,
+        CANONICAL_REDIRECT_URI
+      );
+
       const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
 
       if (!userInfo.openId) {
@@ -116,18 +98,15 @@ export function registerOAuthRoutes(app: Express) {
       // Destruir cookie anterior antes de criar novo — evita sessões fantasmas
       clearSessionCookie(req, res);
 
-      // Setar novo cookie de sessão
+      // Setar novo cookie de sessão (HttpOnly, SameSite:Lax, Secure, 8h)
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, {
         ...cookieOptions,
         maxAge: SESSION_MAX_AGE_MS,
       });
 
-      // Redirecionar para a raiz do domínio atual usando URL absoluta.
-      // URL absoluta garante que o browser não preserve ?code=... da URL atual.
-      const redirectTo = getPostLoginRedirect(req);
-      console.log("[OAuth] Login bem-sucedido, redirecionando para:", redirectTo);
-      res.redirect(302, redirectTo);
+      // Redirect fixo para a raiz — URL absoluta para limpar ?code= da barra de endereços
+      res.redirect(302, "/");
     } catch (err: any) {
       console.error("[OAuth] Falha na troca de token:", {
         message: err?.message,
@@ -155,8 +134,6 @@ export function registerOAuthRoutes(app: Express) {
   });
 
   // ─── GET + POST /api/logout ───────────────────────────────────────────────
-  // Rota Express pura para logout — funciona mesmo quando o tRPC não está
-  // disponível (sessão corrompida, erro de rede, cookie inválido).
   const handleLogout = (req: Request, res: Response) => {
     clearSessionCookie(req, res);
     res.status(200).json({ success: true });

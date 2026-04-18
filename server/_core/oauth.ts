@@ -5,83 +5,52 @@ import { getSessionCookieOptions, clearSessionCookie } from "./cookies";
 import { sdk } from "./sdk";
 import { logError } from "../errorLogger";
 
-const ALLOWED_HOSTS = [
-  "atomtech-financeiro.manus.space",
-  "www.financedash.company",
-  "financedash.company",
-];
-
-function getCanonicalRedirectUri(req: Request): string {
-  const host = req.hostname || req.headers.host || ALLOWED_HOSTS[0];
-  const cleanHost = Array.isArray(host) ? host[0] : host.split(":")[0];
-  const validHost = ALLOWED_HOSTS.includes(cleanHost)
-    ? cleanHost
-    : ALLOWED_HOSTS[0];
-  return `https://${validHost}/api/oauth/callback`;
-}
-
 /** Duração da sessão: 8 horas. */
 const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 8;
 
-function getQueryParam(req: Request, key: string): string | undefined {
-  const value = req.query[key];
-  return typeof value === "string" ? value : undefined;
-}
-
 export function registerOAuthRoutes(app: Express) {
-  app.get("/api/oauth/callback", async (req: Request, res: Response) => {
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-    res.setHeader("Pragma", "no-cache");
-    res.setHeader("Expires", "0");
 
-    const code = getQueryParam(req, "code");
-    const error = getQueryParam(req, "error");
-    const errorDescription = getQueryParam(req, "error_description");
-
-    if (error) {
-      console.error("[OAuth] Erro do servidor OAuth:", { error, errorDescription });
-      await logError({
-        nivel: "error",
-        origem: "login",
-        acao: "oauth_callback",
-        mensagem: `OAuth server retornou erro: ${error} - ${errorDescription ?? ""}`,
-        ip: req.ip,
-        contexto: { error, errorDescription },
-      });
-      res.status(400).json({ error, error_description: errorDescription });
-      return;
-    }
-
-    if (!code) {
-      console.error("[OAuth] Parâmetro 'code' ausente no callback:", { query: req.query });
-      res.status(400).json({ error: "code é obrigatório" });
-      return;
-    }
-
+  // ─── POST /api/auth/login ─────────────────────────────────────────────────
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
-      const tokenResponse = await sdk.exchangeCodeForToken(
-        code,
-        getCanonicalRedirectUri(req)
-      );
+      const { email, password } = req.body;
 
-      const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
-
-      if (!userInfo.openId) {
-        console.error("[OAuth] openId ausente na resposta do servidor OAuth");
-        res.status(400).json({ error: "openId ausente na resposta do OAuth" });
+      if (!email || !password) {
+        res.status(400).json({ error: "Email e senha são obrigatórios" });
         return;
       }
 
+      // Busca usuário pelo email
+      const user = await db.getUserByEmail(email);
+
+      if (!user) {
+        res.status(401).json({ error: "Email ou senha inválidos" });
+        return;
+      }
+
+      if (!user.ativo) {
+        res.status(401).json({ error: "Usuário inativo" });
+        return;
+      }
+
+      // Verifica senha
+      const bcrypt = await import("bcryptjs");
+      const senhaValida = await bcrypt.compare(password, user.passwordHash || "");
+
+      if (!senhaValida) {
+        res.status(401).json({ error: "Email ou senha inválidos" });
+        return;
+      }
+
+      // Atualiza último login
       await db.upsertUser({
-        openId: userInfo.openId,
-        name: userInfo.name || null,
-        email: userInfo.email ?? null,
-        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+        openId: user.openId,
         lastSignedIn: new Date(),
       });
 
-      const sessionToken = await sdk.createSessionToken(userInfo.openId, {
-        name: userInfo.name || "",
+      // Cria sessão JWT
+      const sessionToken = await sdk.createSessionToken(user.openId, {
+        name: user.name || "",
         expiresInMs: SESSION_MAX_AGE_MS,
       });
 
@@ -93,33 +62,23 @@ export function registerOAuthRoutes(app: Express) {
         maxAge: SESSION_MAX_AGE_MS,
       });
 
-      res.redirect(302, "/");
+      res.status(200).json({ success: true });
     } catch (err: any) {
-      console.error("[OAuth] Falha na troca de token:", {
-        message: err?.message,
-        status: err?.response?.status,
-        data: err?.response?.data,
-      });
+      console.error("[Auth] Falha no login:", err?.message);
       await logError({
-        nivel: "critical",
+        nivel: "error",
         origem: "login",
-        acao: "oauth_token_exchange",
-        mensagem: err?.message ?? "Falha na troca de token OAuth",
+        acao: "email_login",
+        mensagem: err?.message ?? "Falha no login",
         stack: err?.stack,
         ip: req.ip,
-        contexto: {
-          status: err?.response?.status,
-          oauthError: err?.response?.data,
-        },
+        contexto: {},
       });
-      res.status(500).json({
-        error: "OAuth callback falhou",
-        detail: err?.message,
-        oauthError: err?.response?.data,
-      });
+      res.status(500).json({ error: "Erro interno no login" });
     }
   });
 
+  // ─── GET + POST /api/logout ───────────────────────────────────────────────
   const handleLogout = (req: Request, res: Response) => {
     clearSessionCookie(req, res);
     res.status(200).json({ success: true });

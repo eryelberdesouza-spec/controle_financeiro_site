@@ -1356,3 +1356,8 @@ export async function getResumoPorCentroCusto(params: { dataInicio?: Date; dataF
       return a.nome.localeCompare(b.nome);
     });
 }
+export async function setUserPassword(userId: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+}

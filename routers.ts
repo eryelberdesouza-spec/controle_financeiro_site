@@ -1,3 +1,7 @@
+// No topo do arquivo, adicione:
+import { authRouter } from "./authRouter";
+// No appRouter, substitua:
+auth: authRouter,
 import { z } from "zod";
 import { tiposServicoRouter, materiaisRouter, contratosRouter, ordensServicoRouter, relatorioContratoRouter } from "./routers/engenharia";
 import { TRPCError } from "@trpc/server";
@@ -589,16 +593,7 @@ const recebimentoParcelasRouter = router({
 
 export const appRouter = router({
   system: systemRouter,
-  auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      // clearCookie precisa das mesmas opções usadas no set (sem maxAge)
-      const { ...clearOptions } = cookieOptions;
-      ctx.res.clearCookie(COOKIE_NAME, clearOptions);
-      return { success: true } as const;
-    }),
-  }),
+  auth: authRouter,  
   pagamentos: pagamentosRouter,
   recebimentos: recebimentosRouter,
   dashboard: dashboardRouter,

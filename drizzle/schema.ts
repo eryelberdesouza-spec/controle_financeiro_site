@@ -10,9 +10,9 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-  ativo: boolean("ativo").default(true).notNull(),
+ ativo: boolean("ativo").default(true).notNull(),
+  passwordHash: varchar("passwordHash", { length: 255 }),
 });
-
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 

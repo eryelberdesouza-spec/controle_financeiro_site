@@ -1,5 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import type { Express, Request, Response } from "express";
+import bcrypt from "bcryptjs";
 import * as db from "../db";
 import { getSessionCookieOptions, clearSessionCookie } from "./cookies";
 import { sdk } from "./sdk";
@@ -10,7 +11,6 @@ const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 8;
 
 export function registerOAuthRoutes(app: Express) {
 
-  // ─── POST /api/auth/login ─────────────────────────────────────────────────
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
@@ -20,7 +20,6 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      // Busca usuário pelo email
       const user = await db.getUserByEmail(email);
 
       if (!user) {
@@ -33,8 +32,6 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      // Verifica senha
-      const bcrypt = await import("bcryptjs");
       const senhaValida = await bcrypt.compare(password, user.passwordHash || "");
 
       if (!senhaValida) {
@@ -42,13 +39,11 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      // Atualiza último login
       await db.upsertUser({
         openId: user.openId,
         lastSignedIn: new Date(),
       });
 
-      // Cria sessão JWT
       const sessionToken = await sdk.createSessionToken(user.openId, {
         name: user.name || "",
         expiresInMs: SESSION_MAX_AGE_MS,
@@ -78,7 +73,6 @@ export function registerOAuthRoutes(app: Express) {
     }
   });
 
-  // ─── GET + POST /api/logout ───────────────────────────────────────────────
   const handleLogout = (req: Request, res: Response) => {
     clearSessionCookie(req, res);
     res.status(200).json({ success: true });

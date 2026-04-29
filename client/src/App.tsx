@@ -34,6 +34,7 @@ import LogsErros from "./pages/LogsErros";
 import MenuMobile from "./pages/MenuMobile";
 import MinhasOS from "./pages/MinhasOS";
 import Login from "./pages/Login";
+import Financeiro from "./pages/Financeiro";
 import { Redirect } from "wouter";
 
 function HomeMobile() {
@@ -56,7 +57,7 @@ function Router() {
         <Route path="/clientes" component={Clientes} />
         <Route path="/clientes/:id" component={ClienteDetalhado} />
         <Route path="/cadastros" component={Cadastros} />
-        <Route path="/financeiro">{() => <Redirect to="/pagamentos" />}</Route>
+        <Route path="/financeiro" component={Financeiro} />
         <Route path="/centros-custo" component={CentrosCusto} />
         <Route path="/extrato-cliente" component={ExtratoCliente} />
         <Route path="/usuarios" component={Usuarios} />

@@ -1188,3 +1188,14 @@
 - [ ] Fluxo Contas a Pagar: Criado → Aguardando aprovação → Aprovado → Pago → Conciliado
 - [ ] Fluxo Contas a Receber: Criado → A receber → Recebido → Conciliado
 - [ ] Atualizar rotas no App.tsx para refletir nova estrutura
+
+## Correção Menu e Módulo Financeiro (pasted_content_3)
+
+- [ ] Auditar menu atual e confirmar que todas as rotas existem
+- [ ] Corrigir DashboardLayout: menu principal completo com submenus expansíveis para Cadastros e Financeiro
+- [ ] Submenu Cadastros: Clientes, Fornecedores, Prestadores, Parceiros, Contatos
+- [ ] Submenu Financeiro: Visão Geral, Contas a Pagar, Contas a Receber, Lançamentos, Aprovações, Fluxo de Caixa, Conciliação, Relatórios Financeiros
+- [ ] Financeiro → Contas a Pagar: realocar tela de Pagamentos/Compras existente
+- [ ] Financeiro → Contas a Receber: realocar tela de Recebimentos existente
+- [ ] Preservar todas as rotas e funcionalidades existentes (sem remoção)
+- [ ] Menu principal: Dashboard, Cadastros, Propostas, Contratos, Projetos, Execução/OS, Centros de Custo, Financeiro, Relatórios, Extrato por Cliente, Inconsistências, Auditoria, Logs de Erros, Usuários, Configurações

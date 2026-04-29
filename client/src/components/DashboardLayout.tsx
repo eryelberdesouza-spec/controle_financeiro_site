@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { usePermissions } from "@/hooks/usePermissions";
-import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList, AlertTriangle, Shield, GitBranch, Plus, Zap, Bug, KeyRound, Eye, EyeOff } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList, AlertTriangle, Shield, GitBranch, Plus, Zap, Bug, KeyRound, Eye, EyeOff, DollarSign } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState, Fragment } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -31,18 +31,44 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/", modulo: "dashboard" as const },
-  { icon: UserCircle2, label: "Cadastros", path: "/cadastros", modulo: "clientes" as const },
-  { icon: ClipboardList, label: "Propostas", path: "/propostas", modulo: "engenharia_contratos" as const },
-  { icon: FileText, label: "Contratos", path: "/contratos", modulo: "engenharia_contratos" as const },
-  { icon: FolderOpen, label: "Projetos", path: "/projetos", modulo: "projetos" as const },
-  { icon: HardHat, label: "Execução / OS", path: "/engenharia", modulo: "engenharia_os" as const },
-  { icon: Building2, label: "Centros de Custo", path: "/centros-custo", modulo: "centros_custo" as const },
-  { icon: ArrowUpCircle, label: "Financeiro", path: "/financeiro", modulo: "pagamentos" as const },
-  { icon: BarChart3, label: "Relatórios", path: "/relatorios", modulo: "relatorios" as const },
-  { icon: FileSearch, label: "Extrato por Cliente", path: "/extrato-cliente", modulo: "clientes" as const },
-  { icon: AlertTriangle, label: "Inconsistências", path: "/inconsistencias", modulo: "pagamentos" as const },
+type MenuItem = {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+  modulo?: "dashboard" | "clientes" | "engenharia_contratos" | "projetos" | "engenharia_os" | "centros_custo" | "pagamentos" | "relatorios";
+  adminOnly?: boolean;
+  children?: { icon: React.ElementType; label: string; path: string; modulo?: MenuItem["modulo"]; adminOnly?: boolean }[];
+};
+
+const menuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/", modulo: "dashboard" },
+  {
+    icon: UserCircle2, label: "Cadastros", path: "/cadastros", modulo: "clientes",
+    children: [
+      { icon: UserCircle2, label: "Clientes", path: "/clientes", modulo: "clientes" },
+      { icon: UserCircle2, label: "Fornecedores", path: "/cadastros?tipo=Fornecedor", modulo: "clientes" },
+      { icon: UserCircle2, label: "Prestadores", path: "/cadastros?tipo=Prestador de Serviço", modulo: "clientes" },
+      { icon: UserCircle2, label: "Parceiros", path: "/cadastros?tipo=Parceiro", modulo: "clientes" },
+      { icon: UserCircle2, label: "Contatos", path: "/cadastros?tipo=Outro", modulo: "clientes" },
+    ],
+  },
+  { icon: ClipboardList, label: "Propostas", path: "/propostas", modulo: "engenharia_contratos" },
+  { icon: FileText, label: "Contratos", path: "/contratos", modulo: "engenharia_contratos" },
+  { icon: FolderOpen, label: "Projetos", path: "/projetos", modulo: "projetos" },
+  { icon: HardHat, label: "Execução / OS", path: "/engenharia", modulo: "engenharia_os" },
+  { icon: Building2, label: "Centros de Custo", path: "/centros-custo", modulo: "centros_custo" },
+  {
+    icon: ArrowUpCircle, label: "Financeiro", path: "/financeiro", modulo: "pagamentos",
+    children: [
+      { icon: DollarSign, label: "Visão Geral", path: "/financeiro", modulo: "pagamentos" },
+      { icon: ArrowUpCircle, label: "Contas a Pagar", path: "/pagamentos", modulo: "pagamentos" },
+      { icon: ArrowDownCircle, label: "Contas a Receber", path: "/recebimentos", modulo: "pagamentos" },
+      { icon: BarChart3, label: "Relatórios Financeiros", path: "/relatorios", modulo: "relatorios" },
+    ],
+  },
+  { icon: BarChart3, label: "Relatórios", path: "/relatorios", modulo: "relatorios" },
+  { icon: FileSearch, label: "Extrato por Cliente", path: "/extrato-cliente", modulo: "clientes" },
+  { icon: AlertTriangle, label: "Inconsistências", path: "/inconsistencias", modulo: "pagamentos" },
   { icon: Shield, label: "Auditoria", path: "/auditoria", adminOnly: true },
   { icon: Bug, label: "Logs de Erros", path: "/logs-erros", adminOnly: true },
   { icon: Users, label: "Usuários", path: "/usuarios", adminOnly: true },
@@ -242,27 +268,65 @@ function DashboardLayoutContent({
             )}
             <SidebarMenu className="px-2 py-1">
               {menuItems.filter(item => {
-                // Itens somente admin
                 if ('adminOnly' in item && item.adminOnly) return user?.role === 'admin';
-                // Admin tem acesso a tudo
                 if (isAdmin) return true;
-                // Itens sem módulo associado (Guia, FAQ) sempre visíveis
                 if (!('modulo' in item) || !item.modulo) return true;
-                // Verificar permissão de visualização do módulo
                 return can.ver(item.modulo);
               }).map(item => {
                 const isActive = location === item.path;
+                const hasChildren = item.children && item.children.length > 0;
+                const isChildActive = hasChildren && item.children!.some(c => location === c.path || location.startsWith(c.path + "?"));
+                const [open, setOpen] = useState(isChildActive);
+
+                if (hasChildren) {
+                  return (
+                    <Fragment key={item.path}>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          isActive={isActive || isChildActive}
+                          onClick={() => setOpen(o => !o)}
+                          tooltip={item.label}
+                          className="h-10 transition-all font-normal"
+                        >
+                          <item.icon className={`h-4 w-4 ${(isActive || isChildActive) ? "text-primary" : ""}`} />
+                          <span className="flex-1">{item.label}</span>
+                          <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-90" : ""}`} />
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                      {open && (
+                        <div className="ml-4 pl-2 border-l border-border/50 flex flex-col gap-0.5 mb-1">
+                          {item.children!.map(child => {
+                            const childActive = location === child.path || location.startsWith(child.path + "?");
+                            return (
+                              <button
+                                key={child.path}
+                                onClick={() => setLocation(child.path)}
+                                className={`flex items-center gap-2 text-xs px-2 py-1.5 rounded-md transition-colors w-full text-left ${
+                                  childActive
+                                    ? "bg-primary/10 text-primary font-medium"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                                }`}
+                              >
+                                <child.icon className="h-3.5 w-3.5 shrink-0" />
+                                {child.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </Fragment>
+                  );
+                }
+
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
+                      className="h-10 transition-all font-normal"
                     >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
+                      <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
                       <span>{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

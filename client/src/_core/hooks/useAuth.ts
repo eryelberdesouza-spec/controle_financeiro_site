@@ -1,4 +1,3 @@
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { useCallback, useEffect, useMemo } from "react";
 
@@ -14,31 +13,12 @@ function clearLocalSession() {
   }
 }
 
-/**
- * Faz logout via rota Express /api/logout (POST).
- * Usado como fallback quando o cliente tRPC não consegue chamar a mutation
- * (ex: sessão já corrompida, erro de rede, cookie inválido).
- */
-async function logoutViaExpressRoute(): Promise<void> {
-  try {
-    await fetch("/api/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-  } catch {
-    // Ignorar erros de rede — o cookie será destruído pelo servidor
-    // na próxima requisição via context.ts (clearSessionCookie)
-  }
-}
-
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
 };
 
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false } = options ?? {};
-
-  const loginUrl = getLoginUrl();
   const utils = trpc.useUtils();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
@@ -57,22 +37,28 @@ export function useAuth(options?: UseAuthOptions) {
     // Limpar dados locais imediatamente (não esperar resposta do servidor)
     clearLocalSession();
     utils.auth.me.setData(undefined, null);
-
     try {
       await logoutMutation.mutateAsync();
     } catch {
-      // Se o tRPC falhar (sessão já inválida), usar rota Express como fallback
-      await logoutViaExpressRoute();
+      // Se o tRPC falhar (sessão já inválida), destruir cookie via rota Express
+      try {
+        await fetch("/api/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch {
+        // Ignorar erros de rede
+      }
     } finally {
-      // Garantir limpeza e invalidação independente do resultado
       clearLocalSession();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
+      // Redirecionar para /login após logout
+      window.location.href = "/login";
     }
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    // Atualizar localStorage apenas quando há dados válidos do usuário
     if (meQuery.data) {
       try {
         localStorage.setItem(USER_INFO_KEY, JSON.stringify(meQuery.data));
@@ -80,10 +66,8 @@ export function useAuth(options?: UseAuthOptions) {
         // Ignorar erros de storage
       }
     } else if (!meQuery.isLoading && meQuery.data === null) {
-      // Usuário não autenticado: limpar dados obsoletos do storage
       clearLocalSession();
     }
-
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,
@@ -98,19 +82,18 @@ export function useAuth(options?: UseAuthOptions) {
     logoutMutation.isPending,
   ]);
 
-  // Redirecionar para login quando não autenticado (token expirado ou inválido)
+  // Redirecionar para /login quando não autenticado
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
     if (meQuery.isLoading || logoutMutation.isPending) return;
     if (state.user) return;
     if (typeof window === "undefined") return;
-
-    // Limpar dados locais antes de redirecionar para evitar estado obsoleto
+    // Não redirecionar se já estiver na página de login
+    if (window.location.pathname === "/login") return;
     clearLocalSession();
-    window.location.href = loginUrl;
+    window.location.href = "/login";
   }, [
     redirectOnUnauthenticated,
-    loginUrl,
     logoutMutation.isPending,
     meQuery.isLoading,
     state.user,
@@ -120,6 +103,5 @@ export function useAuth(options?: UseAuthOptions) {
     ...state,
     refresh: () => meQuery.refetch(),
     logout,
-    getLoginUrl,
   };
 }

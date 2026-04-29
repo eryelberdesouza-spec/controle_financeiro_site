@@ -4,11 +4,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "./routers";
 import { authRouter } from "./authRouter";
-import { createContext } from "./_core/trpc";
+import { createContext } from "./_core/context";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

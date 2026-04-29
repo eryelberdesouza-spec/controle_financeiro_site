@@ -1,57 +1,63 @@
+import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
-import path from "path";
-import { fileURLToPath } from "url";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { sdk } from "./sdk";
 import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./cookies";
+import { getSessionCookieOptions, clearSessionCookie } from "./cookies";
+import { serveStatic, setupVite } from "./vite";
 import * as db from "../db";
 import bcrypt from "bcryptjs";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  // ─── Middlewares básicos ──────────────────────────────────────────────────
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
+  // ─── Login por email/senha ────────────────────────────────────────────────
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return res.status(400).json({ error: "Email e senha obrigatórios" });
+        res.status(400).json({ error: "Email e senha são obrigatórios" });
+        return;
       }
 
       const user = await db.getUserByEmail(email.toLowerCase().trim());
 
       if (!user || !user.passwordHash) {
-        return res.status(401).json({ error: "Email ou senha incorretos" });
+        res.status(401).json({ error: "Email ou senha incorretos" });
+        return;
       }
 
       if (!user.ativo) {
-        return res.status(403).json({ error: "Conta desativada. Contate o administrador." });
+        res.status(403).json({ error: "Conta desativada. Contate o administrador." });
+        return;
       }
 
       const ok = await bcrypt.compare(password, user.passwordHash);
       if (!ok) {
-        return res.status(401).json({ error: "Email ou senha incorretos" });
+        res.status(401).json({ error: "Email ou senha incorretos" });
+        return;
       }
 
       const token = await sdk.createSessionToken(user.openId, {
         name: user.name ?? user.email ?? "",
       });
 
+      // Destruir cookie anterior antes de criar novo — evita sessões fantasmas
+      clearSessionCookie(req, res);
+
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, token, cookieOptions);
 
-      return res.json({
+      res.json({
         success: true,
         user: {
           id: user.id,
@@ -62,30 +68,40 @@ async function startServer() {
       });
     } catch (err) {
       console.error("[Login] Erro:", err);
-      return res.status(500).json({ error: "Erro interno. Tente novamente." });
+      res.status(500).json({ error: "Erro interno. Tente novamente." });
     }
   });
 
+  // ─── Logout ───────────────────────────────────────────────────────────────
+  const handleLogout = (req: express.Request, res: express.Response) => {
+    clearSessionCookie(req, res);
+    res.status(200).json({ success: true });
+  };
+  app.get("/api/logout", handleLogout);
+  app.post("/api/logout", handleLogout);
+
+  // ─── tRPC API ─────────────────────────────────────────────────────────────
   app.use(
     "/api/trpc",
     createExpressMiddleware({
       router: appRouter,
       createContext,
+      onError: ({ error, path }) => {
+        if (error.code === "INTERNAL_SERVER_ERROR") {
+          console.error(`[tRPC Error] ${path}:`, error.message);
+        }
+      },
     })
   );
 
-  const staticPath =
-    process.env.NODE_ENV === "production"
-      ? path.resolve(__dirname, "public")
-      : path.resolve(__dirname, "..", "dist", "public");
+  // ─── Frontend (Vite em dev, estático em prod) ─────────────────────────────
+  if (process.env.NODE_ENV === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
 
-  app.use(express.static(staticPath));
-
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(staticPath, "index.html"));
-  });
-
-  const port = process.env.PORT || 3000;
+  const port = parseInt(process.env.PORT || "3000");
   server.listen(port, () => {
     console.log(`✅ SIGECO rodando em http://localhost:${port}/`);
   });

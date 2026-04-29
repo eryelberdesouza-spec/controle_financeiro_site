@@ -1148,3 +1148,14 @@
 - [x] Reescrever oauth.ts: state ignorado na troca de token, redirectUri fixo, redirect para /
 - [x] Reescrever const.ts: getLoginUrl com state = crypto.randomUUID()
 - [x] Remover toda lógica de returnTo, redirect dinâmico e reaproveitamento de state
+
+## Correção de Autenticação v13 (29/04/2026)
+
+- [x] Consolidar server/_core/index.ts: login por email/senha, logout, Vite em dev, serveStatic em prod
+- [x] Instalar cookie-parser e cors, corrigir erros TypeScript no server/index.ts
+- [x] Adicionar colunas passwordHash e ativo no banco via SQL
+- [x] Atualizar useAuth.ts: redirecionar para /login em vez de OAuth
+- [x] Atualizar DashboardLayout.tsx: redirecionar para /login em vez de getLoginUrl()
+- [x] getLoginUrl() simplificado para retornar "/login"
+- [x] Fallback SPA confirmado: /, /login, /dashboard retornam 200
+- [x] Login por email/senha funcionando: retorna 401 para credenciais inválidas

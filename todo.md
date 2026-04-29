@@ -1166,3 +1166,25 @@
 - [x] Modal para admin definir/resetar senha de qualquer usuário
 - [x] Opção "Alterar minha senha" no menu do perfil (sidebar ou header)
 - [x] Modal de alteração de senha própria (senha atual + nova senha + confirmação)
+
+## Reestruturação Arquitetural v1 (pasted_content_2)
+
+- [x] Reorganizar menu lateral: Dashboard, Cadastros, Propostas, Contratos, Projetos, Centros de Custo, Financeiro, Relatórios
+- [x] Renomear "Clientes" → "Cadastros" no menu
+- [x] Renomear "Engenharia" → "Projetos" no menu
+- [x] Criar página Cadastros.tsx com abas: Clientes, Fornecedores, Prestadores, Parceiros, Outros
+- [x] Adicionar rota /cadastros e /financeiro no App.tsx
+- [ ] Adicionar campos na tabela propostas: probabilidade (%), origem, responsavelComercial
+- [ ] Remover campos projetoId e centroCustoId do formulário de Propostas (manter no schema para histórico)
+- [ ] Contratos: exigir propostaOrigemId obrigatório para novos contratos
+- [ ] Contratos: criar Centro de Custo automaticamente ao salvar (tipo operacional)
+- [ ] Contratos: gerar Contas a Receber (parcelas) automaticamente ao salvar
+- [ ] Projetos: exigir contratoPrincipalId obrigatório
+- [ ] Projetos: herdar centroCustoId do contrato (não permitir criação manual de CC)
+- [ ] Centros de Custo: simplificar tipo para apenas "operacional" (automático) e "administrativo" (manual)
+- [ ] Centros de Custo: bloquear criação manual de tipo operacional para não-admins
+- [ ] Unificar módulo Financeiro: criar página Financeiro.tsx com abas Contas a Pagar, Contas a Receber, Lançamentos, Fluxo de Caixa
+- [ ] Lançamentos financeiros: exigir centro de custo obrigatório
+- [ ] Fluxo Contas a Pagar: Criado → Aguardando aprovação → Aprovado → Pago → Conciliado
+- [ ] Fluxo Contas a Receber: Criado → A receber → Recebido → Conciliado
+- [ ] Atualizar rotas no App.tsx para refletir nova estrutura

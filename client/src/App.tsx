@@ -17,6 +17,7 @@ import Faq from "./pages/Faq";
 import Usuarios from "./pages/Usuarios";
 import Configuracoes from "./pages/Configuracoes";
 import Clientes from "./pages/Clientes";
+import Cadastros from "./pages/Cadastros";
 import ClienteDetalhado from "./pages/ClienteDetalhado";
 import CentrosCusto from "./pages/CentrosCusto";
 import ExtratoCliente from "./pages/ExtratoCliente";
@@ -54,6 +55,8 @@ function Router() {
         <Route path="/relatorios" component={Relatorios} />
         <Route path="/clientes" component={Clientes} />
         <Route path="/clientes/:id" component={ClienteDetalhado} />
+        <Route path="/cadastros" component={Cadastros} />
+        <Route path="/financeiro">{() => <Redirect to="/pagamentos" />}</Route>
         <Route path="/centros-custo" component={CentrosCusto} />
         <Route path="/extrato-cliente" component={ExtratoCliente} />
         <Route path="/usuarios" component={Usuarios} />

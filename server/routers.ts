@@ -13,6 +13,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions, clearSessionCookie } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { authRouter } from "./authRouter";
 import { getDb } from "./db";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { recebimentoParcelas, recebimentos, contratos, centrosCusto, pagamentos, projetos, ordensServico } from "../drizzle/schema";
@@ -1284,10 +1285,11 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
-      // Usar clearSessionCookie para garantir opções idênticas ao set (sameSite:lax).
       clearSessionCookie(ctx.req, ctx.res);
       return { success: true } as const;
     }),
+    changePassword: authRouter.changePassword,
+    adminSetPassword: authRouter.adminSetPassword,
   }),
   pagamentos: pagamentosRouter,
   recebimentos: recebimentosRouter,

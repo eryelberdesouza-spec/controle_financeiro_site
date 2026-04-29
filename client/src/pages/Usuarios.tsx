@@ -52,10 +52,12 @@ import {
   Settings2,
   RotateCcw,
   Eye,
+  EyeOff,
   PlusCircle,
   Pencil,
   Ban,
   Wrench,
+  KeyRound,
 } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -97,6 +99,11 @@ export default function Usuarios() {
   const [conviteRole, setConviteRole] = useState<"admin" | "operador" | "operacional" | "user">("operacional");
   const [convitePerfilAcesso, setConvitePerfilAcesso] = useState<string>("operacional");
   const [conviteLink, setConviteLink] = useState<string | null>(null);
+
+  // Estado para o modal de definição de senha (admin)
+  const [senhaModalUser, setSenhaModalUser] = useState<{ id: number; name: string } | null>(null);
+  const [novaSenhaAdmin, setNovaSenhaAdmin] = useState("");
+  const [mostrarSenhaAdmin, setMostrarSenhaAdmin] = useState(false);
 
   // Estado para o modal de permissões
   const [permModalUser, setPermModalUser] = useState<{ id: number; name: string; role: string } | null>(null);
@@ -150,6 +157,15 @@ export default function Usuarios() {
     onSuccess: () => {
       toast.success("Permissões resetadas para o padrão do nível de acesso.");
       setPermModalUser(null);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const adminSetPassword = trpc.auth.adminSetPassword.useMutation({
+    onSuccess: () => {
+      toast.success("Senha definida com sucesso!");
+      setSenhaModalUser(null);
+      setNovaSenhaAdmin("");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -452,6 +468,19 @@ export default function Usuarios() {
                                 {!isSelf && (
                                   <div className="flex items-center justify-end gap-1">
                                     {/* Botão de permissões granulares */}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 text-green-600 hover:text-green-800"
+                                      title="Definir / Resetar senha"
+                                      onClick={() => {
+                                        setSenhaModalUser({ id: u.id, name: u.name ?? "Sem nome" });
+                                        setNovaSenhaAdmin("");
+                                        setMostrarSenhaAdmin(false);
+                                      }}
+                                    >
+                                      <KeyRound className="w-4 h-4" />
+                                    </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -945,6 +974,66 @@ export default function Usuarios() {
                 {setPermissions.isPending ? "Salvando..." : "Salvar Permissões"}
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Modal: Definir Senha (admin) */}
+      <Dialog open={!!senhaModalUser} onOpenChange={(open) => { if (!open) { setSenhaModalUser(null); setNovaSenhaAdmin(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-green-600" />
+              Definir Senha — {senhaModalUser?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Digite uma nova senha para este usuário. A senha anterior será substituída imediatamente.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="nova-senha-admin">Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="nova-senha-admin"
+                  type={mostrarSenhaAdmin ? "text" : "password"}
+                  placeholder="Mínimo 8 caracteres"
+                  value={novaSenhaAdmin}
+                  onChange={(e) => setNovaSenhaAdmin(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && novaSenhaAdmin.length >= 8 && senhaModalUser) {
+                      adminSetPassword.mutate({ userId: senhaModalUser.id, novaSenha: novaSenhaAdmin });
+                    }
+                  }}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setMostrarSenhaAdmin((v) => !v)}
+                  tabIndex={-1}
+                >
+                  {mostrarSenhaAdmin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {novaSenhaAdmin.length > 0 && novaSenhaAdmin.length < 8 && (
+                <p className="text-xs text-red-500">Mínimo 8 caracteres ({novaSenhaAdmin.length}/8)</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setSenhaModalUser(null); setNovaSenhaAdmin(""); }}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white gap-2"
+              disabled={novaSenhaAdmin.length < 8 || adminSetPassword.isPending}
+              onClick={() => {
+                if (senhaModalUser) adminSetPassword.mutate({ userId: senhaModalUser.id, novaSenha: novaSenhaAdmin });
+              }}
+            >
+              <KeyRound className="w-4 h-4" />
+              {adminSetPassword.isPending ? "Salvando..." : "Definir Senha"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

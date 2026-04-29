@@ -22,8 +22,11 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { usePermissions } from "@/hooks/usePermissions";
-import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList, AlertTriangle, Shield, GitBranch, Plus, Zap, Bug } from "lucide-react";
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList, AlertTriangle, Shield, GitBranch, Plus, Zap, Bug, KeyRound, Eye, EyeOff } from "lucide-react";
+import { CSSProperties, useEffect, useRef, useState, Fragment } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
@@ -107,6 +110,17 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [pwdForm, setPwdForm] = useState({ senhaAtual: "", novaSenha: "", confirmar: "" });
+  const [showPwdFields, setShowPwdFields] = useState({ senhaAtual: false, novaSenha: false, confirmar: false });
+  const changePassword = trpc.auth.changePassword.useMutation({
+    onSuccess: () => {
+      import("sonner").then(({ toast }) => toast.success("Senha alterada com sucesso!"));
+      setShowChangePwd(false);
+      setPwdForm({ senhaAtual: "", novaSenha: "", confirmar: "" });
+    },
+    onError: (e) => import("sonner").then(({ toast }) => toast.error(e.message)),
+  });
   const { can, isAdmin } = usePermissions();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
@@ -277,13 +291,20 @@ function DashboardLayoutContent({
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem
+                  onClick={() => { setShowChangePwd(true); setPwdForm({ senhaAtual: "", novaSenha: "", confirmar: "" }); }}
+                  className="cursor-pointer"
+                >
+                  <KeyRound className="mr-2 h-4 w-4 text-green-600" />
+                  <span>Alterar minha senha</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
+                  <span>Sair</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -298,6 +319,66 @@ function DashboardLayoutContent({
           style={{ zIndex: 50 }}
         />
       </div>
+
+      {/* Modal: Alterar minha senha */}
+      <Dialog open={showChangePwd} onOpenChange={(open) => { if (!open) setShowChangePwd(false); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-green-600" />
+              Alterar minha senha
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {([
+              { key: "senhaAtual", label: "Senha atual" },
+              { key: "novaSenha", label: "Nova senha (mín. 8 caracteres)" },
+              { key: "confirmar", label: "Confirmar nova senha" },
+            ] as { key: keyof typeof pwdForm; label: string }[]).map(({ key, label }) => (
+              <div key={key} className="space-y-1.5">
+                <Label htmlFor={`pwd-${key}`}>{label}</Label>
+                <div className="relative">
+                  <Input
+                    id={`pwd-${key}`}
+                    type={showPwdFields[key] ? "text" : "password"}
+                    value={pwdForm[key]}
+                    onChange={(e) => setPwdForm(prev => ({ ...prev, [key]: e.target.value }))}
+                    className="pr-10"
+                    placeholder={key === "senhaAtual" ? "Sua senha atual" : "Mínimo 8 caracteres"}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPwdFields(prev => ({ ...prev, [key]: !prev[key] }))}
+                    tabIndex={-1}
+                  >
+                    {showPwdFields[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {pwdForm.novaSenha && pwdForm.confirmar && pwdForm.novaSenha !== pwdForm.confirmar && (
+              <p className="text-xs text-red-500">As senhas não coincidem.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChangePwd(false)}>Cancelar</Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white gap-2"
+              disabled={
+                !pwdForm.senhaAtual ||
+                pwdForm.novaSenha.length < 8 ||
+                pwdForm.novaSenha !== pwdForm.confirmar ||
+                changePassword.isPending
+              }
+              onClick={() => changePassword.mutate({ senhaAtual: pwdForm.senhaAtual, novaSenha: pwdForm.novaSenha })}
+            >
+              <KeyRound className="w-4 h-4" />
+              {changePassword.isPending ? "Salvando..." : "Alterar Senha"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <SidebarInset>
         {/* Cabeçalho mobile */}

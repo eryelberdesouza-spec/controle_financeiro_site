@@ -1159,3 +1159,10 @@
 - [x] getLoginUrl() simplificado para retornar "/login"
 - [x] Fallback SPA confirmado: /, /login, /dashboard retornam 200
 - [x] Login por email/senha funcionando: retorna 401 para credenciais inválidas
+
+## Gestão de Senhas de Usuários
+
+- [x] Botão "Definir Senha" na tela de Usuários (visível apenas para admin)
+- [x] Modal para admin definir/resetar senha de qualquer usuário
+- [x] Opção "Alterar minha senha" no menu do perfil (sidebar ou header)
+- [x] Modal de alteração de senha própria (senha atual + nova senha + confirmação)

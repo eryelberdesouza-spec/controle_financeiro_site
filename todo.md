@@ -1199,3 +1199,11 @@
 - [ ] Financeiro → Contas a Receber: realocar tela de Recebimentos existente
 - [ ] Preservar todas as rotas e funcionalidades existentes (sem remoção)
 - [ ] Menu principal: Dashboard, Cadastros, Propostas, Contratos, Projetos, Execução/OS, Centros de Custo, Financeiro, Relatórios, Extrato por Cliente, Inconsistências, Auditoria, Logs de Erros, Usuários, Configurações
+
+## Sub-Sidebar de Dois Níveis (v15)
+
+- [x] Reescrever DashboardLayout: sidebar principal fixa + sub-sidebar lateral para grupos com filhos
+- [x] Sidebar principal: sempre visível, largura fixa com ícones e labels curtos
+- [x] Sub-sidebar: aparece ao lado da principal quando grupo com filhos é selecionado (Cadastros, Financeiro)
+- [x] Sub-sidebar com scroll independente, sem comprimir o menu principal
+- [x] Destacar item ativo e grupo ativo com hierarquia visual clara

@@ -7,23 +7,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { usePermissions } from "@/hooks/usePermissions";
-import { LayoutDashboard, LogOut, PanelLeft, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle, BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight, FileSearch, HardHat, FileText, FolderOpen, ClipboardList, AlertTriangle, Shield, GitBranch, Plus, Zap, Bug, KeyRound, Eye, EyeOff, DollarSign } from "lucide-react";
-import { CSSProperties, useEffect, useRef, useState, Fragment } from "react";
+import {
+  LayoutDashboard, LogOut, ArrowDownCircle, ArrowUpCircle, BarChart3, HelpCircle,
+  BookOpen, Users, Settings, UserCircle2, Building2, Home, ChevronRight,
+  FileSearch, HardHat, FileText, FolderOpen, ClipboardList, AlertTriangle,
+  Shield, Bug, Plus, Zap, KeyRound, Eye, EyeOff, DollarSign, Menu, X,
+  Wallet, TrendingUp, FileBarChart, CheckSquare, GitMerge, PieChart,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,25 +24,37 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
+// ─── Tipos ───────────────────────────────────────────────────────────────────
+
+type SubItem = {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+  modulo?: string;
+  adminOnly?: boolean;
+};
+
 type MenuItem = {
   icon: React.ElementType;
   label: string;
   path: string;
-  modulo?: "dashboard" | "clientes" | "engenharia_contratos" | "projetos" | "engenharia_os" | "centros_custo" | "pagamentos" | "relatorios";
+  modulo?: string;
   adminOnly?: boolean;
-  children?: { icon: React.ElementType; label: string; path: string; modulo?: MenuItem["modulo"]; adminOnly?: boolean }[];
+  children?: SubItem[];
 };
 
+// ─── Definição do menu ────────────────────────────────────────────────────────
+
 const menuItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/", modulo: "dashboard" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   {
-    icon: UserCircle2, label: "Cadastros", path: "/cadastros", modulo: "clientes",
+    icon: UserCircle2, label: "Cadastros", path: "/cadastros",
     children: [
-      { icon: UserCircle2, label: "Clientes", path: "/clientes", modulo: "clientes" },
-      { icon: UserCircle2, label: "Fornecedores", path: "/cadastros?tipo=Fornecedor", modulo: "clientes" },
-      { icon: UserCircle2, label: "Prestadores", path: "/cadastros?tipo=Prestador de Serviço", modulo: "clientes" },
-      { icon: UserCircle2, label: "Parceiros", path: "/cadastros?tipo=Parceiro", modulo: "clientes" },
-      { icon: UserCircle2, label: "Contatos", path: "/cadastros?tipo=Outro", modulo: "clientes" },
+      { icon: UserCircle2, label: "Clientes", path: "/clientes" },
+      { icon: Building2, label: "Fornecedores", path: "/cadastros?tipo=Fornecedor" },
+      { icon: HardHat, label: "Prestadores", path: "/cadastros?tipo=Prestador de Serviço" },
+      { icon: GitMerge, label: "Parceiros", path: "/cadastros?tipo=Parceiro" },
+      { icon: Users, label: "Contatos", path: "/cadastros?tipo=Outro" },
     ],
   },
   { icon: ClipboardList, label: "Propostas", path: "/propostas", modulo: "engenharia_contratos" },
@@ -58,17 +63,21 @@ const menuItems: MenuItem[] = [
   { icon: HardHat, label: "Execução / OS", path: "/engenharia", modulo: "engenharia_os" },
   { icon: Building2, label: "Centros de Custo", path: "/centros-custo", modulo: "centros_custo" },
   {
-    icon: ArrowUpCircle, label: "Financeiro", path: "/financeiro", modulo: "pagamentos",
+    icon: DollarSign, label: "Financeiro", path: "/financeiro",
     children: [
-      { icon: DollarSign, label: "Visão Geral", path: "/financeiro", modulo: "pagamentos" },
-      { icon: ArrowUpCircle, label: "Contas a Pagar", path: "/pagamentos", modulo: "pagamentos" },
-      { icon: ArrowDownCircle, label: "Contas a Receber", path: "/recebimentos", modulo: "pagamentos" },
-      { icon: BarChart3, label: "Relatórios Financeiros", path: "/relatorios", modulo: "relatorios" },
+      { icon: PieChart, label: "Visão Geral", path: "/financeiro" },
+      { icon: ArrowUpCircle, label: "Contas a Pagar", path: "/pagamentos" },
+      { icon: ArrowDownCircle, label: "Contas a Receber", path: "/recebimentos" },
+      { icon: Wallet, label: "Lançamentos", path: "/lancamentos" },
+      { icon: CheckSquare, label: "Aprovações", path: "/aprovacoes" },
+      { icon: TrendingUp, label: "Fluxo de Caixa", path: "/fluxo-caixa" },
+      { icon: FileBarChart, label: "Conciliação", path: "/conciliacao" },
+      { icon: BarChart3, label: "Relatórios Fin.", path: "/relatorios" },
     ],
   },
-  { icon: BarChart3, label: "Relatórios", path: "/relatorios", modulo: "relatorios" },
-  { icon: FileSearch, label: "Extrato por Cliente", path: "/extrato-cliente", modulo: "clientes" },
-  { icon: AlertTriangle, label: "Inconsistências", path: "/inconsistencias", modulo: "pagamentos" },
+  { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
+  { icon: FileSearch, label: "Extrato por Cliente", path: "/extrato-cliente" },
+  { icon: AlertTriangle, label: "Inconsistências", path: "/inconsistencias" },
   { icon: Shield, label: "Auditoria", path: "/auditoria", adminOnly: true },
   { icon: Bug, label: "Logs de Erros", path: "/logs-erros", adminOnly: true },
   { icon: Users, label: "Usuários", path: "/usuarios", adminOnly: true },
@@ -77,67 +86,50 @@ const menuItems: MenuItem[] = [
   { icon: HelpCircle, label: "FAQ", path: "/faq" },
 ];
 
-const SIDEBAR_WIDTH_KEY = "sidebar-width";
-const DEFAULT_WIDTH = 280;
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 480;
+// ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
-  });
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { loading, user } = useAuth();
 
-  useEffect(() => {
-    localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
-  }, [sidebarWidth]);
-
-  // Redirecionar automaticamente para login quando não autenticado.
-  // Isso evita que o usuário fique preso na tela de "Sign in" quando
-  // há um cookie de sessão inválido/expirado no navegador.
   useEffect(() => {
     if (!loading && !user) {
       window.location.href = "/login";
     }
   }, [loading, user]);
 
-  if (loading || !user) {
-    return <DashboardLayoutSkeleton />
-  }
+  if (loading || !user) return <DashboardLayoutSkeleton />;
 
-  return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": `${sidebarWidth}px`,
-        } as CSSProperties
-      }
-    >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
-        {children}
-      </DashboardLayoutContent>
-    </SidebarProvider>
-  );
+  return <DashboardLayoutContent>{children}</DashboardLayoutContent>;
 }
 
-type DashboardLayoutContentProps = {
-  children: React.ReactNode;
-  setSidebarWidth: (width: number) => void;
-};
+// ─── Layout interno ───────────────────────────────────────────────────────────
 
-function DashboardLayoutContent({
-  children,
-  setSidebarWidth,
-}: DashboardLayoutContentProps) {
+function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
+  const { can, isAdmin } = usePermissions();
+  const [location, setLocation] = useLocation();
+  const isMobile = useIsMobile();
+  const { data: empresa } = trpc.empresa.get.useQuery();
+
+  // Sidebar principal: colapsada ou expandida (mobile: oculta)
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+
+  // Sub-sidebar: qual grupo está ativo (null = nenhum)
+  const [activeGroup, setActiveGroup] = useState<string | null>(() => {
+    // Abrir automaticamente o grupo cujo filho está ativo
+    for (const item of menuItems) {
+      if (item.children?.some(c => location === c.path || location.startsWith(c.path + "?"))) {
+        return item.path;
+      }
+    }
+    return null;
+  });
+
+  // Modal de alteração de senha
   const [showChangePwd, setShowChangePwd] = useState(false);
   const [pwdForm, setPwdForm] = useState({ senhaAtual: "", novaSenha: "", confirmar: "" });
   const [showPwdFields, setShowPwdFields] = useState({ senhaAtual: false, novaSenha: false, confirmar: false });
+
   const changePassword = trpc.auth.changePassword.useMutation({
     onSuccess: () => {
       import("sonner").then(({ toast }) => toast.success("Senha alterada com sucesso!"));
@@ -146,244 +138,301 @@ function DashboardLayoutContent({
     },
     onError: (e) => import("sonner").then(({ toast }) => toast.error(e.message)),
   });
-  const { can, isAdmin } = usePermissions();
-  const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
-  const isCollapsed = state === "collapsed";
-  const [isResizing, setIsResizing] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
-  const isMobile = useIsMobile();
-  const { data: empresa } = trpc.empresa.get.useQuery();
 
+  // Fechar sidebar no mobile ao navegar
   useEffect(() => {
-    if (isCollapsed) {
-      setIsResizing(false);
+    if (isMobile) setSidebarOpen(false);
+  }, [location, isMobile]);
+
+  // Filtrar itens do menu por permissão
+  const visibleItems = menuItems.filter(item => {
+    if (item.adminOnly) return user?.role === "admin";
+    if (isAdmin) return true;
+    if (!item.modulo) return true;
+    return can.ver(item.modulo as Parameters<typeof can.ver>[0]);
+  });
+
+  // Grupo ativo atual
+  const activeGroupItem = visibleItems.find(i => i.path === activeGroup && i.children);
+
+  // Verificar se um item de primeiro nível está ativo
+  const isItemActive = (item: MenuItem) => {
+    if (item.children) {
+      return item.children.some(c => location === c.path || location.startsWith(c.path + "?"));
     }
-  }, [isCollapsed]);
+    return location === item.path;
+  };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
+  // Clicar em item do menu principal
+  const handleMainItemClick = (item: MenuItem) => {
+    if (item.children) {
+      // Toggle do grupo: se já está ativo, fecha; senão abre
+      setActiveGroup(prev => prev === item.path ? null : item.path);
+    } else {
+      setActiveGroup(null);
+      setLocation(item.path);
+    }
+  };
 
-      const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
-      const newWidth = e.clientX - sidebarLeft;
-      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
-        setSidebarWidth(newWidth);
+  // Clicar em item do submenu
+  const handleSubItemClick = (path: string) => {
+    setLocation(path);
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const logoUrl = empresa?.logoUrl || "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png";
+
+  // Breadcrumb: encontrar label da página atual
+  const currentLabel = (() => {
+    for (const item of menuItems) {
+      if (item.children) {
+        const child = item.children.find(c => location === c.path || location.startsWith(c.path + "?"));
+        if (child) return { group: item.label, page: child.label };
       }
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    if (isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
+      if (location === item.path) return { group: null, page: item.label };
     }
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-  }, [isResizing, setSidebarWidth]);
+    return { group: null, page: "Página" };
+  })();
 
   return (
-    <>
-      <div className="relative" ref={sidebarRef}>
-        <Sidebar
-          collapsible="icon"
-          className="border-r-0"
-          disableTransition={isResizing}
-        >
-          <SidebarHeader className="h-16 justify-center">
-            <div className="flex items-center gap-3 px-2 transition-all w-full">
-              <button
-                onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
-                aria-label="Toggle navigation"
-              >
-                <PanelLeft className="h-4 w-4 text-muted-foreground" />
-              </button>
-              {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
-                  <img
-                    src={empresa?.logoUrl || "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png"}
-                    alt="Logo SIGECO"
-                    className="h-8 object-contain shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <p className="font-bold tracking-tight text-sm leading-none text-primary">SIGECO</p>
-                    <p className="text-[9px] text-muted-foreground leading-tight truncate">Gestão de Engenharia</p>
-                  </div>
-                </div>
-              ) : (
-                <img
-                  src={empresa?.logoUrl || "https://d2xsxph8kpxj0f.cloudfront.net/310519663389577190/eCW2qMCc4P3oBzxQMhj7Zi/logo-atomtech-horizontal_7749c840.png"}
-                  alt="Logo"
-                  className="h-6 object-contain mx-auto"
-                />
+    <div className="flex h-screen overflow-hidden bg-background">
+
+      {/* ── Overlay mobile ── */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* ── Sidebar Principal ── */}
+      <aside
+        className={`
+          flex flex-col shrink-0 bg-sidebar border-r border-sidebar-border
+          transition-all duration-200 z-40
+          ${isMobile ? "fixed top-0 left-0 h-full" : "relative h-full"}
+          ${sidebarOpen ? "w-56" : isMobile ? "-translate-x-full w-56" : "w-14"}
+        `}
+      >
+        {/* Header da sidebar */}
+        <div className="flex items-center h-14 px-3 border-b border-sidebar-border shrink-0 gap-2">
+          <button
+            onClick={() => setSidebarOpen(o => !o)}
+            className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-sidebar-accent transition-colors shrink-0"
+            aria-label="Toggle sidebar"
+          >
+            {sidebarOpen && isMobile ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+          {sidebarOpen && (
+            <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+              <img src={logoUrl} alt="Logo" className="h-7 object-contain shrink-0" />
+              <div className="min-w-0">
+                <p className="font-bold text-xs leading-none text-primary truncate">SIGECO</p>
+                <p className="text-[9px] text-muted-foreground leading-tight truncate">Gestão de Engenharia</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Atalhos rápidos */}
+        {sidebarOpen && (
+          <div className="px-2 pt-3 pb-1 shrink-0">
+            <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1 px-1">
+              <Zap className="h-3 w-3" /> Criar Novo
+            </p>
+            <div className="flex flex-col gap-1">
+              {can.criar("engenharia_contratos" as Parameters<typeof can.criar>[0]) && (
+                <button
+                  onClick={() => { setActiveGroup(null); setLocation("/propostas?novo=1"); }}
+                  className="flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-md text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-colors font-medium w-full text-left"
+                >
+                  <Plus className="h-3 w-3 shrink-0" /> Nova Proposta
+                </button>
+              )}
+              {can.criar("projetos" as Parameters<typeof can.criar>[0]) && (
+                <button
+                  onClick={() => { setActiveGroup(null); setLocation("/projetos?novo=1"); }}
+                  className="flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-md text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-colors font-medium w-full text-left"
+                >
+                  <Plus className="h-3 w-3 shrink-0" /> Novo Projeto
+                </button>
+              )}
+              {can.criar("engenharia_contratos" as Parameters<typeof can.criar>[0]) && (
+                <button
+                  onClick={() => { setActiveGroup(null); setLocation("/contratos?novo=1"); }}
+                  className="flex items-center gap-2 text-[11px] px-2 py-1.5 rounded-md text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-colors font-medium w-full text-left"
+                >
+                  <Plus className="h-3 w-3 shrink-0" /> Novo Contrato
+                </button>
               )}
             </div>
-          </SidebarHeader>
+          </div>
+        )}
 
-          <SidebarContent className="gap-0 overflow-y-auto">
-            {/* Atalhos Rápidos — só exibe quando sidebar expandida */}
-            {!isCollapsed && (
-              <div className="px-3 pt-3 pb-1">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                  <Zap className="h-3 w-3" /> Criar Novo
-                </p>
-                <div className="flex flex-col gap-1">
-                  {can.criar("engenharia_contratos") && (
-                    <button
-                      onClick={() => setLocation("/propostas?novo=1")}
-                      className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-md text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-colors font-medium w-full text-left"
-                    >
-                      <Plus className="h-3 w-3 shrink-0" /> Nova Proposta
-                    </button>
-                  )}
-                  {can.criar("projetos") && (
-                    <button
-                      onClick={() => setLocation("/projetos?novo=1")}
-                      className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-md text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-colors font-medium w-full text-left"
-                    >
-                      <Plus className="h-3 w-3 shrink-0" /> Novo Projeto
-                    </button>
-                  )}
-                  {can.criar("engenharia_contratos") && (
-                    <button
-                      onClick={() => setLocation("/contratos?novo=1")}
-                      className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-md text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-colors font-medium w-full text-left"
-                    >
-                      <Plus className="h-3 w-3 shrink-0" /> Novo Contrato
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.filter(item => {
-                if ('adminOnly' in item && item.adminOnly) return user?.role === 'admin';
-                if (isAdmin) return true;
-                if (!('modulo' in item) || !item.modulo) return true;
-                return can.ver(item.modulo);
-              }).map(item => {
-                const isActive = location === item.path;
-                const hasChildren = item.children && item.children.length > 0;
-                const isChildActive = hasChildren && item.children!.some(c => location === c.path || location.startsWith(c.path + "?"));
-                const [open, setOpen] = useState(isChildActive);
+        {/* Itens do menu principal */}
+        <nav className="flex-1 overflow-y-auto py-2 px-1.5 space-y-0.5">
+          {visibleItems.map(item => {
+            const active = isItemActive(item);
+            const groupOpen = activeGroup === item.path;
+            const hasChildren = !!item.children?.length;
 
-                if (hasChildren) {
-                  return (
-                    <Fragment key={item.path}>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          isActive={isActive || isChildActive}
-                          onClick={() => setOpen(o => !o)}
-                          tooltip={item.label}
-                          className="h-10 transition-all font-normal"
-                        >
-                          <item.icon className={`h-4 w-4 ${(isActive || isChildActive) ? "text-primary" : ""}`} />
-                          <span className="flex-1">{item.label}</span>
-                          <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-90" : ""}`} />
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                      {open && (
-                        <div className="ml-4 pl-2 border-l border-border/50 flex flex-col gap-0.5 mb-1">
-                          {item.children!.map(child => {
-                            const childActive = location === child.path || location.startsWith(child.path + "?");
-                            return (
-                              <button
-                                key={child.path}
-                                onClick={() => setLocation(child.path)}
-                                className={`flex items-center gap-2 text-xs px-2 py-1.5 rounded-md transition-colors w-full text-left ${
-                                  childActive
-                                    ? "bg-primary/10 text-primary font-medium"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                }`}
-                              >
-                                <child.icon className="h-3.5 w-3.5 shrink-0" />
-                                {child.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </Fragment>
-                  );
-                }
+            return (
+              <button
+                key={item.path}
+                onClick={() => handleMainItemClick(item)}
+                title={!sidebarOpen ? item.label : undefined}
+                className={`
+                  flex items-center gap-2.5 w-full rounded-lg px-2 py-2 text-sm transition-colors text-left
+                  ${active || groupOpen
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }
+                  ${!sidebarOpen ? "justify-center" : ""}
+                `}
+              >
+                <item.icon className={`h-4 w-4 shrink-0 ${active || groupOpen ? "text-primary" : ""}`} />
+                {sidebarOpen && (
+                  <>
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {hasChildren && (
+                      <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${groupOpen ? "rotate-90" : ""}`} />
+                    )}
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </nav>
 
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className="h-10 transition-all font-normal"
-                    >
-                      <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarContent>
-
-          <SidebarFooter className="p-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
-                      {user?.name || "-"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
-                    </p>
+        {/* Footer: avatar + menu do usuário */}
+        <div className="shrink-0 border-t border-sidebar-border p-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 hover:bg-sidebar-accent transition-colors w-full text-left ${!sidebarOpen ? "justify-center" : ""}`}>
+                <Avatar className="h-8 w-8 border shrink-0">
+                  <AvatarFallback className="text-xs font-medium">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {sidebarOpen && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate leading-none">{user?.name || "-"}</p>
+                    <p className="text-[10px] text-muted-foreground truncate mt-1">{user?.email || "-"}</p>
                   </div>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem
+                onClick={() => { setShowChangePwd(true); setPwdForm({ senhaAtual: "", novaSenha: "", confirmar: "" }); }}
+                className="cursor-pointer"
+              >
+                <KeyRound className="mr-2 h-4 w-4 text-green-600" />
+                <span>Alterar minha senha</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={logout}
+                className="cursor-pointer text-destructive focus:text-destructive"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </aside>
+
+      {/* ── Sub-Sidebar (segundo nível) ── */}
+      {activeGroupItem && (
+        <aside
+          className={`
+            flex flex-col shrink-0 bg-sidebar/60 border-r border-sidebar-border
+            transition-all duration-200 z-30
+            ${isMobile ? "fixed top-0 h-full" : "relative h-full"}
+            w-48
+          `}
+          style={isMobile ? { left: sidebarOpen ? "14rem" : "0" } : undefined}
+        >
+          {/* Header do submenu */}
+          <div className="flex items-center h-14 px-4 border-b border-sidebar-border shrink-0">
+            <activeGroupItem.icon className="h-4 w-4 text-primary mr-2 shrink-0" />
+            <span className="font-semibold text-sm text-foreground truncate">{activeGroupItem.label}</span>
+          </div>
+
+          {/* Itens do submenu */}
+          <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+            {activeGroupItem.children!.map(child => {
+              const childActive = location === child.path || location.startsWith(child.path + "?");
+              return (
+                <button
+                  key={child.path}
+                  onClick={() => handleSubItemClick(child.path)}
+                  className={`
+                    flex items-center gap-2.5 w-full rounded-lg px-3 py-2 text-sm transition-colors text-left
+                    ${childActive
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }
+                  `}
+                >
+                  <child.icon className={`h-4 w-4 shrink-0 ${childActive ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="truncate">{child.label}</span>
                 </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem
-                  onClick={() => { setShowChangePwd(true); setPwdForm({ senhaAtual: "", novaSenha: "", confirmar: "" }); }}
-                  className="cursor-pointer"
+              );
+            })}
+          </nav>
+        </aside>
+      )}
+
+      {/* ── Área principal ── */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+
+        {/* Topbar */}
+        <header className="flex items-center h-14 px-4 border-b border-border bg-background/95 backdrop-blur shrink-0 gap-3">
+          {/* Botão menu mobile */}
+          {isMobile && (
+            <button
+              onClick={() => setSidebarOpen(o => !o)}
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+          )}
+
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-0">
+            {location !== "/" && (
+              <>
+                <button
+                  onClick={() => { setActiveGroup(null); setLocation("/"); }}
+                  className="flex items-center gap-1 hover:text-foreground transition-colors shrink-0"
                 >
-                  <KeyRound className="mr-2 h-4 w-4 text-green-600" />
-                  <span>Alterar minha senha</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sair</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarFooter>
-        </Sidebar>
-        <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
-          onMouseDown={() => {
-            if (isCollapsed) return;
-            setIsResizing(true);
-          }}
-          style={{ zIndex: 50 }}
-        />
+                  <Home className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </button>
+                {currentLabel.group && (
+                  <>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                    <span className="hidden sm:inline truncate">{currentLabel.group}</span>
+                  </>
+                )}
+                <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                <span className="text-foreground font-medium truncate">{currentLabel.page}</span>
+              </>
+            )}
+            {location === "/" && (
+              <span className="text-foreground font-medium">Dashboard</span>
+            )}
+          </div>
+        </header>
+
+        {/* Conteúdo da página */}
+        <main className="flex-1 overflow-y-auto p-4">
+          {children}
+        </main>
       </div>
 
-      {/* Modal: Alterar minha senha */}
+      {/* ── Modal: Alterar minha senha ── */}
       <Dialog open={showChangePwd} onOpenChange={(open) => { if (!open) setShowChangePwd(false); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -442,51 +491,6 @@ function DashboardLayoutContent({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <SidebarInset>
-        {/* Cabeçalho mobile */}
-        {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            {/* Botão Home mobile — só aparece fora do Dashboard */}
-            {location !== "/" && (
-              <button
-                onClick={() => setLocation("/")}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                title="Voltar ao Dashboard"
-              >
-                <Home className="h-4 w-4" />
-                <span>Dashboard</span>
-              </button>
-            )}
-          </div>
-        )}
-        {/* Breadcrumb desktop — só aparece fora do Dashboard */}
-        {!isMobile && location !== "/" && (
-          <div className="flex items-center gap-1.5 px-5 pt-4 pb-0 text-sm text-muted-foreground">
-            <button
-              onClick={() => setLocation("/")}
-              className="flex items-center gap-1 hover:text-foreground transition-colors group"
-              title="Voltar ao Dashboard"
-            >
-              <Home className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />
-              <span className="group-hover:text-primary transition-colors">Dashboard</span>
-            </button>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0" />
-            <span className="text-foreground font-medium">{activeMenuItem?.label ?? "Página"}</span>
-          </div>
-        )}
-        <main className="flex-1 p-4">{children}</main>
-      </SidebarInset>
-    </>
+    </div>
   );
 }

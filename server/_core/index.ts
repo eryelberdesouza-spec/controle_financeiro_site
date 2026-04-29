@@ -72,6 +72,17 @@ async function startServer() {
     }
   });
 
+  // ─── Fallback OAuth callback: redireciona para /login ─────────────────────
+  // O Manus Platform pode redirecionar para esta rota com ?code=&state= quando
+  // há sessões OAuth antigas no browser. Em vez de 404, redirecionamos para /login.
+  app.get("/api/oauth/callback", (_req, res) => {
+    res.redirect(302, "/login");
+  });
+  // Também capturar o login OAuth (caso algum link antigo ainda aponte)
+  app.get("/api/oauth/login", (_req, res) => {
+    res.redirect(302, "/login");
+  });
+
   // ─── Logout ───────────────────────────────────────────────────────────────
   const handleLogout = (req: express.Request, res: express.Response) => {
     clearSessionCookie(req, res);

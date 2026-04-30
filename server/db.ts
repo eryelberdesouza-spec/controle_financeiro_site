@@ -71,6 +71,7 @@ export async function listUsers() {
     loginMethod: users.loginMethod,
     createdAt: users.createdAt,
     lastSignedIn: users.lastSignedIn,
+    ativo: users.ativo,
   }).from(users).orderBy(desc(users.createdAt));
 }
 

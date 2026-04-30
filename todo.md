@@ -1207,3 +1207,11 @@
 - [x] Sub-sidebar: aparece ao lado da principal quando grupo com filhos é selecionado (Cadastros, Financeiro)
 - [x] Sub-sidebar com scroll independente, sem comprimir o menu principal
 - [x] Destacar item ativo e grupo ativo com hierarquia visual clara
+
+## Correção Ativação/Desativação de Usuários (v16)
+
+- [x] Verificar campo `ativo` no banco: tinyint(1), 1=ativo, 0=inativo
+- [x] Corrigir listUsers() no db.ts: adicionar campo ativo ao select (era undefined antes)
+- [x] Corrigir frontend Usuarios.tsx: ler ativo como `=== true || === 1` (MySQL retorna número)
+- [x] invalidate após toggleAtivo já estava correto
+- [x] Testar via SQL: desativar → confirmar 0; reativar → confirmar 1 ✓

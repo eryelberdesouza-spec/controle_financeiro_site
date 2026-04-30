@@ -405,7 +405,8 @@ export default function Usuarios() {
                       <TableBody>
                         {usuarios.map((u) => {
                           const isSelf = u.id === currentUser?.id;
-                          const ativo = (u as any).ativo !== false;
+                          // ativo: MySQL retorna 1/0 (tinyint), TypeScript pode receber boolean ou number
+                          const ativo = (u as any).ativo === true || (u as any).ativo === 1;
                           return (
                             <TableRow key={u.id} className={!ativo ? "opacity-50" : ""}>
                               <TableCell className="font-medium">

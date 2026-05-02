@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import fs from "fs";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
@@ -21,7 +21,15 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
+
+  // Fallback SPA: apenas GET, apenas rotas não-API
+  app.get("*", async (req: Request, res: Response, next) => {
+    // Rotas de API devem retornar 404 JSON, não o index.html
+    if (req.path.startsWith("/api")) {
+      res.status(404).json({ error: "API route not found" });
+      return;
+    }
+
     const url = req.originalUrl;
 
     try {
@@ -46,6 +54,7 @@ export async function setupVite(app: Express, server: Server) {
     }
   });
 }
+
 export function serveStatic(app: Express) {
   const distPath = path.resolve(
     path.dirname(new URL(import.meta.url).pathname),
@@ -54,13 +63,32 @@ export function serveStatic(app: Express) {
 
   if (!fs.existsSync(distPath)) {
     console.error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
+      `[SIGECO] Build directory not found: ${distPath}. Run 'pnpm build' first.`
     );
   }
 
-  app.use(express.static(distPath));
+  // Servir arquivos estáticos (JS, CSS, imagens, etc.)
+  app.use(express.static(distPath, {
+    // Não enviar index.html automaticamente para rotas — o fallback abaixo faz isso
+    index: false,
+  }));
 
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  // Fallback SPA: TODAS as rotas GET que não são /api retornam index.html
+  // Isso garante que F5 em /dashboard, /usuarios, /financeiro, etc. funcione
+  app.get("*", (req: Request, res: Response) => {
+    // Rotas de API inexistentes retornam 404 JSON
+    if (req.path.startsWith("/api")) {
+      res.status(404).json({ error: "API route not found" });
+      return;
+    }
+
+    const indexPath = path.resolve(distPath, "index.html");
+
+    if (!fs.existsSync(indexPath)) {
+      res.status(503).send("Application not built yet. Run 'pnpm build'.");
+      return;
+    }
+
+    res.sendFile(indexPath);
   });
 }

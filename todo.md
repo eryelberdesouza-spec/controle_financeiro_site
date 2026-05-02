@@ -1215,3 +1215,12 @@
 - [x] Corrigir frontend Usuarios.tsx: ler ativo como `=== true || === 1` (MySQL retorna número)
 - [x] invalidate após toggleAtivo já estava correto
 - [x] Testar via SQL: desativar → confirmar 0; reativar → confirmar 1 ✓
+
+## Auditoria Técnica e Desvinculação do Manus (v17)
+
+- [x] Corrigir fallback SPA no vite.ts: app.get("*") apenas para rotas não-API, retornar index.html
+- [x] Corrigir CORS no security.ts: incluir financedash.company e www.financedash.company como origens permitidas
+- [x] Remover wildcard manus.space do CORS (usar lista explícita de domínios)
+- [x] Verificar OAuth: getLoginUrl() retorna "/login" (login próprio, sem portal Manus)
+- [x] Verificar cookies: domain omitido (compatível com ambos os domínios), sameSite:lax, secure em produção
+- [x] TypeScript: 0 erros após todas as correções

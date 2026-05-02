@@ -118,31 +118,29 @@ export function applyCors(app: Express) {
       return next();
     }
 
-    // Em produção, restringe às origens conhecidas
+    // Em produção: domínios canônicos + Manus + portal OAuth
+    // Domínio canônico: financedash.company
+    // Domínio Manus (legado): atomtech-financeiro.manus.space
     const allowedOrigins = [
+      "https://financedash.company",
+      "https://www.financedash.company",
+      "https://atomtech-financeiro.manus.space",
+      "https://financedash-ecw2qmcc.manus.space",
       process.env.VITE_OAUTH_PORTAL_URL,
       "https://manus.im",
-      "https://*.manus.space",
-    ].filter(Boolean);
+    ].filter(Boolean) as string[];
 
     const isAllowed =
-      !origin ||
-      allowedOrigins.some((allowed) => {
-        if (!allowed) return false;
-        if (allowed.includes("*")) {
-          const pattern = allowed.replace("*", ".*");
-          return new RegExp(pattern).test(origin);
-        }
-        return allowed === origin;
-      });
+      !origin || // requests sem origin (curl, apps mobile) são permitidos
+      allowedOrigins.includes(origin);
 
     if (isAllowed && origin) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
     }
 
-    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
 
     if (req.method === "OPTIONS") return res.sendStatus(204);
     next();

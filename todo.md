@@ -1228,3 +1228,8 @@
 ## Correção de Fonte nos Documentos Impressos
 - [x] Substituir Arial/Segoe UI por Calibri/Calibri Light em todos os documentos impressos (Propostas, EngenhariaImpressao, ComprovanteViewer, Relatorios, RelatorioCentroCusto)
 - [x] Definir font-weight: 400 como padrão para evitar negrito indesejado nas letras "l" e "I maiúsculo"
+
+## Correções de Navegação e Ordem de Serviço
+- [x] Corrigir erro ao abrir aba Ordem de Serviço (mapas PRIORIDADE e STATUS_OS incompletos)
+- [x] Adicionar DashboardLayout ao Engenharia.tsx (menu lateral agora aparece)
+- [x] Adicionar DashboardLayout ao Projetos.tsx (menu lateral agora aparece)

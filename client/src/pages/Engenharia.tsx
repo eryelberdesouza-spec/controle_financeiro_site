@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
+import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -37,16 +38,22 @@ const STATUS_CONTRATO: Record<string, { label: string; color: string }> = {
 
 const STATUS_OS: Record<string, { label: string; color: string }> = {
   planejada: { label: "Planejada", color: "bg-blue-100 text-blue-800" },
+  agendada: { label: "Agendada", color: "bg-cyan-100 text-cyan-800" },
+  em_deslocamento: { label: "Em Deslocamento", color: "bg-indigo-100 text-indigo-800" },
   autorizada: { label: "Autorizada", color: "bg-purple-100 text-purple-800" },
   em_execucao: { label: "Em Execução", color: "bg-yellow-100 text-yellow-800" },
+  pausada: { label: "Pausada", color: "bg-orange-100 text-orange-800" },
+  aguardando_validacao: { label: "Aguardando Validação", color: "bg-amber-100 text-amber-800" },
   concluida: { label: "Concluída", color: "bg-green-100 text-green-800" },
   cancelada: { label: "Cancelada", color: "bg-red-100 text-red-800" },
 };
 
 const PRIORIDADE: Record<string, { label: string; color: string }> = {
   baixa: { label: "Baixa", color: "bg-gray-100 text-gray-600" },
+  normal: { label: "Normal", color: "bg-blue-100 text-blue-700" },
   media: { label: "Média", color: "bg-blue-100 text-blue-700" },
   alta: { label: "Alta", color: "bg-orange-100 text-orange-700" },
+  critica: { label: "Crítica", color: "bg-red-100 text-red-900" },
   urgente: { label: "Urgente", color: "bg-red-100 text-red-800" },
 };
 
@@ -2221,11 +2228,10 @@ function MateriaisTab() {
   );
 }
 
-// === Página Principal ===
-export default function Engenharia() {
+/// === Página Principal ===
+function EngenhariaContent() {
   const { data: contratos = [] } = trpc.contratos.list.useQuery();
   const { data: ordens = [] } = trpc.ordensServico.list.useQuery();
-
   // Detectar ?novaOS=1 para selecionar aba de OS
   const defaultTab = (() => {
     const params = new URLSearchParams(window.location.search);
@@ -2235,16 +2241,14 @@ export default function Engenharia() {
     }
     return "contratos";
   })();
-
   const stats = useMemo(() => ({
     contratosAtivos: contratos.filter(c => c.status === "ativo").length,
     osAbertas: ordens.filter(o => o.status === "planejada" || o.status === "autorizada").length,
     osEmExecucao: ordens.filter(o => o.status === "em_execucao").length,
     valorContratos: contratos.filter(c => c.status === "ativo").reduce((s, c) => s + parseFloat(c.valorTotal ?? "0"), 0),
   }), [contratos, ordens]);
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold">Engenharia</h1>
         <p className="text-muted-foreground text-sm mt-1">Gerencie contratos, ordens de serviço, tipos de serviço e materiais.</p>
@@ -2324,5 +2328,13 @@ export default function Engenharia() {
         <TabsContent value="materiais" className="mt-6"><MateriaisTab /></TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function Engenharia() {
+  return (
+    <DashboardLayout>
+      <EngenhariaContent />
+    </DashboardLayout>
   );
 }

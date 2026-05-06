@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -666,6 +667,7 @@ export default function Projetos() {
   const isAdmin = user?.role === "admin";
 
   return (
+    <DashboardLayout>
     <div className="p-6 space-y-6">
       {/* Cabeçalho */}
       <div className="flex items-center justify-between">
@@ -1035,5 +1037,6 @@ export default function Projetos() {
         onConfirm={() => { if (deleteProjetoId) deleteMutation.mutate({ id: deleteProjetoId }); }}
       />
     </div>
+    </DashboardLayout>
   );
 }

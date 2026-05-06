@@ -688,7 +688,7 @@ function AbaCentroCusto() {
         <td>${r.status}</td>
       </tr>`).join("");
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório por CC</title>
-      <style>body{font-family:Arial,sans-serif;font-size:12px;padding:20px}
+      <style>body{font-family:'Calibri','Calibri Light','Trebuchet MS','Gill Sans','Gill Sans MT',Candara,Verdana,Arial,sans-serif;font-size:12px;padding:20px;font-weight:400;-webkit-font-smoothing:antialiased}
       h1{font-size:18px}h2{font-size:14px;margin-top:20px;border-bottom:1px solid #ccc;padding-bottom:4px}
       table{width:100%;border-collapse:collapse;margin-top:8px}
       th{background:#f3f4f6;text-align:left;padding:6px 8px;font-size:11px}

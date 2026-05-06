@@ -154,7 +154,7 @@ function gerarPDFProposta(p: any) {
 <title>Proposta ${p.numero ?? ""}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937; font-size: 12px; line-height: 1.6; background: #fff; }
+  body { font-family: 'Calibri', 'Calibri Light', 'Trebuchet MS', 'Gill Sans', 'Gill Sans MT', Candara, Verdana, Arial, sans-serif; color: #1f2937; font-size: 12px; line-height: 1.6; background: #fff; font-weight: 400; -webkit-font-smoothing: antialiased; }
   .page { max-width: 820px; margin: 0 auto; padding: 32px 40px; }
 
   /* Cabeçalho */

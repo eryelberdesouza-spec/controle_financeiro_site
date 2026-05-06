@@ -165,7 +165,7 @@ export default function RelatorioCentroCusto() {
         <style>
           @page { size: A4; margin: 15mm 12mm; }
           * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; }
+          body { font-family: 'Calibri', 'Calibri Light', 'Trebuchet MS', 'Gill Sans', 'Gill Sans MT', Candara, Verdana, Arial, sans-serif; font-size: 11px; color: #1a1a1a; font-weight: 400; -webkit-font-smoothing: antialiased; }
           .header { background: #f9fafb; border-bottom: 3px solid #111827; padding: 12px 20px; display: flex; align-items: center; margin-bottom: 16px; }
           .header-info { flex: 1; }
           .sigeco-title { font-size: 18px; font-weight: 900; letter-spacing: 0.08em; color: #111827; margin-bottom: 1px; }

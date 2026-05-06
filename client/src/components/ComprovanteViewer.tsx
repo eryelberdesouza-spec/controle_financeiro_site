@@ -103,11 +103,13 @@ function Field({
 const PRINT_CSS = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Calibri', 'Calibri Light', 'Trebuchet MS', 'Gill Sans', 'Gill Sans MT', Candara, Verdana, Arial, sans-serif;
   font-size: 10px;
   color: #111827;
   background: #fff;
   padding: 14px 18px;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
 }
 .comp-header {
   display: flex;

@@ -1224,3 +1224,7 @@
 - [x] Verificar OAuth: getLoginUrl() retorna "/login" (login próprio, sem portal Manus)
 - [x] Verificar cookies: domain omitido (compatível com ambos os domínios), sameSite:lax, secure em produção
 - [x] TypeScript: 0 erros após todas as correções
+
+## Correção de Fonte nos Documentos Impressos
+- [x] Substituir Arial/Segoe UI por Calibri/Calibri Light em todos os documentos impressos (Propostas, EngenhariaImpressao, ComprovanteViewer, Relatorios, RelatorioCentroCusto)
+- [x] Definir font-weight: 400 como padrão para evitar negrito indesejado nas letras "l" e "I maiúsculo"
